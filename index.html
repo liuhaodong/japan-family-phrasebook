@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json?v=5" />
+  <link rel="stylesheet" href="styles.css?v=5" />
 </head>
 <body>
   <!-- Compact Top Header -->
@@ -76,9 +76,6 @@
       <!-- Row 2: Slim Horizontal Trip Leg Bar -->
       <div class="leg-tabs" id="leg-tabs-container"></div>
 
-      <!-- Context Banner for Selected Leg -->
-      <div class="leg-context-banner" id="leg-context-banner"></div>
-
       <!-- Collapsible Toggles Drawer (Always visible on desktop, toggleable on mobile) -->
       <div class="toolbar-collapsible" id="toolbar-collapsible">
         <div class="toggle-group">
@@ -112,7 +109,11 @@
     </aside>
 
     <!-- Right Content: Modules, Phrases & Roleplay Dialogues -->
-    <div id="modules-main-container"></div>
+    <div class="main-content-column" style="min-width:0;">
+      <!-- Context Banner for Selected Leg (Scrolls with content so sticky header never jumps/flickers) -->
+      <div class="leg-context-banner" id="leg-context-banner"></div>
+      <div id="modules-main-container"></div>
+    </div>
   </main>
 
   <!-- Fullscreen Modal ("Show to Staff" & Hotel/Ginza Vaults) -->
@@ -127,15 +128,23 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="data/itinerary.js"></script>
-  <script src="data/modules_1_to_6.js"></script>
-  <script src="data/modules_7_to_12.js"></script>
-  <script src="data/modules_13_to_18.js"></script>
-  <script src="data/audio_manifest.js"></script>
-  <script src="app.js"></script>
+  <script src="data/itinerary.js?v=5"></script>
+  <script src="data/modules_1_to_6.js?v=5"></script>
+  <script src="data/modules_7_to_12.js?v=5"></script>
+  <script src="data/modules_13_to_18.js?v=5"></script>
+  <script src="data/audio_manifest.js?v=5"></script>
+  <script src="app.js?v=5"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
-      navigator.serviceWorker.register("sw.js").catch(() => {});
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+      navigator.serviceWorker.register("sw.js?v=5").then((reg) => {
+        reg.update().catch(() => {});
+      }).catch(() => {});
     }
   </script>
 </body>

@@ -790,31 +790,40 @@
       .filter((mod) => mod.filteredSections.length > 0 || mod.filteredDialogues.length > 0);
   }
 
-  // Render Leg Tabs & Context Banner
+  // Render Leg Tabs & Context Banner (Updates in-place without destroying DOM or resetting scrollLeft)
   function renderLegTabs() {
     const container = document.getElementById("leg-tabs-container");
     const banner = document.getElementById("leg-context-banner");
     if (!container) return;
 
-    container.innerHTML = ITINERARY.legs
-      .map(
-        (leg) => `
-      <button class="leg-tab ${state.activeLeg === leg.id ? "active" : ""}" data-leg="${leg.id}">
-        <span>${leg.icon}</span>
-        <span>${escapeHtml(leg.shortTitle)}</span>
-        <span class="leg-dates">(${escapeHtml(leg.dates)})</span>
-      </button>
-    `
-      )
-      .join("");
+    if (container.children.length === 0) {
+      container.innerHTML = ITINERARY.legs
+        .map(
+          (leg) => `
+        <button type="button" class="leg-tab ${state.activeLeg === leg.id ? "active" : ""}" data-leg="${leg.id}">
+          <span>${leg.icon}</span>
+          <span>${escapeHtml(leg.shortTitle)}</span>
+          <span class="leg-dates">(${escapeHtml(leg.dates)})</span>
+        </button>
+      `
+        )
+        .join("");
 
-    container.querySelectorAll(".leg-tab").forEach((btn) => {
-      btn.onclick = () => {
-        state.activeLeg = btn.dataset.leg;
-        renderAll();
-      };
-    });
+      container.querySelectorAll(".leg-tab").forEach((btn) => {
+        btn.onclick = () => {
+          if (state.activeLeg === btn.dataset.leg) return;
+          state.activeLeg = btn.dataset.leg;
+          renderAll();
+          btn.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+        };
+      });
+    } else {
+      container.querySelectorAll(".leg-tab").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.leg === state.activeLeg);
+      });
+    }
 
+    if (!banner) return;
     const currentLeg = ITINERARY.legs.find((l) => l.id === state.activeLeg);
     if (currentLeg && currentLeg.id !== "all") {
       banner.classList.add("visible");
@@ -823,7 +832,7 @@
           <strong>${currentLeg.icon} ${escapeHtml(currentLeg.shortTitle)} (${escapeHtml(currentLeg.dates)}) · ${escapeHtml(currentLeg.hotel)}</strong>
           <div style="margin-top:0.15rem;color:var(--text-secondary);">${escapeHtml(currentLeg.summary)}</div>
         </div>
-        <button class="action-btn" id="reset-leg-btn" style="flex-shrink:0;">查看全部18个模块</button>
+        <button type="button" class="action-btn" id="reset-leg-btn" style="flex-shrink:0;">查看全部18个模块</button>
       `;
       document.getElementById("reset-leg-btn").onclick = () => {
         state.activeLeg = "all";
@@ -1261,26 +1270,6 @@
         }
       };
     }
-
-    // Auto-condense sticky controls on mobile scroll-down to maximize reading space
-    const stickyControls = document.getElementById("sticky-controls");
-    let lastScrollY = window.scrollY;
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!stickyControls) return;
-        const currentY = window.scrollY;
-        if (currentY > 140 && currentY > lastScrollY + 10) {
-          stickyControls.classList.add("scroll-compact");
-          if (toolbarCollapsible) toolbarCollapsible.classList.remove("open");
-          if (btnToggleFilters) btnToggleFilters.classList.remove("active");
-        } else if (currentY < lastScrollY - 12 || currentY <= 80) {
-          stickyControls.classList.remove("scroll-compact");
-        }
-        lastScrollY = currentY;
-      },
-      { passive: true }
-    );
 
     const modal = document.getElementById("app-modal");
     const modalClose = document.getElementById("modal-close-btn");

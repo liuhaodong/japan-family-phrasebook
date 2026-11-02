@@ -1,59 +1,63 @@
-const CACHE_NAME = "japan-family-phrasebook-v4";
+const CACHE_NAME = "japan-family-phrasebook-v5";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./manifest.json",
-  "./data/itinerary.js",
-  "./data/modules_1_to_6.js",
-  "./data/modules_7_to_12.js",
-  "./data/modules_13_to_18.js",
-  "./data/audio_manifest.js"
+  "./styles.css?v=5",
+  "./app.js?v=5",
+  "./manifest.json?v=5",
+  "./data/itinerary.js?v=5",
+  "./data/modules_1_to_6.js?v=5",
+  "./data/modules_7_to_12.js?v=5",
+  "./data/modules_13_to_18.js?v=5",
+  "./data/audio_manifest.js?v=5"
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
-  );
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        ASSETS.map((url) =>
+          fetch(new Request(url, { cache: "reload" }))
+            .then((res) => {
+              if (res.ok) return cache.put(url, res);
+            })
+            .catch(() => {})
+        )
+      )
+    )
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)));
+      await self.clients.claim();
+    })()
   );
-  self.clients.claim();
 });
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
-  // Network-first for HTML/JS/CSS so updates arrive immediately, Cache-first for MP3 audio
-  if (req.url.endsWith(".mp3")) {
-    event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req).then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
-          return res;
-        });
-      })
-    );
+  // Let browser handle MP3 audio & byte-range requests natively
+  if (req.url.includes(".mp3") || req.headers.has("range")) {
     return;
   }
 
+  // Network-first for HTML/JS/CSS with offline fallback
   event.respondWith(
     fetch(req)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
         return res;
       })
-      .catch(() => caches.match(req))
+      .catch(() => caches.match(req, { ignoreSearch: true }))
   );
 });
