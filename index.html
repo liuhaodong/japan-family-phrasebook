@@ -2,67 +2,89 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>日本家庭35晚长假全场景日语手册 & 实战对话演练 (2026.12.5 – 2027.1.10)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <title>日本家庭35晚长假日语手册 & 实战对话 (2026.12.5 – 2027.1.10)</title>
   <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行全场景日语手册与双人对话Web App" />
   <meta name="theme-color" content="#1b2c52" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- Hero Header -->
+  <!-- Compact Top Header -->
   <header class="hero-header">
     <div class="hero-container">
       <div class="hero-top">
-        <div>
-          <div class="hero-badge">🗾 2026年12月5日 – 2027年1月10日 (35晚) · 18大场景模块 · 40+多轮实战对话</div>
-          <h1 class="hero-title">日本家庭旅行全场景日语背诵 & 实战对话手册</h1>
-          <p class="hero-subtitle">
-            成田 · 东京高轮 · 轻井泽滑雪 · 东京保育园周 & 银座7周年纪念日午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町/大门跨年
-          </p>
-          <div class="family-pills">
-            <span class="family-pill">👨 <strong>刘浩东 (Haodong)</strong> · Google SWE Manager</span>
-            <span class="family-pill">👩 <strong>滕帅帅 (Sherry)</strong> · Software Engineer</span>
-            <span class="family-pill">👧 <strong>Jinny (6岁半)</strong> · ジニー (未就学児)</span>
-            <span class="family-pill">👶 <strong>Jaycie (2岁半)</strong> · ジェイシー (ベビーカー)</span>
-          </div>
+        <div class="hero-brand">
+          <h1 class="hero-title">🗾 日本家庭旅行日语手册</h1>
+          <button class="hero-info-toggle" id="btn-toggle-trip-info" title="展开/收起行程与家庭信息">
+            35晚行程信息 ▾
+          </button>
         </div>
+
         <div class="hero-actions">
-          <button class="btn-vault gold" id="btn-open-hotels">📍 7家酒店地址 & 出租车卡</button>
-          <button class="btn-vault" id="btn-open-ginza">🥂 银座7周年5场午餐预约卡</button>
-          <button class="btn-vault" id="btn-add-phrase">➕ 新增句子 / 笔记</button>
-          <button class="btn-vault" id="btn-share-sync">📲 分享给 Sherry & 同步</button>
-          <button class="btn-vault" id="btn-filter-starred">⭐ 必背收藏夹</button>
+          <button class="btn-vault gold" id="btn-open-hotels">📍 酒店&出租车卡</button>
+          <button class="btn-vault" id="btn-open-ginza">🥂 银座预约卡</button>
+          <button class="btn-vault" id="btn-add-phrase">➕ 新增</button>
+          <button class="btn-vault" id="btn-share-sync">📲 同步</button>
+          <button class="btn-vault" id="btn-filter-starred">⭐ 收藏</button>
+        </div>
+      </div>
+
+      <!-- Collapsible Trip Details (Hidden by default on mobile to save screen space) -->
+      <div class="hero-details" id="hero-details-drawer">
+        <p class="hero-subtitle">
+          2026.12.5 – 2027.1.10 (35晚) · 成田 · 东京高轮 · 轻井泽滑雪 · 保育园周 & 银座7周年午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町跨年
+        </p>
+        <div class="family-pills">
+          <span class="family-pill">👨 <strong>刘浩东</strong> · Google SWE Mgr</span>
+          <span class="family-pill">👩 <strong>Sherry</strong> · SWE</span>
+          <span class="family-pill">👧 <strong>Jinny (6岁半)</strong> · ジニー</span>
+          <span class="family-pill">👶 <strong>Jaycie (2岁半)</strong> · ジェイシー</span>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Sticky Filter & Control Deck -->
-  <section class="sticky-controls" aria-label="筛选与发音工具栏">
+  <!-- Compact Sticky Filter & Control Deck -->
+  <section class="sticky-controls" id="sticky-controls" aria-label="筛选与发音工具栏">
     <div class="controls-inner">
-      <!-- Trip Leg Tabs -->
-      <div class="leg-tabs" id="leg-tabs-container"></div>
-
-      <!-- Context Banner for Selected Leg -->
-      <div class="leg-context-banner" id="leg-context-banner"></div>
-
-      <!-- Search + View Mode + Typography Toggles -->
-      <div class="toolbar-row">
+      <!-- Row 1: Search + Mobile Quick Module Jump + Display Drawer Toggle -->
+      <div class="search-and-drawer-row">
         <div class="search-box">
           <span class="search-icon">🔍</span>
           <input
             type="text"
             id="search-input"
-            placeholder="搜索场景、日文、中文、罗马音（如：行李寄存、尿布、山科、替玉、退烧药、滑雪）..."
+            placeholder="搜场景/日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
           />
           <button class="search-clear" id="search-clear" title="清空搜索">✕</button>
         </div>
 
+        <!-- Quick Module Selector (Especially handy on mobile!) -->
+        <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
+          <option value="">📑 跳至模块...</option>
+        </select>
+
+        <!-- Toggle button for display/filter chips on mobile -->
+        <button class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
+          ⚙️ 筛选/显示
+        </button>
+      </div>
+
+      <!-- Row 2: Slim Horizontal Trip Leg Bar -->
+      <div class="leg-tabs" id="leg-tabs-container"></div>
+
+      <!-- Context Banner for Selected Leg -->
+      <div class="leg-context-banner" id="leg-context-banner"></div>
+
+      <!-- Collapsible Toggles Drawer (Always visible on desktop, toggleable on mobile) -->
+      <div class="toolbar-collapsible" id="toolbar-collapsible">
         <div class="toggle-group">
-          <button class="toggle-chip active" data-viewmode="all">📚 全部(句+对话)</button>
-          <button class="toggle-chip" data-viewmode="sentences">🗣️ 仅看必背句</button>
-          <button class="toggle-chip" data-viewmode="dialogues">💬 仅看双人对话</button>
+          <button class="toggle-chip active" data-viewmode="all">📚 全部</button>
+          <button class="toggle-chip" data-viewmode="sentences">🗣️ 仅句子</button>
+          <button class="toggle-chip" data-viewmode="dialogues">💬 仅对话</button>
           <button class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
           <button class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
         </div>
@@ -71,7 +93,7 @@
           <button class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
           <button class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
           <button class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
-          <button class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词练习</button>
+          <button class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词</button>
           <button class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
         </div>
       </div>
@@ -80,7 +102,7 @@
 
   <!-- Main Content Grid -->
   <main class="app-layout">
-    <!-- Left Sidebar: 18 Modules Directory & Progress -->
+    <!-- Left Sidebar: 18 Modules Directory & Progress (Desktop only; mobile uses top dropdown) -->
     <aside class="module-sidebar" aria-label="18大模块目录">
       <div class="sidebar-header">
         <span>📑 18大场景目录</span>

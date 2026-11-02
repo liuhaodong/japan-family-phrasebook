@@ -838,7 +838,7 @@
   function renderSidebar(filteredModules) {
     const listEl = document.getElementById("sidebar-module-list");
     const statsEl = document.getElementById("sidebar-total-stats");
-    if (!listEl) return;
+    const mobileSelectEl = document.getElementById("mobile-module-select");
 
     const allMods = getEffectiveModules();
     let totalItems = 0;
@@ -855,6 +855,19 @@
     if (statsEl) {
       statsEl.textContent = `已背熟 ${totalMastered} / ${totalItems} 句`;
     }
+
+    if (mobileSelectEl) {
+      mobileSelectEl.innerHTML =
+        `<option value="">📂 跳至模块 (${filteredModules.length}个 · 已背${totalMastered}/${totalItems})...</option>` +
+        filteredModules
+          .map(
+            (mod) =>
+              `<option value="module-${mod.id}">${mod.icon} ${mod.id}. ${escapeHtml(mod.title.replace(/（.*）/, ""))}</option>`
+          )
+          .join("");
+    }
+
+    if (!listEl) return;
 
     listEl.innerHTML = filteredModules
       .map((mod) => {
@@ -1215,6 +1228,59 @@
         renderAll();
       };
     }
+
+    // Mobile Trip Info Drawer Toggle
+    const btnToggleTripInfo = document.getElementById("btn-toggle-trip-info");
+    const heroDetailsDrawer = document.getElementById("hero-details-drawer");
+    if (btnToggleTripInfo && heroDetailsDrawer) {
+      btnToggleTripInfo.onclick = () => {
+        const isOpen = heroDetailsDrawer.classList.toggle("open");
+        btnToggleTripInfo.textContent = isOpen ? "🔼 收起家庭行程简介" : "ℹ️ 行程简介";
+      };
+    }
+
+    // Mobile Filter & Display Settings Drawer Toggle
+    const btnToggleFilters = document.getElementById("btn-toggle-filters");
+    const toolbarCollapsible = document.getElementById("toolbar-collapsible");
+    if (btnToggleFilters && toolbarCollapsible) {
+      btnToggleFilters.onclick = () => {
+        const isOpen = toolbarCollapsible.classList.toggle("open");
+        btnToggleFilters.classList.toggle("active", isOpen);
+      };
+    }
+
+    // Mobile Quick-Jump Module Select
+    const mobileModuleSelect = document.getElementById("mobile-module-select");
+    if (mobileModuleSelect) {
+      mobileModuleSelect.onchange = (e) => {
+        const targetId = e.target.value;
+        if (targetId) {
+          const el = document.getElementById(targetId);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          e.target.value = "";
+        }
+      };
+    }
+
+    // Auto-condense sticky controls on mobile scroll-down to maximize reading space
+    const stickyControls = document.getElementById("sticky-controls");
+    let lastScrollY = window.scrollY;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!stickyControls) return;
+        const currentY = window.scrollY;
+        if (currentY > 140 && currentY > lastScrollY + 10) {
+          stickyControls.classList.add("scroll-compact");
+          if (toolbarCollapsible) toolbarCollapsible.classList.remove("open");
+          if (btnToggleFilters) btnToggleFilters.classList.remove("active");
+        } else if (currentY < lastScrollY - 12 || currentY <= 80) {
+          stickyControls.classList.remove("scroll-compact");
+        }
+        lastScrollY = currentY;
+      },
+      { passive: true }
+    );
 
     const modal = document.getElementById("app-modal");
     const modalClose = document.getElementById("modal-close-btn");
