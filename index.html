@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>日本家庭35晚长假全场景日语手册 & 实战对话演练 (2026.12.5 – 2027.1.10)</title>
+  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行全场景日语手册与双人对话Web App" />
+  <meta name="theme-color" content="#1b2c52" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Hero Header -->
+  <header class="hero-header">
+    <div class="hero-container">
+      <div class="hero-top">
+        <div>
+          <div class="hero-badge">🗾 2026年12月5日 – 2027年1月10日 (35晚) · 18大场景模块 · 40+多轮实战对话</div>
+          <h1 class="hero-title">日本家庭旅行全场景日语背诵 & 实战对话手册</h1>
+          <p class="hero-subtitle">
+            成田 · 东京高轮 · 轻井泽滑雪 · 东京保育园周 & 银座7周年纪念日午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町/大门跨年
+          </p>
+          <div class="family-pills">
+            <span class="family-pill">👨 <strong>刘浩东 (Haodong)</strong> · Google SWE Manager</span>
+            <span class="family-pill">👩 <strong>滕帅帅 (Sherry)</strong> · Software Engineer</span>
+            <span class="family-pill">👧 <strong>Jinny (6岁半)</strong> · ジニー (未就学児)</span>
+            <span class="family-pill">👶 <strong>Jaycie (2岁半)</strong> · ジェイシー (ベビーカー)</span>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-vault gold" id="btn-open-hotels">📍 7家酒店地址 & 出租车卡</button>
+          <button class="btn-vault" id="btn-open-ginza">🥂 银座7周年5场午餐预约卡</button>
+          <button class="btn-vault" id="btn-add-phrase">➕ 新增句子 / 笔记</button>
+          <button class="btn-vault" id="btn-share-sync">📲 分享给 Sherry & 同步</button>
+          <button class="btn-vault" id="btn-filter-starred">⭐ 必背收藏夹</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Filter & Control Deck -->
+  <section class="sticky-controls" aria-label="筛选与发音工具栏">
+    <div class="controls-inner">
+      <!-- Trip Leg Tabs -->
+      <div class="leg-tabs" id="leg-tabs-container"></div>
+
+      <!-- Context Banner for Selected Leg -->
+      <div class="leg-context-banner" id="leg-context-banner"></div>
+
+      <!-- Search + View Mode + Typography Toggles -->
+      <div class="toolbar-row">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="搜索场景、日文、中文、罗马音（如：行李寄存、尿布、山科、替玉、退烧药、滑雪）..."
+          />
+          <button class="search-clear" id="search-clear" title="清空搜索">✕</button>
+        </div>
+
+        <div class="toggle-group">
+          <button class="toggle-chip active" data-viewmode="all">📚 全部(句+对话)</button>
+          <button class="toggle-chip" data-viewmode="sentences">🗣️ 仅看必背句</button>
+          <button class="toggle-chip" data-viewmode="dialogues">💬 仅看双人对话</button>
+          <button class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
+          <button class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
+        </div>
+
+        <div class="toggle-group">
+          <button class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
+          <button class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
+          <button class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
+          <button class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词练习</button>
+          <button class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Grid -->
+  <main class="app-layout">
+    <!-- Left Sidebar: 18 Modules Directory & Progress -->
+    <aside class="module-sidebar" aria-label="18大模块目录">
+      <div class="sidebar-header">
+        <span>📑 18大场景目录</span>
+        <span id="sidebar-total-stats">已背熟 0 / 0 句</span>
+      </div>
+      <ul class="sidebar-list" id="sidebar-module-list"></ul>
+    </aside>
+
+    <!-- Right Content: Modules, Phrases & Roleplay Dialogues -->
+    <div id="modules-main-container"></div>
+  </main>
+
+  <!-- Fullscreen Modal ("Show to Staff" & Hotel/Ginza Vaults) -->
+  <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button class="modal-close" id="modal-close-btn" title="关闭">✕</button>
+      <div id="modal-body-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="app-toast"></div>
+
+  <!-- Data & Application Scripts -->
+  <script src="data/itinerary.js"></script>
+  <script src="data/modules_1_to_6.js"></script>
+  <script src="data/modules_7_to_12.js"></script>
+  <script src="data/modules_13_to_18.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "日本家庭35晚长假全场景日语手册 & 对话演练",
+  "short_name": "日本家庭日语",
+  "description": "刘浩东一家四口 2026.12.5 – 2027.1.10 日本35晚旅行全场景日语手册与双人对话Web App",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f6f2",
+  "theme_color": "#1b2c52"
+}
