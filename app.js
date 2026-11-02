@@ -1,4 +1,5 @@
-// Japan Family Phrasebook & Roleplay Web App Controller (with In-App Editor & Couple Sync)
+// Japan Family Phrasebook & Roleplay Web App Controller
+// Powered by Studio Neural Japanese Audio (ja-JP-NanamiNeural & ja-JP-KeitaNeural) + In-App Editor & Couple Sync
 (function () {
   const BASE_MODULES = [
     ...(window.PHRASE_MODULES_1_6 || []),
@@ -6,6 +7,7 @@
     ...(window.PHRASE_MODULES_13_18 || [])
   ];
   const ITINERARY = window.TRIP_ITINERARY;
+  const AUDIO_MANIFEST = window.AUDIO_MANIFEST || {};
 
   // App State
   const state = {
@@ -57,24 +59,31 @@
     });
   }
 
-  // Convert parenthetical furigana e.g. 漢字（かんじ） into <ruby>漢字<rt>かんじ</rt></ruby>
+  // Convert parenthetical furigana (both Hiragana and Katakana) e.g. 漢字（かんじ） or Google（グーグル） into <ruby>
   function formatRuby(text) {
     if (!text) return "";
     return text.replace(
-      /([一-龯々ヶ0-9０-９a-zA-Z]+)\（([\u3040-\u309Fー・]+)\）/g,
+      /([一-龯々ヶ0-9０-９a-zA-Z]+)\（([\u3040-\u309F\u30A0-\u30FFー・]+)\）/g,
       "<ruby>$1<rt>$2</rt></ruby>"
     );
   }
 
-  // Strip parenthetical furigana so TTS reads clean Japanese without repeating readings
+  // Clean display Japanese into pure spoken Japanese (for copying & fallback TTS)
   function stripFurigana(text) {
     if (!text) return "";
+    if (text.includes("【洗衣机】")) {
+      return "洗濯、洗濯乾燥、洗剤自動投入。ふろ自動、追いだき。暖房、加湿。";
+    }
     return text
-      .replace(/（[\u3040-\u309Fー・]+）/g, "")
-      .replace(/［[^］]*］/g, " ")
-      .replace(/【[^】]*】/g, " ")
-      .replace(/→.*$/g, "")
-      .replace(/／/g, "、")
+      .replace(/【[^】]*】/g, "")
+      .replace(/→/g, "。 ")
+      .replace(/［[^］]*］/g, "")
+      .replace(/（※[^）]*）/g, "")
+      .replace(/（[\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+）/g, "")
+      .replace(/\s*／\s*/g, "。 ")
+      .replace(/〇〇/g, "まるまる")
+      .replace(/。+/g, "。")
+      .replace(/\s+/g, " ")
       .trim();
   }
 
@@ -140,14 +149,22 @@
     return `${baseUrl}#sync=${b64}`;
   }
 
-  // Web Speech API Japanese TTS
+  // =========================================================================
+  // Studio Neural Audio Engine (HTML5 Audio MP3 + Fallback Web Speech API)
+  // =========================================================================
+  const neuralAudioPlayer = new Audio();
+  neuralAudioPlayer.preload = "auto";
+
   let jpVoice = null;
   function loadJapaneseVoice() {
     if (!("speechSynthesis" in window)) return;
     const voices = window.speechSynthesis.getVoices();
+    const jaVoices = voices.filter((v) => v.lang && (v.lang === "ja-JP" || v.lang.startsWith("ja")));
+    // Prefer Google 日本語 or Enhanced/Premium Apple voices over compact robotic voices
     jpVoice =
-      voices.find((v) => v.lang === "ja-JP" && /Kyoko|Otoya|O-Ren|Google|Siri|Haruka/i.test(v.name)) ||
-      voices.find((v) => v.lang && v.lang.startsWith("ja")) ||
+      jaVoices.find((v) => /Google|Enhanced|Premium|Natural|Siri/i.test(v.name)) ||
+      jaVoices.find((v) => /Kyoko|Otoya|O-Ren|Haruka/i.test(v.name)) ||
+      jaVoices[0] ||
       null;
   }
 
@@ -156,24 +173,67 @@
     window.speechSynthesis.onvoiceschanged = loadJapaneseVoice;
   }
 
-  function speakJapanese(rawJpText, rate = 1.0, btnEl = null, onEndCallback = null) {
+  function stopAllAudio() {
+    try {
+      neuralAudioPlayer.pause();
+      neuralAudioPlayer.currentTime = 0;
+    } catch (e) {}
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    document.querySelectorAll(".action-btn.speaking, .icon-btn.speaking").forEach((b) => b.classList.remove("speaking"));
+  }
+
+  function speakJapanese(rawJpText, rate = 1.0, btnEl = null, onEndCallback = null, audioKey = null) {
+    stopAllAudio();
+
+    // Check if we have a pre-generated Studio Neural MP3 (and item wasn't custom-edited in JP text)
+    const manifestEntry = audioKey && !state.edits[audioKey] ? AUDIO_MANIFEST[audioKey] : null;
+
+    if (manifestEntry && manifestEntry.file) {
+      if (btnEl) btnEl.classList.add("speaking");
+      neuralAudioPlayer.src = manifestEntry.file;
+      // Preserve natural human pitch even when slowed down (0.78x is optimal for shadowing)
+      const targetRate = rate < 1.0 ? 0.78 : 1.0;
+      neuralAudioPlayer.playbackRate = targetRate;
+      neuralAudioPlayer.defaultPlaybackRate = targetRate;
+      if ("preservesPitch" in neuralAudioPlayer) neuralAudioPlayer.preservesPitch = true;
+      if ("webkitPreservesPitch" in neuralAudioPlayer) neuralAudioPlayer.webkitPreservesPitch = true;
+      if ("mozPreservesPitch" in neuralAudioPlayer) neuralAudioPlayer.mozPreservesPitch = true;
+
+      neuralAudioPlayer.onended = () => {
+        if (btnEl) btnEl.classList.remove("speaking");
+        if (onEndCallback) onEndCallback();
+      };
+      neuralAudioPlayer.onerror = () => {
+        if (btnEl) btnEl.classList.remove("speaking");
+        // Fallback to Web Speech API if offline and MP3 not cached yet
+        speakFallbackBrowserTTS(rawJpText, rate, btnEl, onEndCallback);
+      };
+
+      neuralAudioPlayer.play().catch(() => {
+        speakFallbackBrowserTTS(rawJpText, rate, btnEl, onEndCallback);
+      });
+      return;
+    }
+
+    speakFallbackBrowserTTS(rawJpText, rate, btnEl, onEndCallback);
+  }
+
+  function speakFallbackBrowserTTS(rawJpText, rate = 1.0, btnEl = null, onEndCallback = null) {
     if (!("speechSynthesis" in window)) {
-      showToast("⚠️ 当前浏览器不支持语音合成 (Web Speech API)");
+      showToast("⚠️ 当前浏览器不支持语音合成");
       if (onEndCallback) onEndCallback();
       return;
     }
-    window.speechSynthesis.cancel();
-    document.querySelectorAll(".action-btn.speaking").forEach((b) => b.classList.remove("speaking"));
-
     const cleanText = stripFurigana(rawJpText);
     const utter = new SpeechSynthesisUtterance(cleanText);
     utter.lang = "ja-JP";
     if (jpVoice) utter.voice = jpVoice;
-    utter.rate = rate;
+    utter.rate = rate < 1.0 ? 0.8 : 1.0;
     utter.pitch = 1.0;
 
     if (btnEl) btnEl.classList.add("speaking");
-
     utter.onend = () => {
       if (btnEl) btnEl.classList.remove("speaking");
       if (onEndCallback) onEndCallback();
@@ -182,16 +242,15 @@
       if (btnEl) btnEl.classList.remove("speaking");
       if (onEndCallback) onEndCallback();
     };
-
     window.speechSynthesis.speak(utter);
   }
 
-  // Play an entire multi-turn dialogue sequentially
+  // Play an entire multi-turn dialogue sequentially with multi-character Neural Voices
   function playDialogue(dialogueId) {
     if (state.playingDialogueId === dialogueId) {
       state.stopDialogueRequested = true;
       state.playingDialogueId = null;
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      stopAllAudio();
       document.querySelectorAll(".dialogue-turn.active-playing").forEach((el) => el.classList.remove("active-playing"));
       renderAll();
       return;
@@ -221,6 +280,7 @@
         return;
       }
       const turn = foundDialogue.turns[idx];
+      const turnAudioKey = `${dialogueId}-turn-${idx}`;
       const turnDomId = `turn-${dialogueId}-${idx}`;
       document.querySelectorAll(".dialogue-turn.active-playing").forEach((el) => el.classList.remove("active-playing"));
       const turnEl = document.getElementById(turnDomId);
@@ -229,9 +289,9 @@
         turnEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
       idx++;
-      speakJapanese(turn.jp, 0.95, null, () => {
+      speakJapanese(turn.jp, 1.0, null, () => {
         setTimeout(playNextTurn, 420);
-      });
+      }, turnAudioKey);
     }
 
     playNextTurn();
@@ -425,7 +485,6 @@
     const body = document.getElementById("modal-body-content");
     if (!modal || !body) return;
 
-    const shareUrl = generateSyncUrl();
     const baseUrl = location.origin + location.pathname;
     const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(baseUrl)}`;
 
@@ -542,7 +601,7 @@
   }
 
   // Open Fullscreen "Show to Staff" Card
-  function openStaffCard(jp, cn, tag) {
+  function openStaffCard(jp, cn, tag, audioKey = null) {
     const modal = document.getElementById("app-modal");
     const body = document.getElementById("modal-body-content");
     if (!modal || !body) return;
@@ -555,8 +614,8 @@
         <div class="staff-jp-huge">${formatRuby(jp)}</div>
         <div class="staff-cn-sub">🇨🇳 中文意思：${escapeHtml(cn)}</div>
         <div style="display:flex;gap:0.65rem;flex-wrap:wrap;">
-          <button class="action-btn primary-audio" id="modal-speak-normal">🔊 正常语速朗读 (1.0x)</button>
-          <button class="action-btn" id="modal-speak-slow">🐢 慢速朗读 (0.75x)</button>
+          <button class="action-btn primary-audio" id="modal-speak-normal">🔊 真人发音朗读 (1.0x)</button>
+          <button class="action-btn" id="modal-speak-slow">🐢 慢速朗读 (0.78x)</button>
           <button class="action-btn" id="modal-copy-jp">📋 复制纯日文</button>
         </div>
       </div>
@@ -564,10 +623,10 @@
     modal.classList.add("open");
 
     document.getElementById("modal-speak-normal").onclick = function () {
-      speakJapanese(jp, 1.0, this);
+      speakJapanese(jp, 1.0, this, null, audioKey);
     };
     document.getElementById("modal-speak-slow").onclick = function () {
-      speakJapanese(jp, 0.75, this);
+      speakJapanese(jp, 0.78, this, null, audioKey);
     };
     document.getElementById("modal-copy-jp").onclick = function () {
       navigator.clipboard.writeText(cleanJp);
@@ -591,7 +650,7 @@
         <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.6rem;">💡 ${escapeHtml(h.note)}</div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
           <button class="action-btn primary-audio vault-taxi-show" data-idx="${i}">📱 全屏出示给司机</button>
-          <button class="action-btn vault-taxi-speak" data-idx="${i}">🔊 读给司机听</button>
+          <button class="action-btn vault-taxi-speak" data-idx="${i}">🔊 真人语音读给司机</button>
           <button class="action-btn vault-copy-addr" data-addr="${escapeHtml(h.address)}">📋 复制地址</button>
         </div>
       </div>
@@ -602,7 +661,7 @@
     body.innerHTML = `
       <div>
         <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">📍 全程7家酒店地址 & 出租车司机出示卡</h2>
-        <p style="font-size:0.86rem;color:var(--text-secondary);">上出租车后点击「📱 全屏出示给司机」或「🔊 读给司机听」即可一键直达酒店正门。</p>
+        <p style="font-size:0.86rem;color:var(--text-secondary);">上出租车后点击「📱 全屏出示给司机」或「🔊 真人语音读给司机」即可一键直达酒店正门。</p>
         <div class="vault-grid">${cardsHtml}</div>
       </div>
     `;
@@ -610,18 +669,21 @@
 
     body.querySelectorAll(".vault-taxi-show").forEach((btn) => {
       btn.onclick = () => {
-        const h = ITINERARY.accommodations[Number(btn.dataset.idx)];
+        const idx = Number(btn.dataset.idx);
+        const h = ITINERARY.accommodations[idx];
         openStaffCard(
           `${h.taxiDriverText}（住所：${h.address}）`,
           `司机您好，麻烦去 ${h.jpName}（${h.address}）。`,
-          `${h.dates} · 出租车目的地卡`
+          `${h.dates} · 出租车目的地卡`,
+          `taxi-${idx}`
         );
       };
     });
     body.querySelectorAll(".vault-taxi-speak").forEach((btn) => {
       btn.onclick = function () {
-        const h = ITINERARY.accommodations[Number(btn.dataset.idx)];
-        speakJapanese(h.taxiDriverText, 1.0, this);
+        const idx = Number(btn.dataset.idx);
+        const h = ITINERARY.accommodations[idx];
+        speakJapanese(h.taxiDriverText, 1.0, this, null, `taxi-${idx}`);
       };
     });
     body.querySelectorAll(".vault-copy-addr").forEach((btn) => {
@@ -670,7 +732,8 @@
         openStaffCard(
           `こんにちは。本日予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。（予約番号：${g.resCode}）`,
           `您好，我是今天有预约的刘 (LIU Haodong)，2位。（预约号：${g.resCode}）`,
-          `${g.date} · ${g.name}`
+          `${g.date} · ${g.name}`,
+          "m7-s1-1"
         );
       };
     });
@@ -679,7 +742,8 @@
         openStaffCard(
           "実（じつ）は今回（こんかい）、私（わたし）たちの結婚（けっこん）7周年（ななしゅうねん）のお祝（いわ）いでサンフランシスコから来（き）ました。普段（ふだん）は小（ちい）さい娘（むすめ）が2人（ふたり）いるのですが、今週（こんしゅう）は東京（とうきょう）の保育園（ほいくえん）に預（あず）けているので、夫婦（ふうふ）でゆっくりランチを楽（たの）しんでいます！",
           "其实这次我们是为了庆祝结婚7周年从旧金山来的。平时有两个小女儿，这周把她们送去了东京的保育园，夫妻俩才能悠闲地享受午餐！",
-          "🥂 结婚7周年板前破冰神句"
+          "🥂 结婚7周年板前破冰神句",
+          "m7-s1-3"
         );
       };
     });
@@ -859,6 +923,8 @@
                 .map((item) => {
                   const isStar = !!state.starred[item.id];
                   const isMast = !!state.mastered[item.id];
+                  const voiceMeta = AUDIO_MANIFEST[item.id];
+                  const voiceBadge = voiceMeta ? `<span style="font-size:0.72rem;color:var(--text-muted);margin-left:0.4rem;">🎙️ ${escapeHtml(voiceMeta.voice)}</span>` : "";
                   const badgeHtml = item.isCustom
                     ? `<span class="custom-badge">✨ 夫妻新增</span>`
                     : item.isEdited
@@ -868,16 +934,16 @@
                     item.replies && item.replies.length
                       ? `
                     <div class="phrase-replies">
-                      <div class="reply-label">👂 对方常见回答（听力预判 · 点击可听发音）：</div>
+                      <div class="reply-label">👂 对方常见回答（听力预判 · 真人分角色发音）：</div>
                       ${item.replies
                         .map(
-                          (rep) => `
+                          (rep, rIdx) => `
                         <div class="reply-item">
                           <div>
                             <div class="reply-jp">${formatRuby(rep.jp)}</div>
                             <div class="reply-cn">${escapeHtml(rep.cn)}</div>
                           </div>
-                          <button class="action-btn speak-reply-btn" data-jp="${escapeHtml(rep.jp)}">🔊 听对方说</button>
+                          <button class="action-btn speak-reply-btn" data-jp="${escapeHtml(rep.jp)}" data-akey="${item.id}-rep-${rIdx}">🔊 听对方说</button>
                         </div>
                       `
                         )
@@ -892,6 +958,7 @@
                       <div>
                         <span class="phrase-tag">${escapeHtml(item.tag)}</span>
                         ${badgeHtml}
+                        ${voiceBadge}
                       </div>
                       <div class="phrase-status-btns">
                         <button class="icon-btn edit-phrase-btn" data-edit="${item.id}" title="编辑此句或添加个人备忘">
@@ -911,9 +978,9 @@
                     ${item.tip ? `<div class="phrase-tip">💡 <strong>实用提示：</strong>${escapeHtml(item.tip)}</div>` : ""}
                     ${repliesHtml}
                     <div class="phrase-actions">
-                      <button class="action-btn primary-audio speak-normal-btn" data-jp="${escapeHtml(item.jp)}">🔊 正常朗读 (1.0x)</button>
-                      <button class="action-btn speak-slow-btn" data-jp="${escapeHtml(item.jp)}">🐢 慢速跟读 (0.75x)</button>
-                      <button class="action-btn show-staff-btn" data-jp="${escapeHtml(item.jp)}" data-cn="${escapeHtml(item.cn)}" data-tag="${escapeHtml(item.tag)}">📱 出示给店员 (大字卡)</button>
+                      <button class="action-btn primary-audio speak-normal-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🔊 真人朗读 (1.0x)</button>
+                      <button class="action-btn speak-slow-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🐢 慢速跟读 (0.78x)</button>
+                      <button class="action-btn show-staff-btn" data-jp="${escapeHtml(item.jp)}" data-cn="${escapeHtml(item.cn)}" data-tag="${escapeHtml(item.tag)}" data-akey="${item.id}">📱 出示给店员 (大字卡)</button>
                       <button class="action-btn copy-jp-btn" data-jp="${escapeHtml(item.jp)}">📋 复制</button>
                     </div>
                   </div>
@@ -931,8 +998,8 @@
             ? `
           <div class="dialogues-section">
             <div class="dialogues-header">
-              <div class="dialogues-heading">💬 实战双人情景对话演练 (Roleplay Dialogues)</div>
-              <div style="font-size:0.8rem;color:var(--text-secondary);">点击「▶ 连续播放整段对话」可跟读整场交流；开启顶部「🎭 遮盖我方台词」可实战自测</div>
+              <div class="dialogues-heading">💬 实战双人情景对话演练 (男女声分角色真人发音)</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);">点击「▶ 连续播放整段对话」聆听男女分角色对答；开启顶部「🎭 遮盖我方台词」可实战自测</div>
             </div>
             ${mod.filteredDialogues
               .map((dlg) => {
@@ -950,15 +1017,18 @@
                   </div>
                   <div class="dialogue-turns">
                     ${dlg.turns
-                      .map(
-                        (turn, tIdx) => `
+                      .map((turn, tIdx) => {
+                        const turnKey = `${dlg.id}-turn-${tIdx}`;
+                        const vMeta = AUDIO_MANIFEST[turnKey];
+                        const vLabel = vMeta ? ` · ${vMeta.voice}` : "";
+                        return `
                       <div class="dialogue-turn ${turn.speaker === "us" ? "turn-us" : "turn-them"}" id="turn-${dlg.id}-${tIdx}">
                         <div class="turn-speaker">
-                          <span>${turn.speaker === "us" ? "👨‍👩‍👧‍👧 " : "🇯🇵 "}${escapeHtml(turn.speakerName)}</span>
+                          <span>${turn.speaker === "us" ? "👨‍👩‍👧‍👧 " : "🇯🇵 "}${escapeHtml(turn.speakerName)}<span style="font-weight:500;opacity:0.78;">${escapeHtml(vLabel)}</span></span>
                           <span style="display:flex;gap:0.35rem;">
-                            <button class="icon-btn speak-normal-btn" data-jp="${escapeHtml(turn.jp)}">🔊 1.0x</button>
-                            <button class="icon-btn speak-slow-btn" data-jp="${escapeHtml(turn.jp)}">🐢 0.75x</button>
-                            <button class="icon-btn show-staff-btn" data-jp="${escapeHtml(turn.jp)}" data-cn="${escapeHtml(turn.cn)}" data-tag="${escapeHtml(dlg.title)}">📱 大字</button>
+                            <button class="icon-btn speak-normal-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🔊 1.0x</button>
+                            <button class="icon-btn speak-slow-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🐢 0.78x</button>
+                            <button class="icon-btn show-staff-btn" data-jp="${escapeHtml(turn.jp)}" data-cn="${escapeHtml(turn.cn)}" data-tag="${escapeHtml(dlg.title)}" data-akey="${turnKey}">📱 大字</button>
                           </span>
                         </div>
                         <div class="jp-text" style="font-size:1.08rem;margin:0.15rem 0;">${formatRuby(turn.jp)}</div>
@@ -966,8 +1036,8 @@
                         <div class="cn-text" style="margin-bottom:0;">${escapeHtml(turn.cn)}</div>
                         ${turn.note ? `<div class="turn-note">💡 ${escapeHtml(turn.note)}</div>` : ""}
                       </div>
-                    `
-                      )
+                    `;
+                      })
                       .join("")}
                   </div>
                 </div>
@@ -998,22 +1068,22 @@
     // Bind events inside modules
     mainEl.querySelectorAll(".speak-normal-btn").forEach((btn) => {
       btn.onclick = function () {
-        speakJapanese(this.dataset.jp, 1.0, this);
+        speakJapanese(this.dataset.jp, 1.0, this, null, this.dataset.akey);
       };
     });
     mainEl.querySelectorAll(".speak-slow-btn").forEach((btn) => {
       btn.onclick = function () {
-        speakJapanese(this.dataset.jp, 0.75, this);
+        speakJapanese(this.dataset.jp, 0.78, this, null, this.dataset.akey);
       };
     });
     mainEl.querySelectorAll(".speak-reply-btn").forEach((btn) => {
       btn.onclick = function () {
-        speakJapanese(this.dataset.jp, 0.95, this);
+        speakJapanese(this.dataset.jp, 1.0, this, null, this.dataset.akey);
       };
     });
     mainEl.querySelectorAll(".show-staff-btn").forEach((btn) => {
       btn.onclick = function () {
-        openStaffCard(this.dataset.jp, this.dataset.cn, this.dataset.tag);
+        openStaffCard(this.dataset.jp, this.dataset.cn, this.dataset.tag, this.dataset.akey);
       };
     });
     mainEl.querySelectorAll(".copy-jp-btn").forEach((btn) => {

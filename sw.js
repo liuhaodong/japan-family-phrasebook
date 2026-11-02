@@ -1,4 +1,4 @@
-const CACHE_NAME = "japan-family-phrasebook-v2";
+const CACHE_NAME = "japan-family-phrasebook-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -8,7 +8,8 @@ const ASSETS = [
   "./data/itinerary.js",
   "./data/modules_1_to_6.js",
   "./data/modules_7_to_12.js",
-  "./data/modules_13_to_18.js"
+  "./data/modules_13_to_18.js",
+  "./data/audio_manifest.js"
 ];
 
 self.addEventListener("install", (event) => {
@@ -28,7 +29,31 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  // Network-first for HTML/JS/CSS so updates arrive immediately, Cache-first for MP3 audio
+  if (req.url.endsWith(".mp3")) {
+    event.respondWith(
+      caches.match(req).then((cached) => {
+        if (cached) return cached;
+        return fetch(req).then((res) => {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          return res;
+        });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
+    fetch(req)
+      .then((res) => {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        return res;
+      })
+      .catch(() => caches.match(req))
   );
 });
