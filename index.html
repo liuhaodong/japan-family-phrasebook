@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <title>日本家庭35晚长假日语手册 & 实战对话 (2026.12.5 – 2027.1.10)</title>
-  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行全场景日语手册与双人对话Web App" />
+  <title>日本家庭35晚长假 · 行程地图 & 全场景日语手册 (2026.12.5 – 2027.1.10)</title>
+  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行可视化行程地图与双人对话日语手册 Web App" />
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=5" />
-  <link rel="stylesheet" href="styles.css?v=5" />
+  <link rel="manifest" href="manifest.json?v=6" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
   <!-- Compact Top Header -->
@@ -17,18 +18,18 @@
     <div class="hero-container">
       <div class="hero-top">
         <div class="hero-brand">
-          <h1 class="hero-title">🗾 日本家庭旅行日语手册</h1>
-          <button class="hero-info-toggle" id="btn-toggle-trip-info" title="展开/收起行程与家庭信息">
-            35晚行程信息 ▾
+          <h1 class="hero-title">🗾 日本家庭35晚旅行手册</h1>
+          <button type="button" class="hero-info-toggle" id="btn-toggle-trip-info" title="展开/收起行程与家庭信息">
+            ℹ️ 家庭与行程 ▾
           </button>
         </div>
 
         <div class="hero-actions">
-          <button class="btn-vault gold" id="btn-open-hotels">📍 酒店&出租车卡</button>
-          <button class="btn-vault" id="btn-open-ginza">🥂 银座预约卡</button>
-          <button class="btn-vault" id="btn-add-phrase">➕ 新增</button>
-          <button class="btn-vault" id="btn-share-sync">📲 同步</button>
-          <button class="btn-vault" id="btn-filter-starred">⭐ 收藏</button>
+          <button type="button" class="btn-vault gold" id="btn-open-hotels">📍 7家酒店&打车卡</button>
+          <button type="button" class="btn-vault" id="btn-open-ginza">🥂 银座5场预约</button>
+          <button type="button" class="btn-vault" id="btn-add-phrase">➕ 新增句子</button>
+          <button type="button" class="btn-vault" id="btn-share-sync">📲 同步</button>
+          <button type="button" class="btn-vault" id="btn-filter-starred">⭐ 收藏</button>
         </div>
       </div>
 
@@ -47,58 +48,146 @@
     </div>
   </header>
 
-  <!-- Compact Sticky Filter & Control Deck -->
-  <section class="sticky-controls" id="sticky-controls" aria-label="筛选与发音工具栏">
+  <!-- Compact Sticky Filter & Mode Switcher Deck -->
+  <section class="sticky-controls" id="sticky-controls" aria-label="主模式切换与筛选工具栏">
     <div class="controls-inner">
-      <!-- Row 1: Search + Mobile Quick Module Jump + Display Drawer Toggle -->
-      <div class="search-and-drawer-row">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input
-            type="text"
-            id="search-input"
-            placeholder="搜场景/日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
-          />
-          <button class="search-clear" id="search-clear" title="清空搜索">✕</button>
+      <!-- Top Row: Primary Mode Switcher (Itinerary & Map vs Phrasebook) + Phrasebook Search -->
+      <div class="mode-and-search-row">
+        <div class="app-mode-switcher" role="tablist" aria-label="切换行程地图或日语手册">
+          <button type="button" class="mode-tab active" id="mode-btn-itinerary" data-appmode="itinerary">
+            📅 行程与地图
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook">
+            🗣️ 场景日语 (18模块)
+          </button>
         </div>
 
-        <!-- Quick Module Selector (Especially handy on mobile!) -->
-        <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
-          <option value="">📑 跳至模块...</option>
-        </select>
+        <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button (Visible in Phrasebook mode) -->
+        <div class="search-and-drawer-row" id="phrasebook-toolbar-row">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input
+              type="text"
+              id="search-input"
+              placeholder="搜日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
+            />
+            <button type="button" class="search-clear" id="search-clear" title="清空搜索">✕</button>
+          </div>
 
-        <!-- Toggle button for display/filter chips on mobile -->
-        <button class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
-          ⚙️ 筛选/显示
-        </button>
+          <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
+            <option value="">📑 跳至模块...</option>
+          </select>
+
+          <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
+            ⚙️ 筛选/显示
+          </button>
+        </div>
       </div>
 
-      <!-- Row 2: Slim Horizontal Trip Leg Bar -->
+      <!-- Row 2: Slim Horizontal Trip Leg Bar (Works for BOTH Itinerary Map zoom & Phrasebook filtering!) -->
       <div class="leg-tabs" id="leg-tabs-container"></div>
 
-      <!-- Collapsible Toggles Drawer (Always visible on desktop, toggleable on mobile) -->
+      <!-- Collapsible Toggles Drawer (For Phrasebook mode) -->
       <div class="toolbar-collapsible" id="toolbar-collapsible">
         <div class="toggle-group">
-          <button class="toggle-chip active" data-viewmode="all">📚 全部</button>
-          <button class="toggle-chip" data-viewmode="sentences">🗣️ 仅句子</button>
-          <button class="toggle-chip" data-viewmode="dialogues">💬 仅对话</button>
-          <button class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
-          <button class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
+          <button type="button" class="toggle-chip active" data-viewmode="all">📚 全部</button>
+          <button type="button" class="toggle-chip" data-viewmode="sentences">🗣️ 仅句子</button>
+          <button type="button" class="toggle-chip" data-viewmode="dialogues">💬 仅对话</button>
+          <button type="button" class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
+          <button type="button" class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
         </div>
 
         <div class="toggle-group">
-          <button class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
-          <button class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
-          <button class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
-          <button class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词</button>
-          <button class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
+          <button type="button" class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
+          <button type="button" class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
+          <button type="button" class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
+          <button type="button" class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词</button>
+          <button type="button" class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Main Content Grid -->
-  <main class="app-layout">
+  <!-- =================================================================== -->
+  <!-- VIEW 1: VISUAL ITINERARY & INTERACTIVE MAP VIEW                     -->
+  <!-- =================================================================== -->
+  <section id="itinerary-view-container" class="itinerary-view-wrapper">
+    <!-- 1. Trip KPI Overview Strip -->
+    <div class="itin-kpi-strip" id="itin-kpi-strip"></div>
+
+    <!-- 2. Interactive Map + Sidebar Pin Directory -->
+    <div class="itin-map-card">
+      <div class="itin-map-header">
+        <div>
+          <h2 class="itin-section-title">🗺️ 35晚全行程互动地图 (酒店 · 机场车站 · 银座5场纪念日午餐)</h2>
+          <p class="itin-section-sub">点击上方行程阶段 (Leg 1–6) 或下方区域按钮，地图会自动飞行聚焦并展示路线；点击任意地标可一键打开 Google Maps 或出租车大字卡</p>
+        </div>
+        <div class="map-region-pills" id="map-region-pills">
+          <button type="button" class="map-pill active" data-mapregion="all">🗾 日本全景</button>
+          <button type="button" class="map-pill" data-mapregion="tokyo">🗼 东京 & 成田</button>
+          <button type="button" class="map-pill" data-mapregion="ginza">🍣 银座5大餐厅</button>
+          <button type="button" class="map-pill" data-mapregion="karuizawa">⛷️ 轻井泽滑雪</button>
+          <button type="button" class="map-pill" data-mapregion="kyushu">♨️ 福冈 & 由布院</button>
+        </div>
+      </div>
+
+      <div class="itin-map-grid">
+        <div id="trip-leaflet-map" class="trip-leaflet-map" aria-label="日本旅行互动地图"></div>
+        <div class="map-pin-list" id="map-pin-list"></div>
+      </div>
+    </div>
+
+    <!-- 3. 36-Day Visual Calendar Strip (Dec 5, 2026 – Jan 10, 2027) -->
+    <div class="itin-card-block">
+      <div class="itin-block-header">
+        <h2 class="itin-section-title">📆 36天全周期日历总览 (2026.12.5 – 2027.1.10)</h2>
+        <span class="itin-section-sub">点击任意日期可快速跳转至对应阶段详情</span>
+      </div>
+      <div class="calendar-strip-grid" id="itin-calendar-grid"></div>
+    </div>
+
+    <!-- 4. Leg-by-Leg Visual Timeline Cards (Legs 1–6) -->
+    <div class="itin-card-block">
+      <div class="itin-block-header">
+        <h2 class="itin-section-title">🧭 六大阶段每日行程与交通时间轴 (Leg 1 – Leg 6)</h2>
+        <span class="itin-section-sub">涵盖航班、接驳巴士时刻表、酒店确认号、跨酒店行李寄存与必用日语</span>
+      </div>
+      <div class="itin-legs-timeline" id="itin-legs-timeline"></div>
+    </div>
+
+    <!-- 5. Ginza 7th Anniversary Lunch Deck (Dec 14–18) -->
+    <div class="itin-card-block" id="itin-ginza-section">
+      <div class="itin-block-header">
+        <h2 class="itin-section-title">🥂 结婚7周年 · 银座五场顶级板前/包厢午餐日程 (12/14 – 12/18)</h2>
+        <span class="itin-section-sub">Jinny & Jaycie 就读魔法保育园期间 · 浩东 & Sherry 二人世界庆祝日程</span>
+      </div>
+      <div class="ginza-deck-grid" id="itin-ginza-grid"></div>
+    </div>
+
+    <!-- 6. Flights & 3 Smart Luggage Hacks -->
+    <div class="itin-two-col">
+      <div class="itin-card-block">
+        <div class="itin-block-header">
+          <h2 class="itin-section-title">✈️ 国际往返航班 (ZIPAIR #CYBNOT)</h2>
+          <span class="itin-section-sub">旧金山 (SFO) ⇄ 东京成田 T1 (NRT)</span>
+        </div>
+        <div id="itin-flights-list" class="itin-flights-list"></div>
+      </div>
+
+      <div class="itin-card-block">
+        <div class="itin-block-header">
+          <h2 class="itin-section-title">🧳 三大轻装行李流转锦囊</h2>
+          <span class="itin-section-sub">带两娃出行不搬重箱子的核心秘诀</span>
+        </div>
+        <div id="itin-luggage-list" class="itin-luggage-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 2: 18-MODULE PHRASEBOOK & ROLEPLAY DIALOGUES                   -->
+  <!-- =================================================================== -->
+  <main class="app-layout" id="phrasebook-view-container" style="display:none;">
     <!-- Left Sidebar: 18 Modules Directory & Progress (Desktop only; mobile uses top dropdown) -->
     <aside class="module-sidebar" aria-label="18大模块目录">
       <div class="sidebar-header">
@@ -119,7 +208,7 @@
   <!-- Fullscreen Modal ("Show to Staff" & Hotel/Ginza Vaults) -->
   <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <button class="modal-close" id="modal-close-btn" title="关闭">✕</button>
+      <button type="button" class="modal-close" id="modal-close-btn" title="关闭">✕</button>
       <div id="modal-body-content"></div>
     </div>
   </div>
@@ -128,12 +217,13 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="data/itinerary.js?v=5"></script>
-  <script src="data/modules_1_to_6.js?v=5"></script>
-  <script src="data/modules_7_to_12.js?v=5"></script>
-  <script src="data/modules_13_to_18.js?v=5"></script>
-  <script src="data/audio_manifest.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="data/itinerary.js?v=6"></script>
+  <script src="data/modules_1_to_6.js?v=6"></script>
+  <script src="data/modules_7_to_12.js?v=6"></script>
+  <script src="data/modules_13_to_18.js?v=6"></script>
+  <script src="data/audio_manifest.js?v=6"></script>
+  <script src="app.js?v=6"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -142,7 +232,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=5").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=6").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

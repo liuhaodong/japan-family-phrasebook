@@ -11,6 +11,8 @@
 
   // App State
   const state = {
+    appMode: "itinerary", // 'itinerary' | 'phrasebook'
+    mapRegion: "all", // 'all' | 'tokyo' | 'ginza' | 'karuizawa' | 'kyushu'
     activeLeg: "all",
     viewMode: "all", // 'all' | 'sentences' | 'dialogues' | 'starred' | 'unmastered'
     searchQuery: "",
@@ -811,10 +813,12 @@
 
       container.querySelectorAll(".leg-tab").forEach((btn) => {
         btn.onclick = () => {
-          if (state.activeLeg === btn.dataset.leg) return;
           state.activeLeg = btn.dataset.leg;
           renderAll();
           btn.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" });
+          if (state.appMode === "itinerary") {
+            focusMapByLeg(state.activeLeg);
+          }
         };
       });
     } else {
@@ -1142,6 +1146,585 @@
     });
   }
 
+  // =========================================================================
+  // VISUAL ITINERARY & INTERACTIVE LEAFLET MAP ENGINE
+  // =========================================================================
+  let leafletMap = null;
+  let leafletMarkers = {};
+  let itineraryInitialized = false;
+
+  function getGoogleMapsUrl(name, address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + address)}`;
+  }
+
+  function getAppleMapsUrl(name, address) {
+    return `https://maps.apple.com/?q=${encodeURIComponent(name + " " + address)}`;
+  }
+
+  function buildAllMapPins() {
+    const pins = [];
+
+    // 7 Hotels
+    (ITINERARY.accommodations || []).forEach((h, idx) => {
+      pins.push({
+        id: h.id || `hotel-${idx}`,
+        legId: h.legId || "leg1",
+        type: "hotel",
+        badge: `🏨 住宿 · ${h.dates}`,
+        icon: "🏨",
+        color: "#2563eb",
+        title: `${h.jpName} (${h.name})`,
+        address: h.address,
+        note: h.note,
+        lat: h.lat,
+        lng: h.lng,
+        taxiText: h.taxiDriverText,
+        audioKey: `taxi-${idx}`
+      });
+    });
+
+    // 5 Ginza Anniversary Restaurants
+    (ITINERARY.ginzaLunches || []).forEach((g, idx) => {
+      pins.push({
+        id: g.id || `ginza-${idx}`,
+        legId: "leg4",
+        type: "ginza",
+        badge: `🍣 7周年午餐 · ${g.date}`,
+        icon: "🍣",
+        color: "#db2777",
+        title: g.name,
+        address: g.address,
+        note: `${g.statusLabel} · ${g.resCode} · ${g.course}`,
+        lat: g.lat,
+        lng: g.lng,
+        taxiText: `運転手さん、銀座の「${g.jpName}」（${g.address}）までお願いします。`,
+        audioKey: "m7-s1-1"
+      });
+    });
+
+    // Key Landmarks & Airports
+    (ITINERARY.landmarks || []).forEach((lm) => {
+      pins.push({
+        id: lm.id,
+        legId: lm.legId,
+        type: lm.category,
+        badge: `${lm.icon} 枢纽/地标`,
+        icon: lm.icon,
+        color: "#059669",
+        title: lm.name,
+        address: lm.address,
+        note: lm.note,
+        lat: lm.lat,
+        lng: lm.lng,
+        taxiText: `運転手さん、「${lm.jpName}」（${lm.address}）までお願いします。`,
+        audioKey: null
+      });
+    });
+
+    return pins;
+  }
+
+  function initOrUpdateMap() {
+    const mapEl = document.getElementById("trip-leaflet-map");
+    const listEl = document.getElementById("map-pin-list");
+    if (!mapEl || !listEl) return;
+
+    const allPins = buildAllMapPins();
+
+    // Filter pins for sidebar directory
+    const visiblePins = allPins.filter((p) => {
+      if (state.activeLeg !== "all") return p.legId === state.activeLeg;
+      if (state.mapRegion === "ginza") return p.type === "ginza";
+      if (state.mapRegion === "karuizawa") return p.legId === "leg3";
+      if (state.mapRegion === "kyushu") return p.legId === "leg5";
+      if (state.mapRegion === "tokyo") return ["leg1", "leg2", "leg4", "leg6"].includes(p.legId);
+      return true;
+    });
+
+    listEl.innerHTML = visiblePins
+      .map(
+        (p) => `
+      <div class="map-pin-item" data-pinid="${p.id}">
+        <div class="map-pin-item-top">
+          <span>${escapeHtml(p.badge)}</span>
+        </div>
+        <div class="map-pin-item-title">${p.icon} ${escapeHtml(p.title)}</div>
+        <div class="map-pin-item-addr">📍 ${escapeHtml(p.address)}</div>
+        <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:0.38rem;">${escapeHtml(p.note)}</div>
+        <div class="map-pin-item-actions">
+          <button type="button" class="mini-link-btn pin-focus-btn" data-pinid="${p.id}">🎯 地图定位</button>
+          <a class="mini-link-btn" href="${getGoogleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+          <a class="mini-link-btn" href="${getAppleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener">🍎 Apple Maps</a>
+          <button type="button" class="mini-link-btn pin-taxi-btn" data-pinid="${p.id}">🚕 给司机看</button>
+        </div>
+      </div>
+    `
+      )
+      .join("");
+
+    listEl.querySelectorAll(".pin-focus-btn").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        focusSinglePin(btn.dataset.pinid);
+      };
+    });
+
+    listEl.querySelectorAll(".map-pin-item").forEach((card) => {
+      card.onclick = (e) => {
+        if (e.target.closest("a, button")) return;
+        focusSinglePin(card.dataset.pinid);
+      };
+    });
+
+    listEl.querySelectorAll(".pin-taxi-btn").forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const pin = allPins.find((x) => x.id === btn.dataset.pinid);
+        if (pin) {
+          openStaffCard(
+            `${pin.taxiText}（住所：${pin.address}）`,
+            `司机您好，麻烦去 ${pin.title}（${pin.address}）。`,
+            pin.badge,
+            pin.audioKey
+          );
+        }
+      };
+    });
+
+    // Initialize Leaflet Map once if Leaflet is loaded
+    if (typeof window.L === "undefined") {
+      mapEl.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-secondary);">📡 离线模式下地图瓦片暂不可用，请使用右侧地标列表一键唤起 Google/Apple Maps 或出租车地址卡。</div>`;
+      return;
+    }
+
+    if (!leafletMap) {
+      leafletMap = L.map("trip-leaflet-map", {
+        center: [35.65, 139.75],
+        zoom: 10,
+        scrollWheelZoom: false
+      });
+
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        subdomains: "abcd",
+        maxZoom: 19
+      }).addTo(leafletMap);
+
+      allPins.forEach((p) => {
+        if (!p.lat || !p.lng) return;
+        const icon = L.divIcon({
+          className: "",
+          html: `<div class="custom-map-pin" style="background:${p.color};">${p.icon}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -16]
+        });
+
+        const popupHtml = `
+          <div style="min-width:210px;font-family:sans-serif;">
+            <div style="font-size:11px;font-weight:700;color:#4f46e5;margin-bottom:2px;">${escapeHtml(p.badge)}</div>
+            <div style="font-size:14px;font-weight:800;margin-bottom:4px;">${escapeHtml(p.title)}</div>
+            <div style="font-size:12px;color:#475569;margin-bottom:4px;">📍 ${escapeHtml(p.address)}</div>
+            <div style="font-size:11px;color:#64748b;margin-bottom:8px;">${escapeHtml(p.note)}</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <a href="${getGoogleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:3px 7px;background:#eef2ff;color:#4338ca;border-radius:5px;text-decoration:none;">🗺️ Google Maps</a>
+              <a href="${getAppleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:3px 7px;background:#f1f5f9;color:#1e293b;border-radius:5px;text-decoration:none;">🍎 Apple Maps</a>
+            </div>
+          </div>
+        `;
+
+        const marker = L.marker([p.lat, p.lng], { icon }).addTo(leafletMap).bindPopup(popupHtml);
+        leafletMarkers[p.id] = { marker, pin: p };
+      });
+
+      // Draw route polyline connecting the 7 stays in chronological order
+      const routeCoords = [
+        [35.7647, 140.3863], // NRT T1
+        [35.7825, 140.3802], // Nikko Narita
+        [35.6267, 139.7361], // Prince Sakura Tower
+        [36.3402, 138.6416], // Karuizawa Prince East
+        [35.6258, 139.7347], // Grand Prince Shin Takanawa
+        [35.6695, 139.764],  // Ginza
+        [33.5902, 130.4111], // Grand Hyatt Fukuoka
+        [33.2669, 131.3688], // Yufuin Kamenoi Bessou
+        [33.5902, 130.4111], // Grand Hyatt Fukuoka
+        [35.6554, 139.7547]  // Hamamatsucho Airbnb
+      ];
+      L.polyline(routeCoords, {
+        color: "#4f46e5",
+        weight: 3,
+        opacity: 0.65,
+        dashArray: "6, 8"
+      }).addTo(leafletMap);
+    }
+
+    setTimeout(() => {
+      if (leafletMap) leafletMap.invalidateSize();
+    }, 120);
+  }
+
+  function focusSinglePin(pinId) {
+    if (!leafletMap || !leafletMarkers[pinId]) return;
+    const { marker, pin } = leafletMarkers[pinId];
+    leafletMap.flyTo([pin.lat, pin.lng], 16, { duration: 0.7 });
+    marker.openPopup();
+    const mapCard = document.getElementById("trip-leaflet-map");
+    if (mapCard && window.innerWidth < 768) {
+      mapCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function focusMapByRegion(region) {
+    state.mapRegion = region;
+    document.querySelectorAll("[data-mapregion]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mapregion === region);
+    });
+    initOrUpdateMap();
+    if (!leafletMap) return;
+    if (region === "all") leafletMap.flyTo([35.1, 135.8], 5, { duration: 0.8 });
+    else if (region === "tokyo") leafletMap.flyTo([35.68, 139.92], 10, { duration: 0.8 });
+    else if (region === "ginza") leafletMap.flyTo([35.6695, 139.7642], 16, { duration: 0.8 });
+    else if (region === "karuizawa") leafletMap.flyTo([36.341, 138.638], 14, { duration: 0.8 });
+    else if (region === "kyushu") leafletMap.flyTo([33.43, 130.89], 9, { duration: 0.8 });
+  }
+
+  function focusMapByLeg(legId) {
+    if (!leafletMap) return;
+    const leg = ITINERARY.legs.find((l) => l.id === legId);
+    if (leg && leg.mapCenter) {
+      leafletMap.flyTo(leg.mapCenter, leg.mapZoom || 12, { duration: 0.8 });
+    }
+  }
+
+  function build36DaysCalendar() {
+    const days = [
+      { d: "12/5", dow: "周六", leg: "leg1", color: "#2563eb", city: "✈️ 旧金山出发", sub: "ZG025 15:35起飞" },
+      { d: "12/6", dow: "周日", leg: "leg1", color: "#2563eb", city: "✈️ 抵达成田", sub: "19:55抵 · 日航成田" },
+      { d: "12/7", dow: "周一", leg: "leg2", color: "#4f46e5", city: "🗼 东京高轮", sub: "N'EX→品川樱花塔" },
+      { d: "12/8", dow: "周二", leg: "leg2", color: "#4f46e5", city: "🗼 东京高轮", sub: "庭园散步·倒时差" },
+      { d: "12/9", dow: "周三", leg: "leg3", color: "#0284c7", city: "⛷️ 轻井泽滑雪", sub: "寄大箱→新干线" },
+      { d: "12/10", dow: "周四", leg: "leg3", color: "#0284c7", city: "⛷️ 轻井泽滑雪", sub: "Jinny滑雪课·玩雪" },
+      { d: "12/11", dow: "周五", leg: "leg3", color: "#0284c7", city: "⛷️ 轻井泽滑雪", sub: "滑雪·温泉·奥莱" },
+      { d: "12/12", dow: "周六", leg: "leg4", color: "#db2777", city: "🗼 返东京高轮", sub: "入住新高轮王子" },
+      { d: "12/13", dow: "周日", leg: "leg4", color: "#db2777", city: "👨‍👩‍👧‍👧 东京亲子日", sub: "保育园行前准备" },
+      { d: "12/14", dow: "周一", leg: "leg4", color: "#db2777", city: "🍣 银座おのでら", sub: "保育园D1·11:00(待绑卡)" },
+      { d: "12/15", dow: "周二", leg: "leg4", color: "#db2777", city: "🍤 银座よこ田", sub: "保育园D2·11:30天妇罗" },
+      { d: "12/16", dow: "周三", leg: "leg4", color: "#db2777", city: "🥩 银座山科(包厢)", sub: "保育园D3·12:00牛排" },
+      { d: "12/17", dow: "周四", leg: "leg4", color: "#db2777", city: "🥩 银座五明铁板", sub: "保育园D4·12:00秋田牛" },
+      { d: "12/18", dow: "周五", leg: "leg4", color: "#db2777", city: "🍶 银座Ukai割烹", sub: "保育园D5·12:00收官" },
+      { d: "12/19", dow: "周六", leg: "leg5", color: "#ea580c", city: "✈️ 飞九州福冈", sub: "HND→FUK·福冈君悦" },
+      { d: "12/20", dow: "周日", leg: "leg5", color: "#ea580c", city: "🍜 福冈博多", sub: "运河城·博多豚骨拉面" },
+      { d: "12/21", dow: "周一", leg: "leg5", color: "#ea580c", city: "♨️ 由布院温泉", sub: "寄大箱→龟之井别庄" },
+      { d: "12/22", dow: "周二", leg: "leg5", color: "#ea580c", city: "♨️ 金鳞湖→福冈", sub: "晨雾散步→回福冈君悦" },
+      { d: "12/23", dow: "周三", leg: "leg5", color: "#ea580c", city: "🎄 福冈圣诞周", sub: "福冈君悦·九州慢游" },
+      { d: "12/24", dow: "周四", leg: "leg5", color: "#ea580c", city: "🎄 平安夜福冈", sub: "博多圣诞市集灯光秀" },
+      { d: "12/25", dow: "周五", leg: "leg5", color: "#ea580c", city: "🎅 圣诞节九州", sub: "熊本/门司港或市内游" },
+      { d: "12/26", dow: "周六", leg: "leg5", color: "#ea580c", city: "🍜 福冈收官日", sub: "屋台美食·伴手礼采购" },
+      { d: "12/27", dow: "周日", leg: "leg6", color: "#059669", city: "🚝 飞羽田→浜松町", sub: "单轨15m直达Airbnb" },
+      { d: "12/28", dow: "周一", leg: "leg6", color: "#059669", city: "🗼 浜松町·芝公园", sub: "东京塔散步·超市采购" },
+      { d: "12/29", dow: "周二", leg: "leg6", color: "#059669", city: "🗼 东京深度游", sub: "山手线/大江户线溜娃" },
+      { d: "12/30", dow: "周三", leg: "leg6", color: "#059669", city: "🗼 岁末东京", sub: "年末采买·亲子乐园" },
+      { d: "12/31", dow: "周四", leg: "leg6", color: "#059669", city: "⛩️ 除夕大晦日", sub: "年越荞麦面·增上寺跨年" },
+      { d: "1/1", dow: "周五", leg: "leg6", color: "#059669", city: "🎍 元旦初诣", sub: "增上寺新年参拜求御守" },
+      { d: "1/2", dow: "周六", leg: "leg6", color: "#059669", city: "🛍️ 新年初卖福袋", sub: "百货初売り·皇居新年" },
+      { d: "1/3", dow: "周日", leg: "leg6", color: "#059669", city: "🗼 东京新年周", sub: "浜松町温馨公寓生活" },
+      { d: "1/4", dow: "周一", leg: "leg6", color: "#059669", city: "🗼 东京探索", sub: "美术馆/亲子博物馆" },
+      { d: "1/5", dow: "周二", leg: "leg6", color: "#059669", city: "🗼 东京探索", sub: "浅草/上野/台场溜娃" },
+      { d: "1/6", dow: "周三", leg: "leg6", color: "#059669", city: "🗼 东京探索", sub: "渋谷/新宿/银座逛街" },
+      { d: "1/7", dow: "周四", leg: "leg6", color: "#059669", city: "🥣 七草粥之日", sub: "东京社区慢生活" },
+      { d: "1/8", dow: "周五", leg: "leg6", color: "#059669", city: "🛍️ 伴手礼采购", sub: "药妆/免税店打包整理" },
+      { d: "1/9", dow: "周六", leg: "leg6", color: "#059669", city: "🧳 返程前夕整理", sub: "检查2×30kg托运行李" },
+      { d: "1/10", dow: "周日", leg: "leg6", color: "#059669", city: "✈️ 21:25返旧金山", sub: "ZG026同日13:45抵SFO" }
+    ];
+    return days;
+  }
+
+  function renderItineraryView() {
+    // 1. KPI Strip
+    const kpiEl = document.getElementById("itin-kpi-strip");
+    if (kpiEl && !itineraryInitialized) {
+      kpiEl.innerHTML = `
+        <div class="kpi-card">
+          <div class="kpi-icon">🗓️</div>
+          <div>
+            <div class="kpi-val">35 晚 / 37 天</div>
+            <div class="kpi-label">2026.12.5 – 2027.1.10</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🏨</div>
+          <div>
+            <div class="kpi-val">7 家精选酒店/公寓</div>
+            <div class="kpi-label">成田·高轮·轻井泽·福冈·由布院·浜松町</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">🥂</div>
+          <div>
+            <div class="kpi-val">5 场银座7周年午餐</div>
+            <div class="kpi-label">12/14–12/18 姐妹保育园周</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon">✈️</div>
+          <div>
+            <div class="kpi-val">ZIPAIR #CYBNOT</div>
+            <div class="kpi-label">SFO ⇄ NRT T1 · 2×30kg行李</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. Interactive Map & Directory
+    initOrUpdateMap();
+
+    // 3. 36-Day Calendar Strip
+    const calEl = document.getElementById("itin-calendar-grid");
+    if (calEl) {
+      const days = build36DaysCalendar().filter((x) => state.activeLeg === "all" || x.leg === state.activeLeg);
+      calEl.innerHTML = days
+        .map(
+          (day) => `
+        <div class="cal-day-cell" style="border-top-color:${day.color};" data-targetleg="${day.leg}">
+          <div class="cal-day-top">
+            <span>${day.d}</span>
+            <span class="cal-day-dow">${day.dow}</span>
+          </div>
+          <div class="cal-day-city">${escapeHtml(day.city)}</div>
+          <div class="cal-day-sub">${escapeHtml(day.sub)}</div>
+        </div>
+      `
+        )
+        .join("");
+
+      calEl.querySelectorAll(".cal-day-cell").forEach((cell) => {
+        cell.onclick = () => {
+          const target = document.getElementById(`itin-card-${cell.dataset.targetleg}`);
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        };
+      });
+    }
+
+    // 4. Leg-by-Leg Visual Timeline Cards
+    const timelineEl = document.getElementById("itin-legs-timeline");
+    if (timelineEl) {
+      const legsToRender = ITINERARY.legs.filter(
+        (l) => l.id !== "all" && (state.activeLeg === "all" || l.id === state.activeLeg)
+      );
+
+      timelineEl.innerHTML = legsToRender
+        .map((leg) => {
+          const modChips = (leg.modules || [])
+            .map((mId) => {
+              const modObj = BASE_MODULES.find((x) => x.id === mId);
+              if (!modObj) return "";
+              return `<button type="button" class="jump-module-chip" data-jumpmod="${mId}">${modObj.icon} ${mId}. ${escapeHtml(modObj.title.replace(/（.*）/, ""))}</button>`;
+            })
+            .join("");
+
+          const hotelAcc = (ITINERARY.accommodations || []).find((a) => a.legId === leg.id);
+          const gmapUrl = hotelAcc ? getGoogleMapsUrl(hotelAcc.jpName, hotelAcc.address) : "#";
+
+          return `
+          <article class="itin-leg-card" id="itin-card-${leg.id}">
+            <div class="itin-leg-banner" style="border-left:5px solid ${leg.color || "#4f46e5"};">
+              <div>
+                <div class="itin-leg-title">
+                  <span>${leg.icon}</span>
+                  <span>${escapeHtml(leg.shortTitle)} · ${escapeHtml(leg.city)}</span>
+                </div>
+                <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.2rem;">
+                  ${escapeHtml(leg.summary)}
+                </div>
+              </div>
+              <span class="itin-leg-dates-badge">${escapeHtml(leg.dates)}</span>
+            </div>
+
+            <div class="itin-leg-hotel-bar">
+              <div>
+                <strong>🏨 驻地酒店：${escapeHtml(leg.hotel)}</strong>
+                <div style="font-size:0.76rem;color:var(--text-secondary);margin-top:0.1rem;">
+                  📋 ${escapeHtml(leg.hotelConf || "")} · 📍 ${escapeHtml(leg.roomType || "")}
+                </div>
+              </div>
+              <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                <button type="button" class="mini-link-btn leg-map-focus-btn" data-leg="${leg.id}">🎯 地图聚焦本阶段</button>
+                ${
+                  hotelAcc
+                    ? `<a class="mini-link-btn" href="${gmapUrl}" target="_blank" rel="noopener">🗺️ 酒店导航</a>`
+                    : ""
+                }
+              </div>
+            </div>
+
+            <div class="itin-schedule-list">
+              ${(leg.schedule || [])
+                .map(
+                  (s) => `
+                <div class="itin-schedule-row">
+                  <div>
+                    <div class="itin-schedule-time">🕒 ${escapeHtml(s.time)}</div>
+                    <span class="itin-schedule-tag">${escapeHtml(s.tag)}</span>
+                  </div>
+                  <div>
+                    <div class="itin-schedule-title">${escapeHtml(s.title)}</div>
+                    <div class="itin-schedule-desc">${escapeHtml(s.desc)}</div>
+                  </div>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+
+            <div class="itin-leg-footer">
+              <span style="font-size:0.76rem;font-weight:800;color:var(--text-secondary);">🗣️ 一键打开本阶段高频日语：</span>
+              ${modChips}
+            </div>
+          </article>
+        `;
+        })
+        .join("");
+
+      timelineEl.querySelectorAll(".leg-map-focus-btn").forEach((btn) => {
+        btn.onclick = () => {
+          focusMapByLeg(btn.dataset.leg);
+          const mapEl = document.getElementById("trip-leaflet-map");
+          if (mapEl) mapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        };
+      });
+
+      timelineEl.querySelectorAll(".jump-module-chip").forEach((chip) => {
+        chip.onclick = () => {
+          const modId = chip.dataset.jumpmod;
+          state.appMode = "phrasebook";
+          state.activeLeg = "all";
+          renderAll();
+          setTimeout(() => {
+            const target = document.getElementById(`module-${modId}`);
+            if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 80);
+        };
+      });
+    }
+
+    // 5. Ginza 7th Anniversary Lunch Deck
+    const ginzaGrid = document.getElementById("itin-ginza-grid");
+    if (ginzaGrid) {
+      ginzaGrid.innerHTML = (ITINERARY.ginzaLunches || [])
+        .map(
+          (g, idx) => `
+        <div class="ginza-card ${g.status}">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;margin-bottom:0.35rem;">
+              <span style="font-size:0.8rem;font-weight:800;color:var(--accent-indigo);">📅 ${escapeHtml(g.date)}</span>
+              <span class="ginza-status-badge ${g.status}">${escapeHtml(g.statusLabel)}</span>
+            </div>
+            <div style="font-size:1rem;font-weight:800;color:var(--text-primary);margin-bottom:0.25rem;">
+              ${escapeHtml(g.name)}
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.25rem;">
+              📍 ${escapeHtml(g.address)}
+            </div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text-primary);margin-bottom:0.2rem;">
+              🍽️ ${escapeHtml(g.course)}
+            </div>
+            <div style="font-size:0.78rem;color:var(--accent-emerald);font-weight:700;margin-bottom:0.2rem;">
+              💴 ${escapeHtml(g.price)}
+            </div>
+            <div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:0.35rem;">
+              🎫 预约号：<strong>${escapeHtml(g.resCode)}</strong> · 取消政策：${escapeHtml(g.cancelPolicy || "")}
+            </div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);background:var(--bg-card);padding:0.45rem 0.6rem;border-radius:6px;border:1px solid var(--border-color);">
+              ✨ ${escapeHtml(g.highlight)}
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">
+            <a class="mini-link-btn" href="${getGoogleMapsUrl(g.jpName, g.address)}" target="_blank" rel="noopener">🗺️ Google Maps</a>
+            <button type="button" class="mini-link-btn ginza-card-checkin" data-idx="${idx}">📱 进店报预约卡</button>
+            <button type="button" class="mini-link-btn ginza-card-map" data-pinid="${g.id}">🎯 地图定位</button>
+          </div>
+        </div>
+      `
+        )
+        .join("");
+
+      ginzaGrid.querySelectorAll(".ginza-card-checkin").forEach((btn) => {
+        btn.onclick = () => {
+          const g = ITINERARY.ginzaLunches[Number(btn.dataset.idx)];
+          openStaffCard(
+            `こんにちは。本日予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。（予約番号：${g.resCode}）`,
+            `您好，我是今天有预约的刘 (LIU Haodong)，2位。（预约号：${g.resCode}）`,
+            `${g.date} · ${g.name}`,
+            "m7-s1-1"
+          );
+        };
+      });
+
+      ginzaGrid.querySelectorAll(".ginza-card-map").forEach((btn) => {
+        btn.onclick = () => {
+          focusSinglePin(btn.dataset.pinid);
+          const mapEl = document.getElementById("trip-leaflet-map");
+          if (mapEl) mapEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        };
+      });
+    }
+
+    // 6. Flights & 3 Smart Luggage Hacks
+    const flightsEl = document.getElementById("itin-flights-list");
+    if (flightsEl && !itineraryInitialized) {
+      flightsEl.innerHTML = (ITINERARY.flights || [])
+        .map(
+          (f) => `
+        <div class="flight-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+            <span style="font-size:0.78rem;font-weight:800;color:var(--accent-indigo);">${escapeHtml(f.direction)} · ${escapeHtml(f.date)}</span>
+            <span class="ginza-status-badge booked">Conf #${escapeHtml(f.confCode)}</span>
+          </div>
+          <div style="font-size:0.98rem;font-weight:800;margin-bottom:0.25rem;">
+            ✈️ ${escapeHtml(f.airline)} ${escapeHtml(f.flightNo)}: ${escapeHtml(f.depAirport)} ➔ ${escapeHtml(f.arrAirport)}
+          </div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);margin-bottom:0.25rem;">
+            🕒 起飞 ${escapeHtml(f.depTime)} ➔ 抵达 ${escapeHtml(f.arrTime)}
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.35rem;">
+            💺 座位：<strong>${escapeHtml(f.seats)}</strong> · 🧳 托运：<strong>${escapeHtml(f.baggage)}</strong>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);background:var(--bg-card);padding:0.45rem 0.6rem;border-radius:6px;border:1px solid var(--border-color);">
+            💡 ${escapeHtml(f.note)}
+          </div>
+        </div>
+      `
+        )
+        .join("");
+    }
+
+    const luggageEl = document.getElementById("itin-luggage-list");
+    if (luggageEl && !itineraryInitialized) {
+      luggageEl.innerHTML = (ITINERARY.luggageHacks || [])
+        .map(
+          (lh) => `
+        <div class="luggage-card">
+          <div style="font-size:0.76rem;font-weight:800;color:var(--accent-indigo);margin-bottom:0.2rem;">
+            📅 ${escapeHtml(lh.date)}
+          </div>
+          <div style="font-size:0.94rem;font-weight:800;margin-bottom:0.2rem;">
+            ${lh.icon} ${escapeHtml(lh.title)}
+          </div>
+          <div style="font-size:0.78rem;font-weight:700;color:var(--accent-emerald);margin-bottom:0.3rem;">
+            📍 ${escapeHtml(lh.route)}
+          </div>
+          <div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.5;">
+            ${escapeHtml(lh.detail)}
+          </div>
+        </div>
+      `
+        )
+        .join("");
+    }
+
+    itineraryInitialized = true;
+  }
+
   // Sync body classes & toolbar buttons
   function syncToolbarUI() {
     document.body.classList.toggle("hide-furigana", !state.showFurigana);
@@ -1149,6 +1732,23 @@
     document.body.classList.toggle("hide-cn", !state.showCn);
     document.body.classList.toggle("practice-mode", state.practiceMode);
     document.body.classList.toggle("dark-mode", state.darkMode);
+
+    // Sync Primary App Mode (Itinerary & Map vs Phrasebook)
+    const itinView = document.getElementById("itinerary-view-container");
+    const phraseView = document.getElementById("phrasebook-view-container");
+    const phraseToolbar = document.getElementById("phrasebook-toolbar-row");
+    const toolbarCollapsible = document.getElementById("toolbar-collapsible");
+
+    const isItin = state.appMode === "itinerary";
+    if (itinView) itinView.style.display = isItin ? "flex" : "none";
+    if (phraseView) phraseView.style.display = isItin ? "none" : "grid";
+    if (phraseToolbar) phraseToolbar.style.display = isItin ? "none" : "flex";
+    if (toolbarCollapsible && isItin) toolbarCollapsible.style.display = "none";
+    else if (toolbarCollapsible && !isItin) toolbarCollapsible.style.display = "";
+
+    document.querySelectorAll("[data-appmode]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.appmode === state.appMode);
+    });
 
     const setChip = (id, active, cls = "active") => {
       const el = document.getElementById(id);
@@ -1169,9 +1769,13 @@
   function renderAll() {
     syncToolbarUI();
     renderLegTabs();
-    const filtered = getFilteredModules();
-    renderSidebar(filtered);
-    renderModules(filtered);
+    if (state.appMode === "itinerary") {
+      renderItineraryView();
+    } else {
+      const filtered = getFilteredModules();
+      renderSidebar(filtered);
+      renderModules(filtered);
+    }
   }
 
   // Initialize App
@@ -1233,10 +1837,28 @@
     const btnStarred = document.getElementById("btn-filter-starred");
     if (btnStarred) {
       btnStarred.onclick = () => {
+        state.appMode = "phrasebook";
         state.viewMode = state.viewMode === "starred" ? "all" : "starred";
         renderAll();
       };
     }
+
+    // Bind Top-Level App Mode Switcher (Itinerary & Map vs Phrasebook)
+    document.querySelectorAll("[data-appmode]").forEach((btn) => {
+      btn.onclick = () => {
+        state.appMode = btn.dataset.appmode;
+        renderAll();
+      };
+    });
+
+    // Bind Map Region Pills
+    document.querySelectorAll("[data-mapregion]").forEach((btn) => {
+      btn.onclick = () => {
+        state.activeLeg = "all";
+        renderLegTabs();
+        focusMapByRegion(btn.dataset.mapregion);
+      };
+    });
 
     // Mobile Trip Info Drawer Toggle
     const btnToggleTripInfo = document.getElementById("btn-toggle-trip-info");

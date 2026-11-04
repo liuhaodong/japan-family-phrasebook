@@ -1,15 +1,15 @@
-const CACHE_NAME = "japan-family-phrasebook-v5";
+const CACHE_NAME = "japan-family-phrasebook-v6";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=5",
-  "./app.js?v=5",
-  "./manifest.json?v=5",
-  "./data/itinerary.js?v=5",
-  "./data/modules_1_to_6.js?v=5",
-  "./data/modules_7_to_12.js?v=5",
-  "./data/modules_13_to_18.js?v=5",
-  "./data/audio_manifest.js?v=5"
+  "./styles.css?v=6",
+  "./app.js?v=6",
+  "./manifest.json?v=6",
+  "./data/itinerary.js?v=6",
+  "./data/modules_1_to_6.js?v=6",
+  "./data/modules_7_to_12.js?v=6",
+  "./data/modules_13_to_18.js?v=6",
+  "./data/audio_manifest.js?v=6"
 ];
 
 self.addEventListener("install", (event) => {

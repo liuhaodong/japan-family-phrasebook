@@ -1144,3 +1144,551 @@ body.practice-mode .turn-us.revealed .romaji-text {
   padding: 0.95rem;
   margin-top: 0.75rem;
 }
+
+/* =========================================================================
+   PRIMARY MODE SWITCHER & VISUAL ITINERARY + INTERACTIVE MAP STYLES
+   ========================================================================= */
+
+.mode-and-search-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-mode-switcher {
+  display: inline-flex;
+  background: var(--bg-subtle);
+  padding: 0.22rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  flex: 0 0 auto;
+}
+
+.mode-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.36rem 0.82rem;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode-tab.active {
+  background: #1b2c52;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+}
+
+body.dark-mode .mode-tab.active {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.mode-and-search-row .search-and-drawer-row {
+  flex: 1 1 280px;
+}
+
+@media (max-width: 640px) {
+  .app-mode-switcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .mode-tab {
+    text-align: center;
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* Itinerary View Wrapper */
+.itinerary-view-wrapper {
+  max-width: 1280px;
+  margin: 0.9rem auto 2.5rem;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+/* 1. KPI Strip */
+.itin-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 0.7rem;
+}
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.95rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.kpi-icon {
+  font-size: 1.55rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  background: var(--bg-indigo-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.kpi-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.12rem;
+}
+
+/* 2. Interactive Map Card */
+.itin-map-card,
+.itin-card-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.itin-map-header,
+.itin-block-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.itin-section-title {
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.itin-section-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.18rem;
+}
+
+.map-region-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.map-pill {
+  padding: 0.32rem 0.68rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-pill.active {
+  background: var(--accent-indigo);
+  color: #ffffff;
+  border-color: var(--accent-indigo);
+}
+
+.itin-map-grid {
+  display: grid;
+  grid-template-columns: 1fr 330px;
+  gap: 0.9rem;
+  align-items: stretch;
+}
+
+.trip-leaflet-map {
+  width: 100%;
+  height: 430px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  z-index: 1;
+  background: #e2e8f0;
+}
+
+.map-pin-list {
+  height: 430px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.map-pin-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.55rem 0.68rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease;
+}
+
+.map-pin-item:hover {
+  border-color: var(--accent-indigo);
+}
+
+.map-pin-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.map-pin-item-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0.15rem 0;
+}
+
+.map-pin-item-addr {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+
+.map-pin-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.mini-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.48rem;
+  border-radius: 6px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.mini-link-btn:hover {
+  border-color: var(--accent-indigo);
+  color: var(--accent-indigo);
+}
+
+/* Custom Leaflet DivIcon Marker */
+.custom-map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1b2c52;
+  color: #fff;
+  font-size: 16px;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.32);
+}
+
+/* 3. 36-Day Visual Calendar Grid */
+.calendar-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 0.45rem;
+}
+
+.cal-day-cell {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.48rem 0.55rem;
+  background: var(--bg-main);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+  border-top-width: 3.5px;
+}
+
+.cal-day-cell:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent-indigo);
+}
+
+.cal-day-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.cal-day-dow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.cal-day-city {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-day-sub {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 4. Leg-by-Leg Timeline Cards */
+.itin-legs-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.itin-leg-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  overflow: hidden;
+}
+
+.itin-leg-banner {
+  padding: 0.85rem 1rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.itin-leg-title {
+  font-size: 1.04rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.itin-leg-dates-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg-indigo-soft);
+  color: var(--accent-indigo);
+}
+
+.itin-leg-hotel-bar {
+  padding: 0.65rem 1rem;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.itin-schedule-list {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.itin-schedule-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.itin-schedule-time {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--accent-indigo);
+}
+
+.itin-schedule-tag {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+}
+
+.itin-schedule-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.22rem;
+}
+
+.itin-schedule-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  white-space: pre-line;
+  line-height: 1.55;
+}
+
+.itin-leg-footer {
+  padding: 0.65rem 1rem;
+  background: var(--bg-card);
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.jump-module-chip {
+  padding: 0.25rem 0.58rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  background: var(--bg-indigo-soft);
+  color: var(--accent-indigo);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.jump-module-chip:hover {
+  border-color: var(--accent-indigo);
+}
+
+/* 5. Ginza 7th Anniversary Deck */
+.ginza-deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 0.85rem;
+}
+
+.ginza-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.ginza-card.pending {
+  border-left: 4px solid #f59e0b;
+}
+
+.ginza-card.booked {
+  border-left: 4px solid #10b981;
+}
+
+.ginza-status-badge {
+  display: inline-block;
+  font-size: 0.71rem;
+  font-weight: 800;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+}
+
+.ginza-status-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.ginza-status-badge.booked {
+  background: #d1fae5;
+  color: #047857;
+}
+
+/* 6. Flights & Luggage Two-Column */
+.itin-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.itin-flights-list,
+.itin-luggage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.flight-card,
+.luggage-card {
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.95rem;
+}
+
+@media (max-width: 900px) {
+  .itin-map-grid {
+    grid-template-columns: 1fr;
+  }
+  .trip-leaflet-map {
+    height: 320px;
+  }
+  .map-pin-list {
+    height: 250px;
+  }
+  .itin-two-col {
+    grid-template-columns: 1fr;
+  }
+  .itin-schedule-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+}
