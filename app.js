@@ -9,31 +9,94 @@
   const ITINERARY = window.TRIP_ITINERARY;
   const AUDIO_MANIFEST = window.AUDIO_MANIFEST || {};
 
+  // Load persisted UI preferences
+  const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
+
   // App State
   const state = {
-    appMode: "itinerary", // 'itinerary' | 'phrasebook'
+    appMode: "itinerary", // 'itinerary' | 'phrasebook' | 'verbs' | 'grammar' | 'practice'
     mapRegion: "all", // 'all' | 'tokyo' | 'ginza' | 'karuizawa' | 'kyushu'
+    mapLayer: savedPrefs.mapLayer || "esri_street", // 'esri_street' | 'gsi_pale' | 'esri_sat'
     activeLeg: "all",
     viewMode: "all", // 'all' | 'sentences' | 'dialogues' | 'starred' | 'unmastered'
     searchQuery: "",
-    showFurigana: true,
-    showRomaji: true,
-    showCn: true,
+    showFurigana: savedPrefs.showFurigana !== undefined ? savedPrefs.showFurigana : true,
+    showRomaji: savedPrefs.showRomaji !== undefined ? savedPrefs.showRomaji : true,
+    showCn: savedPrefs.showCn !== undefined ? savedPrefs.showCn : true,
     practiceMode: false,
-    darkMode: false,
+    darkMode: !!savedPrefs.darkMode,
     starred: JSON.parse(localStorage.getItem("jp_phrasebook_starred_v1") || "{}"),
     mastered: JSON.parse(localStorage.getItem("jp_phrasebook_mastered_v1") || "{}"),
     edits: JSON.parse(localStorage.getItem("jp_phrasebook_edits_v1") || "{}"),
     customItems: JSON.parse(localStorage.getItem("jp_phrasebook_custom_v1") || "[]"),
+    srs: JSON.parse(localStorage.getItem("jp_phrasebook_srs_v1") || "{}"),
+    streak: JSON.parse(localStorage.getItem("jp_phrasebook_streak_v1") || '{"count":0,"lastDate":"","todayDate":"","todayCount":0}'),
     playingDialogueId: null,
     stopDialogueRequested: false
   };
+
+  function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function getYesterdayStr() {
+    const d = new Date(Date.now() - 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
+  function recordStudyActivity(amount = 1) {
+    const today = getTodayStr();
+    const yesterday = getYesterdayStr();
+    if (state.streak.todayDate !== today) {
+      state.streak.todayDate = today;
+      state.streak.todayCount = 0;
+    }
+    state.streak.todayCount += amount;
+    if (state.streak.lastDate !== today) {
+      if (state.streak.lastDate === yesterday) {
+        state.streak.count = (state.streak.count || 0) + 1;
+      } else {
+        state.streak.count = 1;
+      }
+      state.streak.lastDate = today;
+    }
+    saveUserState();
+    updateHeaderStreak();
+  }
+
+  function updateHeaderStreak() {
+    const el = document.getElementById("header-streak-pill");
+    if (!el) return;
+    const today = getTodayStr();
+    const yesterday = getYesterdayStr();
+    const isAlive = state.streak.lastDate === today || state.streak.lastDate === yesterday;
+    const days = isAlive ? (state.streak.count || 0) : 0;
+    const todayCnt = state.streak.todayDate === today ? (state.streak.todayCount || 0) : 0;
+    el.textContent = todayCnt > 0 ? `🔥 ${days}天连学 · 今日+${todayCnt}` : `🔥 ${days}天连学`;
+  }
+
+  function savePrefs() {
+    localStorage.setItem(
+      "jp_phrasebook_prefs_v1",
+      JSON.stringify({
+        showFurigana: state.showFurigana,
+        showRomaji: state.showRomaji,
+        showCn: state.showCn,
+        darkMode: state.darkMode,
+        mapLayer: state.mapLayer
+      })
+    );
+  }
 
   function saveUserState() {
     localStorage.setItem("jp_phrasebook_starred_v1", JSON.stringify(state.starred));
     localStorage.setItem("jp_phrasebook_mastered_v1", JSON.stringify(state.mastered));
     localStorage.setItem("jp_phrasebook_edits_v1", JSON.stringify(state.edits));
     localStorage.setItem("jp_phrasebook_custom_v1", JSON.stringify(state.customItems));
+    localStorage.setItem("jp_phrasebook_srs_v1", JSON.stringify(state.srs));
+    localStorage.setItem("jp_phrasebook_streak_v1", JSON.stringify(state.streak));
+    savePrefs();
   }
 
   // Merge BASE_MODULES with state.edits and state.customItems dynamically
@@ -317,10 +380,195 @@
       delete state.mastered[itemId];
     } else {
       state.mastered[itemId] = true;
-      showToast("✅ 太棒了！已标记为背熟");
+      recordStudyActivity(1);
+      showToast("✅ 太棒了！已标记为已掌握");
     }
     saveUserState();
     renderAll();
+  }
+
+  function openModalHtml(html) {
+    const modal = document.getElementById("app-modal");
+    const body = document.getElementById("modal-body-content");
+    if (!modal || !body) return null;
+    body.innerHTML = html;
+    modal.classList.add("open");
+    return body;
+  }
+
+  function closeModal() {
+    const modal = document.getElementById("app-modal");
+    if (modal) modal.classList.remove("open");
+  }
+
+  // Open Quick Reference Learning Toolbox Modal (Top 50 Adjectives, Counters/Numbers/Prices, 50-On Kana Chart)
+  function openToolboxModal(defaultTab = "adjectives") {
+    const extras = window.JP_LEARNING_EXTRAS;
+    if (!extras) return;
+    let activeTab = defaultTab;
+    let adjTypeFilter = "all";
+    let adjSearch = "";
+
+    const body = openModalHtml(`<div id="toolbox-modal-root"></div>`);
+    if (!body) return;
+
+    function renderToolbox() {
+      const root = document.getElementById("toolbox-modal-root");
+      if (!root) return;
+
+      let tabContent = "";
+      if (activeTab === "adjectives") {
+        const q = adjSearch.trim().toLowerCase();
+        const list = (extras.adjectives || []).filter((a) => {
+          if (adjTypeFilter === "i" && !a.type.startsWith("い")) return false;
+          if (adjTypeFilter === "na" && !a.type.startsWith("な")) return false;
+          if (!q) return true;
+          return `${a.jp} ${a.kana} ${a.romaji} ${a.cn} ${a.ex} ${a.exCn}`.toLowerCase().includes(q);
+        });
+        tabContent = `
+          <div class="toolbox-filter-row">
+            <input type="text" id="tb-adj-search" class="tb-input" value="${escapeHtml(adjSearch)}" placeholder="搜形容词（如：おいしい、静か、冷、贵）..." />
+            <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+              <button type="button" class="toggle-chip ${adjTypeFilter === "all" ? "active" : ""}" data-adjtype="all">全部 (${extras.adjectives.length})</button>
+              <button type="button" class="toggle-chip ${adjTypeFilter === "i" ? "active" : ""}" data-adjtype="i">い形容词</button>
+              <button type="button" class="toggle-chip ${adjTypeFilter === "na" ? "active" : ""}" data-adjtype="na">な形容词</button>
+            </div>
+          </div>
+          <div class="tb-rule-banner">
+            💡 <strong>形容词速记：</strong>い形否定「去い＋くない」・过去「去い＋かった」（いい例外→よくない/よかった）｜ な形否定「＋じゃない」・过去「＋だった」
+          </div>
+          <div class="tb-adj-grid">
+            ${list
+              .map(
+                (a) => `
+              <div class="tb-adj-card">
+                <div class="tb-adj-top">
+                  <div>
+                    <span class="tb-adj-jp">${formatRuby(a.jp)}</span>
+                    <span class="tb-badge ${a.type.startsWith("い") ? "badge-i" : "badge-na"}">${escapeHtml(a.type)}</span>
+                  </div>
+                  <button type="button" class="icon-btn tb-speak-btn" data-jp="${escapeHtml(a.kana)}">🔊 读词</button>
+                </div>
+                <div class="tb-adj-cn">${escapeHtml(a.cn)} <span class="tb-romaji">${escapeHtml(a.romaji)}</span></div>
+                <div class="tb-adj-forms">否定: <strong>${escapeHtml(a.neg)}</strong> · 过去: <strong>${escapeHtml(a.past)}</strong></div>
+                <div class="tb-adj-ex">
+                  <div style="flex:1;">
+                    <div class="tb-ex-jp">${formatRuby(a.ex)}</div>
+                    <div class="tb-ex-cn">${escapeHtml(a.exCn)}</div>
+                  </div>
+                  <button type="button" class="icon-btn tb-speak-btn" data-jp="${escapeHtml(a.ex)}">🔊</button>
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (activeTab === "counters") {
+        tabContent = `
+          <div class="tb-counters-stack">
+            ${(extras.counters || [])
+              .map(
+                (grp) => `
+              <div class="tb-counter-group">
+                <div class="tb-counter-title">${escapeHtml(grp.title)}</div>
+                <div class="tb-counter-desc">${escapeHtml(grp.desc)}</div>
+                <div class="tb-counter-grid">
+                  ${grp.items
+                    .map(
+                      (it) => `
+                    <button type="button" class="tb-counter-chip tb-speak-btn" data-jp="${escapeHtml(it.kana)}">
+                      <div class="tb-c-jp">${escapeHtml(it.jp)}</div>
+                      <div class="tb-c-kana">${escapeHtml(it.kana)}</div>
+                      <div class="tb-c-romaji">${escapeHtml(it.romaji)}</div>
+                      <div class="tb-c-cn">${escapeHtml(it.cn)}</div>
+                    </button>
+                  `
+                    )
+                    .join("")}
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (activeTab === "kana") {
+        tabContent = `
+          <div class="tb-rule-banner">
+            🔊 点击任意平假名 / 片假名方块即可收听标准日语发音（适合亲子一起认假名、练听辨）！
+          </div>
+          <div class="tb-kana-table">
+            ${(extras.kanaRows || [])
+              .map(
+                (r) => `
+              <div class="tb-kana-row">
+                <div class="tb-kana-label">${escapeHtml(r.row)}</div>
+                ${r.cells
+                  .map(([h, k, rom]) =>
+                    h
+                      ? `<button type="button" class="tb-kana-cell tb-speak-btn" data-jp="${escapeHtml(h)}">
+                          <span class="tb-k-hira">${h}</span>
+                          <span class="tb-k-kata">${k}</span>
+                          <span class="tb-k-rom">${rom}</span>
+                        </button>`
+                      : `<div class="tb-kana-cell empty"></div>`
+                  )
+                  .join("")}
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      root.innerHTML = `
+        <h2 style="font-size:1.25rem;font-weight:800;margin-bottom:0.25rem;">📘 日语随身速查工具箱 (点击任意词条即可发声)</h2>
+        <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.75rem;">
+          覆盖最高频 50 形容词、日本点餐/购物必背量词与金额读法、以及亲子互动五十音发声表。
+        </p>
+        <div class="toolbox-tabs">
+          <button type="button" class="map-pill ${activeTab === "adjectives" ? "active" : ""}" data-tbtab="adjectives">✨ 高频形容词 50</button>
+          <button type="button" class="map-pill ${activeTab === "counters" ? "active" : ""}" data-tbtab="counters">🔢 量词·数字·时间·价钱</button>
+          <button type="button" class="map-pill ${activeTab === "kana" ? "active" : ""}" data-tbtab="kana">🔤 五十音发声表</button>
+        </div>
+        <div style="margin-top:0.8rem;">${tabContent}</div>
+      `;
+
+      root.querySelectorAll("[data-tbtab]").forEach((btn) => {
+        btn.onclick = () => {
+          activeTab = btn.dataset.tbtab;
+          renderToolbox();
+        };
+      });
+      root.querySelectorAll("[data-adjtype]").forEach((btn) => {
+        btn.onclick = () => {
+          adjTypeFilter = btn.dataset.adjtype;
+          renderToolbox();
+        };
+      });
+      const searchEl = document.getElementById("tb-adj-search");
+      if (searchEl) {
+        searchEl.oninput = (e) => {
+          adjSearch = e.target.value;
+          const pos = e.target.selectionStart;
+          renderToolbox();
+          const nextEl = document.getElementById("tb-adj-search");
+          if (nextEl) {
+            nextEl.focus();
+            nextEl.setSelectionRange(pos, pos);
+          }
+        };
+      }
+      root.querySelectorAll(".tb-speak-btn").forEach((btn) => {
+        btn.onclick = function () {
+          speakJapanese(this.dataset.jp, 1.0, this);
+        };
+      });
+    }
+
+    renderToolbox();
   }
 
   // Find item by ID across effective modules
@@ -564,7 +812,9 @@
               starred: state.starred,
               mastered: state.mastered,
               edits: state.edits,
-              customItems: state.customItems
+              customItems: state.customItems,
+              srs: state.srs,
+              streak: state.streak
             },
             null,
             2
@@ -590,7 +840,10 @@
           if (data.mastered) state.mastered = { ...state.mastered, ...data.mastered };
           if (data.edits) state.edits = { ...state.edits, ...data.edits };
           if (Array.isArray(data.customItems)) state.customItems = data.customItems;
+          if (data.srs) state.srs = { ...state.srs, ...data.srs };
+          if (data.streak) state.streak = data.streak;
           saveUserState();
+          updateHeaderStreak();
           modal.classList.remove("open");
           showToast("🎉 成功导入备份数据！");
           renderAll();
@@ -1150,8 +1403,50 @@
   // VISUAL ITINERARY & INTERACTIVE LEAFLET MAP ENGINE
   // =========================================================================
   let leafletMap = null;
+  let leafletTileLayer = null;
   let leafletMarkers = {};
+  let activePinId = null;
   let itineraryInitialized = false;
+
+  // Reliable, zero-API-key map tile layers (CartoCDN now requires an API key)
+  const MAP_TILE_LAYERS = {
+    esri_street: {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+      options: {
+        attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OSM",
+        maxZoom: 19
+      }
+    },
+    gsi_pale: {
+      url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
+      options: {
+        attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 (GSI Japan)</a>',
+        minZoom: 5,
+        maxZoom: 18
+      }
+    },
+    esri_sat: {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      options: {
+        attribution: "Tiles &copy; Esri &mdash; Earthstar Geographics",
+        maxZoom: 19
+      }
+    }
+  };
+
+  function switchMapTileLayer(layerKey) {
+    const cfg = MAP_TILE_LAYERS[layerKey] || MAP_TILE_LAYERS.esri_street;
+    state.mapLayer = MAP_TILE_LAYERS[layerKey] ? layerKey : "esri_street";
+    savePrefs();
+    document.querySelectorAll("[data-maplayer]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.maplayer === state.mapLayer);
+    });
+    if (!leafletMap || typeof window.L === "undefined") return;
+    if (leafletTileLayer) {
+      leafletMap.removeLayer(leafletTileLayer);
+    }
+    leafletTileLayer = L.tileLayer(cfg.url, cfg.options).addTo(leafletMap);
+  }
 
   function getGoogleMapsUrl(name, address) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + " " + address)}`;
@@ -1170,7 +1465,7 @@
         id: h.id || `hotel-${idx}`,
         legId: h.legId || "leg1",
         type: "hotel",
-        badge: `🏨 住宿 · ${h.dates}`,
+        badge: `🏨 住宿 #${idx + 1} · ${h.dates}`,
         icon: "🏨",
         color: "#2563eb",
         title: `${h.jpName} (${h.name})`,
@@ -1244,7 +1539,7 @@
     listEl.innerHTML = visiblePins
       .map(
         (p) => `
-      <div class="map-pin-item" data-pinid="${p.id}">
+      <div class="map-pin-item ${activePinId === p.id ? "active-pin" : ""}" data-pinid="${p.id}">
         <div class="map-pin-item-top">
           <span>${escapeHtml(p.badge)}</span>
         </div>
@@ -1299,16 +1594,12 @@
 
     if (!leafletMap) {
       leafletMap = L.map("trip-leaflet-map", {
-        center: [35.65, 139.75],
-        zoom: 10,
+        center: [35.1, 135.8],
+        zoom: 5,
         scrollWheelZoom: false
       });
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-        subdomains: "abcd",
-        maxZoom: 19
-      }).addTo(leafletMap);
+      switchMapTileLayer(state.mapLayer);
 
       allPins.forEach((p) => {
         if (!p.lat || !p.lng) return;
@@ -1321,20 +1612,44 @@
         });
 
         const popupHtml = `
-          <div style="min-width:210px;font-family:sans-serif;">
+          <div style="min-width:220px;font-family:sans-serif;line-height:1.45;">
             <div style="font-size:11px;font-weight:700;color:#4f46e5;margin-bottom:2px;">${escapeHtml(p.badge)}</div>
-            <div style="font-size:14px;font-weight:800;margin-bottom:4px;">${escapeHtml(p.title)}</div>
+            <div style="font-size:14px;font-weight:800;margin-bottom:4px;color:#0f172a;">${escapeHtml(p.title)}</div>
             <div style="font-size:12px;color:#475569;margin-bottom:4px;">📍 ${escapeHtml(p.address)}</div>
             <div style="font-size:11px;color:#64748b;margin-bottom:8px;">${escapeHtml(p.note)}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <a href="${getGoogleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:3px 7px;background:#eef2ff;color:#4338ca;border-radius:5px;text-decoration:none;">🗺️ Google Maps</a>
-              <a href="${getAppleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:3px 7px;background:#f1f5f9;color:#1e293b;border-radius:5px;text-decoration:none;">🍎 Apple Maps</a>
+              <a href="${getGoogleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 8px;background:#eef2ff;color:#4338ca;border-radius:5px;text-decoration:none;">🗺️ Google Maps</a>
+              <a href="${getAppleMapsUrl(p.title, p.address)}" target="_blank" rel="noopener" style="font-size:11px;font-weight:700;padding:4px 8px;background:#f1f5f9;color:#1e293b;border-radius:5px;text-decoration:none;">🍎 Apple Maps</a>
+              <button type="button" class="popup-taxi-btn" data-pinid="${p.id}" style="font-size:11px;font-weight:700;padding:4px 8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;">🚕 出租车卡</button>
             </div>
           </div>
         `;
 
         const marker = L.marker([p.lat, p.lng], { icon }).addTo(leafletMap).bindPopup(popupHtml);
+        marker.on("click", () => {
+          activePinId = p.id;
+          document.querySelectorAll(".map-pin-item").forEach((el) => {
+            el.classList.toggle("active-pin", el.dataset.pinid === p.id);
+          });
+        });
         leafletMarkers[p.id] = { marker, pin: p };
+      });
+
+      // Delegate popup taxi card button clicks immediately (works even during flyTo transitions)
+      mapEl.addEventListener("click", (e) => {
+        const taxiBtn = e.target.closest(".popup-taxi-btn");
+        if (!taxiBtn) return;
+        e.stopPropagation();
+        const entry = leafletMarkers[taxiBtn.dataset.pinid];
+        if (entry && entry.pin) {
+          const p = entry.pin;
+          openStaffCard(
+            `${p.taxiText}（住所：${p.address}）`,
+            `司机您好，麻烦去 ${p.title}（${p.address}）。`,
+            p.badge,
+            p.audioKey
+          );
+        }
       });
 
       // Draw route polyline connecting the 7 stays in chronological order
@@ -1352,19 +1667,23 @@
       ];
       L.polyline(routeCoords, {
         color: "#4f46e5",
-        weight: 3,
-        opacity: 0.65,
-        dashArray: "6, 8"
+        weight: 3.5,
+        opacity: 0.78,
+        dashArray: "7, 7"
       }).addTo(leafletMap);
     }
 
     setTimeout(() => {
       if (leafletMap) leafletMap.invalidateSize();
-    }, 120);
+    }, 150);
   }
 
   function focusSinglePin(pinId) {
     if (!leafletMap || !leafletMarkers[pinId]) return;
+    activePinId = pinId;
+    document.querySelectorAll(".map-pin-item").forEach((el) => {
+      el.classList.toggle("active-pin", el.dataset.pinid === pinId);
+    });
     const { marker, pin } = leafletMarkers[pinId];
     leafletMap.flyTo([pin.lat, pin.lng], 16, { duration: 0.7 });
     marker.openPopup();
@@ -1733,21 +2052,31 @@
     document.body.classList.toggle("practice-mode", state.practiceMode);
     document.body.classList.toggle("dark-mode", state.darkMode);
 
-    // Sync Primary App Mode (Itinerary & Map vs Phrasebook)
+    // Sync all 5 Primary App Modes
     const itinView = document.getElementById("itinerary-view-container");
     const phraseView = document.getElementById("phrasebook-view-container");
+    const verbsView = document.getElementById("verbs-view-container");
+    const grammarView = document.getElementById("grammar-view-container");
+    const practiceView = document.getElementById("practice-view-container");
     const phraseToolbar = document.getElementById("phrasebook-toolbar-row");
     const toolbarCollapsible = document.getElementById("toolbar-collapsible");
+    const legTabs = document.getElementById("leg-tabs-container");
+    const globalDisplayBar = document.getElementById("global-display-bar");
 
-    const isItin = state.appMode === "itinerary";
-    if (itinView) itinView.style.display = isItin ? "flex" : "none";
-    if (phraseView) phraseView.style.display = isItin ? "none" : "grid";
-    if (phraseToolbar) phraseToolbar.style.display = isItin ? "none" : "flex";
-    if (toolbarCollapsible && isItin) toolbarCollapsible.style.display = "none";
-    else if (toolbarCollapsible && !isItin) toolbarCollapsible.style.display = "";
+    const mode = state.appMode;
+    if (itinView) itinView.style.display = mode === "itinerary" ? "flex" : "none";
+    if (phraseView) phraseView.style.display = mode === "phrasebook" ? "grid" : "none";
+    if (verbsView) verbsView.style.display = mode === "verbs" ? "flex" : "none";
+    if (grammarView) grammarView.style.display = mode === "grammar" ? "flex" : "none";
+    if (practiceView) practiceView.style.display = mode === "practice" ? "flex" : "none";
+
+    if (phraseToolbar) phraseToolbar.style.display = mode === "phrasebook" ? "flex" : "none";
+    if (toolbarCollapsible) toolbarCollapsible.style.display = mode === "phrasebook" ? "" : "none";
+    if (legTabs) legTabs.style.display = mode === "itinerary" || mode === "phrasebook" ? "flex" : "none";
+    if (globalDisplayBar) globalDisplayBar.style.display = "flex";
 
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.appmode === state.appMode);
+      btn.classList.toggle("active", btn.dataset.appmode === mode);
     });
 
     const setChip = (id, active, cls = "active") => {
@@ -1766,21 +2095,57 @@
     });
   }
 
+  function switchAppMode(newMode) {
+    state.appMode = newMode;
+    renderAll();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function renderAll() {
     syncToolbarUI();
-    renderLegTabs();
+    updateHeaderStreak();
+    if (state.appMode === "itinerary" || state.appMode === "phrasebook") {
+      renderLegTabs();
+    }
     if (state.appMode === "itinerary") {
       renderItineraryView();
-    } else {
+    } else if (state.appMode === "phrasebook") {
       const filtered = getFilteredModules();
       renderSidebar(filtered);
       renderModules(filtered);
+    } else if (window.JP_LEARNING) {
+      window.JP_LEARNING.renderMode(state.appMode);
     }
   }
+
+  // Expose shared bridge for learning.js (Verbs, Grammar, Practice & SRS Lab)
+  window.JP_APP = {
+    state,
+    saveUserState,
+    savePrefs,
+    recordStudyActivity,
+    updateHeaderStreak,
+    speakJapanese,
+    stopAllAudio,
+    formatRuby,
+    stripFurigana,
+    escapeHtml,
+    showToast,
+    openStaffCard,
+    openModalHtml,
+    closeModal,
+    openToolboxModal,
+    getEffectiveModules,
+    toggleStar,
+    toggleMastered,
+    renderAll,
+    switchAppMode
+  };
 
   // Initialize App
   window.addEventListener("DOMContentLoaded", () => {
     checkIncomingSyncHash();
+    updateHeaderStreak();
 
     const searchInput = document.getElementById("search-input");
     const searchClear = document.getElementById("search-clear");
@@ -1812,6 +2177,7 @@
       if (el) {
         el.onclick = () => {
           state[key] = !state[key];
+          savePrefs();
           renderAll();
         };
       }
@@ -1828,6 +2194,9 @@
     const btnGinza = document.getElementById("btn-open-ginza");
     if (btnGinza) btnGinza.onclick = openGinzaVault;
 
+    const btnToolbox = document.getElementById("btn-open-toolbox");
+    if (btnToolbox) btnToolbox.onclick = () => openToolboxModal("adjectives");
+
     const btnAddPhrase = document.getElementById("btn-add-phrase");
     if (btnAddPhrase) btnAddPhrase.onclick = () => openPhraseEditorModal(null);
 
@@ -1843,7 +2212,13 @@
       };
     }
 
-    // Bind Top-Level App Mode Switcher (Itinerary & Map vs Phrasebook)
+    const headerStreak = document.getElementById("header-streak-pill");
+    if (headerStreak) {
+      headerStreak.style.cursor = "pointer";
+      headerStreak.onclick = () => switchAppMode("practice");
+    }
+
+    // Bind Top-Level App Mode Switcher (5 Modes)
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
       btn.onclick = () => {
         state.appMode = btn.dataset.appmode;
@@ -1860,13 +2235,26 @@
       };
     });
 
+    // Bind Map Tile Layer Switcher Pills
+    document.querySelectorAll("[data-maplayer]").forEach((btn) => {
+      btn.onclick = () => {
+        switchMapTileLayer(btn.dataset.maplayer);
+      };
+    });
+
+    window.addEventListener("resize", () => {
+      if (leafletMap && state.appMode === "itinerary") {
+        leafletMap.invalidateSize();
+      }
+    });
+
     // Mobile Trip Info Drawer Toggle
     const btnToggleTripInfo = document.getElementById("btn-toggle-trip-info");
     const heroDetailsDrawer = document.getElementById("hero-details-drawer");
     if (btnToggleTripInfo && heroDetailsDrawer) {
       btnToggleTripInfo.onclick = () => {
         const isOpen = heroDetailsDrawer.classList.toggle("open");
-        btnToggleTripInfo.textContent = isOpen ? "🔼 收起家庭行程简介" : "ℹ️ 行程简介";
+        btnToggleTripInfo.textContent = isOpen ? "🔼 收起家庭行程简介" : "ℹ️ 家庭与行程 ▾";
       };
     }
 

@@ -1,15 +1,21 @@
-const CACHE_NAME = "japan-family-phrasebook-v6";
+const CACHE_NAME = "japan-family-phrasebook-v7";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=6",
-  "./app.js?v=6",
-  "./manifest.json?v=6",
-  "./data/itinerary.js?v=6",
-  "./data/modules_1_to_6.js?v=6",
-  "./data/modules_7_to_12.js?v=6",
-  "./data/modules_13_to_18.js?v=6",
-  "./data/audio_manifest.js?v=6"
+  "./styles.css?v=7",
+  "./app.js?v=7",
+  "./learning.js?v=7",
+  "./manifest.json?v=7",
+  "./vendor/leaflet/leaflet.css?v=7",
+  "./vendor/leaflet/leaflet.js?v=7",
+  "./data/itinerary.js?v=7",
+  "./data/modules_1_to_6.js?v=7",
+  "./data/modules_7_to_12.js?v=7",
+  "./data/modules_13_to_18.js?v=7",
+  "./data/audio_manifest.js?v=7",
+  "./data/verbs_top200.js?v=7",
+  "./data/grammar_n5_n3.js?v=7",
+  "./data/learning_extras.js?v=7"
 ];
 
 self.addEventListener("install", (event) => {
@@ -43,12 +49,22 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
+  // Never intercept cross-origin requests (map tiles, external CDNs, QR API)
+  try {
+    const reqUrl = new URL(req.url);
+    if (reqUrl.origin !== self.location.origin) {
+      return;
+    }
+  } catch (e) {
+    return;
+  }
+
   // Let browser handle MP3 audio & byte-range requests natively
   if (req.url.includes(".mp3") || req.headers.has("range")) {
     return;
   }
 
-  // Network-first for HTML/JS/CSS with offline fallback
+  // Network-first for same-origin HTML/JS/CSS/Data with offline cache fallback
   event.respondWith(
     fetch(req)
       .then((res) => {
@@ -58,6 +74,9 @@ self.addEventListener("fetch", (event) => {
         }
         return res;
       })
-      .catch(() => caches.match(req, { ignoreSearch: true }))
+      .catch(async () => {
+        const cached = await caches.match(req, { ignoreSearch: true });
+        return cached || new Response("Offline", { status: 503, statusText: "Offline" });
+      })
   );
 });

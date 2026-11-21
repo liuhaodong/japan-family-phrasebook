@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 import edge_tts
 
-PROJECT_DIR = Path("/Users/haodongl/Documents/projects/japan-family-phrasebook")
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 AUDIO_DIR = PROJECT_DIR / "audio"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)

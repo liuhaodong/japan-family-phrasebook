@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <title>日本家庭35晚长假 · 行程地图 & 全场景日语手册 (2026.12.5 – 2027.1.10)</title>
-  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行可视化行程地图与双人对话日语手册 Web App" />
+  <title>日本家庭35晚长假 · 行程地图 & 全方位日语学习手册 (2026.12.5 – 2027.1.10)</title>
+  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行可视化行程地图、双人对话手册、高频200动词、N5-N3核心语法与交互式闪卡练习 Web App" />
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=6" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-  <link rel="stylesheet" href="styles.css?v=6" />
+  <link rel="manifest" href="manifest.json?v=7" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=7" />
+  <link rel="stylesheet" href="styles.css?v=7" />
 </head>
 <body>
   <!-- Compact Top Header -->
@@ -18,7 +18,8 @@
     <div class="hero-container">
       <div class="hero-top">
         <div class="hero-brand">
-          <h1 class="hero-title">🗾 日本家庭35晚旅行手册</h1>
+          <h1 class="hero-title">🗾 日本家庭旅行 & 日语学习手册</h1>
+          <span class="streak-pill" id="header-streak-pill" title="每日学习打卡连胜与掌握进度">🔥 0天连学</span>
           <button type="button" class="hero-info-toggle" id="btn-toggle-trip-info" title="展开/收起行程与家庭信息">
             ℹ️ 家庭与行程 ▾
           </button>
@@ -27,13 +28,14 @@
         <div class="hero-actions">
           <button type="button" class="btn-vault gold" id="btn-open-hotels">📍 7家酒店&打车卡</button>
           <button type="button" class="btn-vault" id="btn-open-ginza">🥂 银座5场预约</button>
+          <button type="button" class="btn-vault" id="btn-open-toolbox">📘 速查表</button>
           <button type="button" class="btn-vault" id="btn-add-phrase">➕ 新增句子</button>
           <button type="button" class="btn-vault" id="btn-share-sync">📲 同步</button>
           <button type="button" class="btn-vault" id="btn-filter-starred">⭐ 收藏</button>
         </div>
       </div>
 
-      <!-- Collapsible Trip Details (Hidden by default on mobile to save screen space) -->
+      <!-- Collapsible Trip Details -->
       <div class="hero-details" id="hero-details-drawer">
         <p class="hero-subtitle">
           2026.12.5 – 2027.1.10 (35晚) · 成田 · 东京高轮 · 轻井泽滑雪 · 保育园周 & 银座7周年午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町跨年
@@ -51,44 +53,61 @@
   <!-- Compact Sticky Filter & Mode Switcher Deck -->
   <section class="sticky-controls" id="sticky-controls" aria-label="主模式切换与筛选工具栏">
     <div class="controls-inner">
-      <!-- Top Row: Primary Mode Switcher (Itinerary & Map vs Phrasebook) + Phrasebook Search -->
+      <!-- Top Row: 5 Primary Mode Switcher Tabs + Global Display Mini-Toggles -->
       <div class="mode-and-search-row">
-        <div class="app-mode-switcher" role="tablist" aria-label="切换行程地图或日语手册">
-          <button type="button" class="mode-tab active" id="mode-btn-itinerary" data-appmode="itinerary">
-            📅 行程与地图
+        <div class="app-mode-switcher" role="tablist" aria-label="切换主要功能模块">
+          <button type="button" class="mode-tab active" id="mode-btn-itinerary" data-appmode="itinerary" role="tab">
+            📅 行程地图
           </button>
-          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook">
-            🗣️ 场景日语 (18模块)
+          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook" role="tab">
+            🗣️ 场景日语
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-verbs" data-appmode="verbs" role="tab">
+            ⚡ 动词200
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-grammar" data-appmode="grammar" role="tab">
+            📖 语法 N5–N3
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab">
+            🎯 实战练习
           </button>
         </div>
 
-        <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button (Visible in Phrasebook mode) -->
-        <div class="search-and-drawer-row" id="phrasebook-toolbar-row">
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input
-              type="text"
-              id="search-input"
-              placeholder="搜日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
-            />
-            <button type="button" class="search-clear" id="search-clear" title="清空搜索">✕</button>
-          </div>
-
-          <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
-            <option value="">📑 跳至模块...</option>
-          </select>
-
-          <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
-            ⚙️ 筛选/显示
-          </button>
+        <!-- Global Learning Display Chips (Always accessible on desktop & compact on mobile) -->
+        <div class="global-display-bar" id="global-display-bar">
+          <button type="button" class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
+          <button type="button" class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
+          <button type="button" class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
+          <button type="button" class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
         </div>
       </div>
 
-      <!-- Row 2: Slim Horizontal Trip Leg Bar (Works for BOTH Itinerary Map zoom & Phrasebook filtering!) -->
+      <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button (Visible in Phrasebook mode) -->
+      <div class="search-and-drawer-row" id="phrasebook-toolbar-row" style="display:none;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="搜日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
+          />
+          <button type="button" class="search-clear" id="search-clear" title="清空搜索">✕</button>
+        </div>
+
+        <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
+          <option value="">📑 跳至模块...</option>
+        </select>
+
+        <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
+          ⚙️ 筛选
+        </button>
+      </div>
+
+      <!-- Row 2: Slim Horizontal Trip Leg Bar (Visible in Itinerary & Phrasebook modes) -->
       <div class="leg-tabs" id="leg-tabs-container"></div>
 
       <!-- Collapsible Toggles Drawer (For Phrasebook mode) -->
-      <div class="toolbar-collapsible" id="toolbar-collapsible">
+      <div class="toolbar-collapsible" id="toolbar-collapsible" style="display:none;">
         <div class="toggle-group">
           <button type="button" class="toggle-chip active" data-viewmode="all">📚 全部</button>
           <button type="button" class="toggle-chip" data-viewmode="sentences">🗣️ 仅句子</button>
@@ -96,13 +115,8 @@
           <button type="button" class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
           <button type="button" class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
         </div>
-
         <div class="toggle-group">
-          <button type="button" class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
-          <button type="button" class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
-          <button type="button" class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
           <button type="button" class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词</button>
-          <button type="button" class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
         </div>
       </div>
     </div>
@@ -120,14 +134,21 @@
       <div class="itin-map-header">
         <div>
           <h2 class="itin-section-title">🗺️ 35晚全行程互动地图 (酒店 · 机场车站 · 银座5场纪念日午餐)</h2>
-          <p class="itin-section-sub">点击上方行程阶段 (Leg 1–6) 或下方区域按钮，地图会自动飞行聚焦并展示路线；点击任意地标可一键打开 Google Maps 或出租车大字卡</p>
+          <p class="itin-section-sub">点击上方行程阶段 (Leg 1–6) 或下方区域按钮，地图自动飞行聚焦并展示路线；右上角可自由切换双语街道 / 日本国土地理院 / 卫星实景图层</p>
         </div>
-        <div class="map-region-pills" id="map-region-pills">
-          <button type="button" class="map-pill active" data-mapregion="all">🗾 日本全景</button>
-          <button type="button" class="map-pill" data-mapregion="tokyo">🗼 东京 & 成田</button>
-          <button type="button" class="map-pill" data-mapregion="ginza">🍣 银座5大餐厅</button>
-          <button type="button" class="map-pill" data-mapregion="karuizawa">⛷️ 轻井泽滑雪</button>
-          <button type="button" class="map-pill" data-mapregion="kyushu">♨️ 福冈 & 由布院</button>
+        <div class="map-controls-stack">
+          <div class="map-region-pills" id="map-region-pills">
+            <button type="button" class="map-pill active" data-mapregion="all">🗾 日本全景</button>
+            <button type="button" class="map-pill" data-mapregion="tokyo">🗼 东京 & 成田</button>
+            <button type="button" class="map-pill" data-mapregion="ginza">🍣 银座5大餐厅</button>
+            <button type="button" class="map-pill" data-mapregion="karuizawa">⛷️ 轻井泽滑雪</button>
+            <button type="button" class="map-pill" data-mapregion="kyushu">♨️ 福冈 & 由布院</button>
+          </div>
+          <div class="map-layer-pills" id="map-layer-pills" aria-label="切换地图底图图层">
+            <button type="button" class="map-layer-pill active" data-maplayer="esri_street">🗺️ 双语街道</button>
+            <button type="button" class="map-layer-pill" data-maplayer="gsi_pale">🇯🇵 日本国土地理院</button>
+            <button type="button" class="map-layer-pill" data-maplayer="esri_sat">🛰️ 卫星实景</button>
+          </div>
         </div>
       </div>
 
@@ -199,13 +220,27 @@
 
     <!-- Right Content: Modules, Phrases & Roleplay Dialogues -->
     <div class="main-content-column" style="min-width:0;">
-      <!-- Context Banner for Selected Leg (Scrolls with content so sticky header never jumps/flickers) -->
       <div class="leg-context-banner" id="leg-context-banner"></div>
       <div id="modules-main-container"></div>
     </div>
   </main>
 
-  <!-- Fullscreen Modal ("Show to Staff" & Hotel/Ginza Vaults) -->
+  <!-- =================================================================== -->
+  <!-- VIEW 3: TOP 200 HIGH-FREQUENCY JAPANESE VERBS & CONJUGATIONS        -->
+  <!-- =================================================================== -->
+  <section id="verbs-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 4: JAPANESE GRAMMAR GUIDE (GROUPED BY N5 / N4 / N3)            -->
+  <!-- =================================================================== -->
+  <section id="grammar-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 5: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
+  <!-- =================================================================== -->
+  <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- Fullscreen Modal ("Show to Staff", Vaults, Quick Reference Toolbox, Conjugation Details) -->
   <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true">
     <div class="modal-card">
       <button type="button" class="modal-close" id="modal-close-btn" title="关闭">✕</button>
@@ -217,13 +252,17 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script src="data/itinerary.js?v=6"></script>
-  <script src="data/modules_1_to_6.js?v=6"></script>
-  <script src="data/modules_7_to_12.js?v=6"></script>
-  <script src="data/modules_13_to_18.js?v=6"></script>
-  <script src="data/audio_manifest.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <script src="vendor/leaflet/leaflet.js?v=7"></script>
+  <script src="data/itinerary.js?v=7"></script>
+  <script src="data/modules_1_to_6.js?v=7"></script>
+  <script src="data/modules_7_to_12.js?v=7"></script>
+  <script src="data/modules_13_to_18.js?v=7"></script>
+  <script src="data/audio_manifest.js?v=7"></script>
+  <script src="data/verbs_top200.js?v=7"></script>
+  <script src="data/grammar_n5_n3.js?v=7"></script>
+  <script src="data/learning_extras.js?v=7"></script>
+  <script src="app.js?v=7"></script>
+  <script src="learning.js?v=7"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -232,7 +271,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=6").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=7").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }
