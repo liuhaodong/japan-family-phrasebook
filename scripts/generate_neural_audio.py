@@ -15,7 +15,7 @@ LEARN_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def parse_js_data(filepath: Path):
-    """Parse JS window.VAR = ... data files reliably using Node (fallback to Python regex)."""
+    """Parse JS window.VAR = ... data files reliably using Node, JavaScriptCore, or JSON/regex fallback."""
     try:
         script = (
             "global.window = {};"
@@ -32,26 +32,48 @@ def parse_js_data(filepath: Path):
         )
         return json.loads(res.stdout)
     except Exception:
-        text = filepath.read_text(encoding="utf-8")
-        idx = min(x for x in (text.find("["), text.find("{")) if x != -1)
-        r_idx = max(text.rfind("]"), text.rfind("}"))
-        body = text[idx : r_idx + 1]
+        pass
+
+    jsc_bin = "/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc"
+    if Path(jsc_bin).exists():
         try:
-            return json.loads(body)
+            script = (
+                "var window = {};"
+                f"load({json.dumps(str(filepath))});"
+                "var keys = Object.keys(window);"
+                "print(JSON.stringify(window[keys[0]]));"
+            )
+            res = subprocess.run(
+                [jsc_bin, "-e", script],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                check=True,
+            )
+            return json.loads(res.stdout)
         except Exception:
             pass
-        lines = []
-        for line in body.splitlines():
-            stripped = line.lstrip()
-            if stripped.startswith("//"):
-                continue
-            line = re.sub(r'(?<=[,"\]\}])\s*//.*$', "", line)
-            lines.append(line)
-        cleaned = "\n".join(lines)
-        cleaned = re.sub(r'(?m)^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
-        cleaned = re.sub(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1 "\2":', cleaned)
-        cleaned = re.sub(r',(\s*[\}\]])', r"\1", cleaned)
-        return json.loads(cleaned)
+
+    text = filepath.read_text(encoding="utf-8")
+    idx = min(x for x in (text.find("["), text.find("{")) if x != -1)
+    r_idx = max(text.rfind("]"), text.rfind("}"))
+    body = text[idx : r_idx + 1]
+    try:
+        return json.loads(body)
+    except Exception:
+        pass
+    lines = []
+    for line in body.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("//"):
+            continue
+        line = re.sub(r'(?<=[,"\]\}])\s*//.*$', "", line)
+        lines.append(line)
+    cleaned = "\n".join(lines)
+    cleaned = re.sub(r'(?m)^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
+    cleaned = re.sub(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1 "\2":', cleaned)
+    cleaned = re.sub(r',(\s*[\}\]])', r"\1", cleaned)
+    return json.loads(cleaned)
 
 
 def clean_spoken_japanese(raw: str) -> str:
@@ -73,9 +95,10 @@ def clean_spoken_japanese(raw: str) -> str:
     # 4. Remove full-width square bracket options/notes ［...］
     s = re.sub(r"［[^］]*］", "", s)
 
-    # 5. Remove parenthetical notes starting with ※
+    # 5. Remove parenthetical notes starting with ※ or [自他]：
     s = re.sub(r"（※[^）]*）", "", s)
     s = re.sub(r"\(※[^\)]*\)", "", s)
+    s = re.sub(r"（[自他]：[^）]*）", "", s)
 
     # 6. Remove furigana in （...） / (...)
     s = re.sub(r"（[\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+）", "", s)
@@ -438,10 +461,19 @@ async def main():
     )
     (DATA_DIR / "audio_learning_manifest.js").write_text(learn_manifest_js, encoding="utf-8")
 
+    # Remove orphaned MP3 clips under audio/learn/ no longer referenced by any manifest entry
+    referenced_rel_paths = {v[0] for v in valid_lookup.values()}
+    pruned_orphans = 0
+    for mp3_file in LEARN_AUDIO_DIR.rglob("*.mp3"):
+        rel = mp3_file.relative_to(PROJECT_DIR).as_posix()
+        if rel not in referenced_rel_paths:
+            mp3_file.unlink()
+            pruned_orphans += 1
+
     total_bytes = sum(f.stat().st_size for f in LEARN_AUDIO_DIR.rglob("*.mp3"))
     print(
         f"Done! Phrasebook={len(manifest)} clips (failed={fail1}) | "
-        f"Learning={len(valid_lookup)} keys / {len(learn_jobs)} MP3s ({total_bytes / 1024 / 1024:.2f} MB, failed={fail2})"
+        f"Learning={len(valid_lookup)} keys / {len(learn_jobs)} MP3s ({total_bytes / 1024 / 1024:.2f} MB, failed={fail2}, pruned_orphans={pruned_orphans})"
     )
 
 

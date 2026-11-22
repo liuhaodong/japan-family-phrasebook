@@ -567,9 +567,9 @@ window.PHRASE_MODULES_1_6 = [
           {
             id: "m3-s2-6",
             tag: "Suica 卡刷不过/余额不足",
-            jp: "すみません、Suica（スイカ）でエラーが出（で）てしまいました。どこでチャージ（精算（せいさん））できますか？",
-            romaji: "Sumimasen, Suica de eraa ga dete shimaimashita. Doko de chaaji (seisan) dekimasu ka?",
-            cn: "不好意思，刷 Suica 卡报错了。请问在哪里充值（补票精算）？"
+            jp: "すみません、Suica（スイカ）でエラーが出（で）てしまいました。どこでチャージ［／ 精算（せいさん）］できますか？",
+            romaji: "Sumimasen, Suica de eraa ga dete shimaimashita. Doko de chaaji [ / seisan] dekimasu ka?",
+            cn: "不好意思，刷 Suica 卡报错了。请问在哪里充值［／ 补票精算］？"
           }
         ]
       },
@@ -740,7 +740,7 @@ window.PHRASE_MODULES_1_6 = [
             jp: "チェックアウトをお願（ねが）いします。実（じつ）は12月12日（じゅうにがつじゅうににち）から、同（おな）じ敷地内（しきちない）の「グランドプリンスホテル新高輪（しんたかなわ）」に宿泊（しゅくはく）する予約（よやく）があります。今日（きょう）から3日間（みっかかん）だけ軽井沢（かるいざわ）へ行（い）くので、この大（おお）きいスーツケース2つを新高輪（しんたかなわ）の方（ほう）へ転送（てんそう）して、12日（じゅうににち）まで預（あず）かっていただけますか？",
             romaji: "Chekkuauto wo onegai shimasu. Jitsu wa juunigatsu juuninichi kara, onaji shikichinai no 'Gurando Purinsu Hoteru Shin-Takanawa' ni shukuhaku suru yoyaku ga arimasu. Kyou kara mikkakan dake Karuizawa e iku node, kono ookii suutsukeesu futatsu wo Shin-Takanawa no hou e tensou shite, juuninichi made azukatte itadakemasu ka?",
             cn: "麻烦办退房。其实我们预订了12月12日起住同一园区的“新高轮格兰王子大饭店”。因为从今天起只去轻井泽3天，请问能帮我们把这2个大行李箱转送到新高轮那边，寄存到12号吗？",
-            tip: "高轮王子三家酒店共享日式庭园与礼宾网，礼宾部（ベルデスク）可直接内部转运寄存，还可直接点击本卡片的「📱 出示给店员」功能！",
+            tip: "高轮王子三家酒店共享日式庭园与礼宾网，礼宾部（ベルデスク）可直接内部转运寄存，可对照本页日语直接向礼宾部说明！",
             replies: [
               { jp: "かしこまりました。新高輪（しんたかなわ）のご予約（よやく）を確認（かくにん）いたしますので、お名前（なまえ）をいただけますか？お荷物（にもつ）は12日（じゅうににち）まで新高輪（しんたかなわ）にてお預（あず）かりいたします。", cn: "好的没问题。我帮您核对一下新高轮的预订，请问预订姓名是？您的行李会帮您转送到新高轮并保管到12号。" }
             ]
@@ -880,7 +880,7 @@ window.PHRASE_MODULES_1_6 = [
           {
             id: "m5-s1-1",
             tag: "租双板全套与头盔雪镜",
-            jp: "大人（おとな）2人（ふたり）と6歳（ろくさい）の子（こ）ども1人（ひとり）、スキーの3点セット［板（いた）・ブーツ・ストック］と、ウェア、ヘルメットを3日間（みっかかん）レンタルしたいです。",
+            jp: "大人（おとな）2人（ふたり）と6歳（ろくさい）の子（こ）ども1人（ひとり）、スキーの3点（さんてん）セット［板（いた）・ブーツ・ストック］と、ウェア、ヘルメットを3日間（みっかかん）レンタルしたいです。",
             romaji: "Otona futari to rokusai no kodomo hitori, sukii no san-tensetto [ita, buutsu, sutokku] to, wea, herumetto wo mikkakan rentaru shitai desu.",
             cn: "2个大人和1个6岁儿童，想租3天的双板滑雪三件套［雪板、雪鞋、雪杖］，以及雪服和头盔。"
           },
@@ -1008,7 +1008,7 @@ window.PHRASE_MODULES_1_6 = [
           {
             speaker: "us",
             speakerName: "浩东 / Sherry",
-            jp: "はい、ほぼ初（はじ）めてです。「止（と）まる（ボーゲン）」から教（おし）えていただけると助（たす）かります。終（お）わりは12時（じゅうにじ）にここへお迎（むか）えに来（く）ればいいですか？",
+            jp: "はい、ほぼ初（はじ）めてです。「ボーゲンで止（と）まる練習（れんしゅう）」から教（おし）えていただけると助（たす）かります。終（お）わりは12時（じゅうにじ）にここへお迎（むか）えに来（く）ればいいですか？",
             romaji: "Hai, hobo hajimete desu. 'Tomaru (boogen)' kara oshiete itadakeru to tasukarimasu. Owari wa juuniji ni koko e omukae ni kureba ii desu ka?",
             cn: "是的，基本是第一次。如果能从“犁式刹车（Bogen）”开始教她就太好了。结束时是12点来这里接她对吗？"
           },
@@ -1105,7 +1105,7 @@ window.PHRASE_MODULES_1_6 = [
           {
             id: "m6-s2-3",
             tag: "最后一天感谢老师",
-            jp: "1週間（いっしゅうかん）、本当（ほんとう）にありがとうございました！先生方（せんせいがた）のおかげで、娘（むすめ）たちも毎日（まいにち）楽しく通（かよ）えましたし、私（わたし）たち夫婦（ふうふ）も素晴（すば）らしい結婚記念日（けっこんきねんび）を過（す）ごせました！",
+            jp: "1週間（いっしゅうかん）、本当（ほんとう）にありがとうございました！先生方（せんせいがた）のおかげで、娘（むすめ）たちも毎日（まいにち）楽（たの）しく通（かよ）えましたし、私（わたし）たち夫婦（ふうふ）も素晴（すば）らしい結婚記念日（けっこんきねんび）を過（す）ごせました！",
             romaji: "Isshuukan, hontou ni arigatou gozaimashita! Senseigata no okage de, musumetachi mo mainichi tanoshiku kayoemashita shi, watashitachi fuufu mo subarashii kekkon kinenbi wo sugosemashita!",
             cn: "这一周真的非常感谢你们！托各位老师的福，女儿们每天都很开心地来上学，我们夫妻俩也度过了美好的结婚纪念日！"
           }

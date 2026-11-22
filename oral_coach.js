@@ -292,7 +292,20 @@
     "枚": "まい",
     "杯": "はい",
     "冊": "さつ",
-    "台": "だい"
+    "台": "だい",
+    "suica": "すいか",
+    "wi-fi": "わいふぁい",
+    "wifi": "わいふぁい",
+    "google": "ぐーぐる",
+    "apple pay": "あっぷるぺい",
+    "apple": "あっぷる",
+    "pay": "ぺい",
+    "line": "らいん",
+    "atm": "えーてぃーえむ",
+    "qr": "きゅーあーる",
+    "visa": "びざ",
+    "esim": "いーしむ",
+    "airbnb": "えあびー"
   };
 
   const COUNTER_COMBO_NUMBERS = [
@@ -418,6 +431,7 @@
       .replace(/［[^］]*］/g, "")
       .replace(/（※[^）]*）/g, "")
       .replace(/\(※[^\)]*\)/g, "")
+      .replace(/（[自他]：[^）]*）/g, "")
       .replace(/→/g, "。")
       .replace(/〇〇/g, "まるまる")
       .replace(/\s+/g, " ")
@@ -436,6 +450,9 @@
       const yomi = katakanaToHiragana(m[2].replace(/・/g, ""));
       if (k && yomi && !targetMap[k]) {
         targetMap[k] = yomi;
+      }
+      if (k && yomi && /[A-Za-z]/.test(k) && !targetMap[k.toLowerCase()]) {
+        targetMap[k.toLowerCase()] = yomi;
       }
     }
   }
@@ -589,7 +606,7 @@
     collectRubyPairsFromText(cleaned, localKanjiMap);
     ensureCorpusKanjiMap();
 
-    const rubyOrTokenRe = /([一-龯々ヶ0-9０-９a-zA-Z]+)\（([\u3040-\u309F\u30A0-\u30FFー・]+)\）|([、。！？!?\s・「」『』()（）/／]+)|([^一-龯々ヶ0-9０-９a-zA-Z、。！？!?\s・「」『』()（）/／]+)|([一-龯々ヶ0-9０-９a-zA-Z]+)/g;
+    const rubyOrTokenRe = /([一-龯々ヶ0-9０-９a-zA-Z]+(?:-[a-zA-Z0-9]+)*)\（([\u3040-\u309F\u30A0-\u30FFー・]+)\）|([、。！？!?\s・「」『』()（）/／]+)|([^一-龯々ヶ0-9０-９a-zA-Z、。！？!?\s・「」『』()（）/／]+)|([一-龯々ヶ0-9０-９a-zA-Z]+(?:-[a-zA-Z0-9]+)*)/g;
     const rawUnits = [];
     let m;
     while ((m = rubyOrTokenRe.exec(cleaned)) !== null) {
@@ -1688,6 +1705,7 @@
       mods.forEach((mod) => {
         (mod.sections || []).forEach((sec) => {
           (sec.items || []).forEach((it) => {
+            if (it.id === "m14-s1-3") return;
             out.push({
               id: it.id,
               tag: `${mod.icon} ${it.tag || mod.number}`,
@@ -1704,11 +1722,11 @@
 
     if (deckName === "staff") {
       const list = (window.JP_LEARNING_EXTRAS && window.JP_LEARNING_EXTRAS.staffDecoder) || [];
-      return list.map((s) => ({
-        id: `oral-staff-${s.id}`,
+      return list.map((s, idx) => ({
+        id: `oral-${s.id || `staff-${idx + 1}`}`,
         tag: `🏪 ${s.scene} · 听问再答`,
         promptContextJp: s.hearJp,
-        promptContextCn: `店员提问：${s.hearCn}`,
+        promptContextCn: `店员提问：${s.hearCn || s.cn || ""}`,
         jp: s.replyJp,
         romaji: s.replyRomaji || "",
         cn: s.replyCn,
@@ -1761,12 +1779,12 @@
           id: `${x.id}-ex`,
           tag: `🟢 N5 · ${x.cat}`,
           jp: x.ex,
-          romaji: x.romaji || "",
+          romaji: x.exRomaji || "",
           cn: x.exCn,
           audioKey: null
         })),
-        ...(ex.contractions || []).map((c) => ({
-          id: `${c.id}-casual`,
+        ...(ex.contractions || []).map((c, idx) => ({
+          id: `${c.id || `con-${idx + 1}`}-casual`,
           tag: `💬 口语缩略 (${c.formal}→${c.casual})`,
           jp: c.exCasual,
           romaji: "",

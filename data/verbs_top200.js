@@ -80,10 +80,10 @@ window.JP_TOP_VERBS = [
         "cn": "接下来要做什么玩呢？"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "チェックインはもう済（す）ませたから、荷物（にもつ）だけ置（お）いとこう。",
-        "romaji": "Chekkuin wa mou sumaseta kara, nimotsu dake oitokou.",
-        "cn": "办理入住已经搞定了，咱们先把行李放着吧（〜ておこう→〜とこう）。"
+        "form": "意向形",
+        "jp": "明日（あした）の朝（あさ）ごはん、和食（わしょく）にしようか、洋食（ようしょく）にしようか？",
+        "romaji": "Ashita no asagohan, washoku ni shiyou ka, youshoku ni shiyou ka?",
+        "cn": "明天的早饭，咱们吃日式还是西式呢？"
       }
     ],
     "transitivity": "vt",
@@ -163,7 +163,7 @@ window.JP_TOP_VERBS = [
         "cn": "孩子们在公园里。"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "今日（きょう）は家（いえ）にだれもいません。",
         "romaji": "Kyou wa ie ni dare mo imasen.",
         "cn": "今天家里一个人都没有。"
@@ -252,7 +252,7 @@ window.JP_TOP_VERBS = [
         "cn": "车站附近有一家很好喝的咖啡馆。"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "今（いま）、現金（げんきん）が少（すこ）しもありません。",
         "romaji": "Ima, genkin ga sukoshi mo arimasen.",
         "cn": "我现在一点现金都没有。"
@@ -525,7 +525,7 @@ window.JP_TOP_VERBS = [
         "cn": "待会儿请到酒店来接我们。"
       },
       {
-        "form": "💬 口语缩略",
+        "form": "N3 口语",
         "jp": "あ、タクシーがやっと来（き）たっぽいよ！",
         "romaji": "A, takushii ga yatto kita ppoi yo!",
         "cn": "啊，出租车好像终于来了哦！"
@@ -875,10 +875,10 @@ window.JP_TOP_VERBS = [
         "cn": "这个用日语怎么说？"
       },
       {
-        "form": "て形",
-        "jp": "もう一度（いちど）ゆっくり言（い）っていただけますか？",
-        "romaji": "Mou ichido yukkuri itte itadakemasu ka?",
-        "cn": "能请您再慢一点说一遍吗？"
+        "form": "た形",
+        "jp": "お会計（かいけい）のときに「ごちそうさまでした」と言（い）いました。",
+        "romaji": "Okaikei no toki ni 'gochisousama deshita' to iimashita.",
+        "cn": "结账的时候说了“谢谢款待”。"
       },
       {
         "form": "💬 口语缩略",
@@ -1238,9 +1238,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 礼貌",
-        "jp": "すみません、こちらのクレジットカードは使（つか）えますか？",
-        "romaji": "Sumimasen, kochira no kurejitto kaado wa tsukaemasu ka?",
-        "cn": "不好意思，请问这张信用卡能用吗？"
+        "jp": "すみません、部屋（へや）のドライヤーを使（つか）ってもよろしいでしょうか？",
+        "romaji": "Sumimasen, heya no doraiyaa wo tsukatte mo yoroshii deshou ka?",
+        "cn": "不好意思，我可以使用房间里的吹风机吗？"
       }
     ],
     "transitivity": "vt",
@@ -1314,7 +1314,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
+        "form": "敬语",
         "jp": "少々（しょうしょう）お待（ま）ちください。",
         "romaji": "Shoushou omachi kudasai.",
         "cn": "请稍等一下。"
@@ -1327,7 +1327,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 使役被动",
-        "jp": "人気（にんき）店（てん）だったので、雨（あめ）の中（なか）30分（ぷん）も待（ま）たされました。",
+        "jp": "人気（にんき）店（てん）だったので、雨（あめ）の中（なか）30分（さんじゅっぷん）も待（ま）たされました。",
         "romaji": "Ninkiten datta node, ame no naka sanjuppun mo matasaremashita.",
         "cn": "因为是人气店，在雨里被硬生生等了30分钟。"
       }
@@ -1587,7 +1587,7 @@ window.JP_TOP_VERBS = [
         "cn": "好的，我完全明白了！"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "すみません、意味（いみ）がよく分（わ）かりません。",
         "romaji": "Sumimasen, imi ga yoku wakarimasen.",
         "cn": "抱歉，我不太明白意思。"
@@ -1676,7 +1676,7 @@ window.JP_TOP_VERBS = [
         "cn": "您知道这附近有好吃的店吗？"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "ごめんなさい、その場所（ばしょ）は知（し）りません。",
         "romaji": "Gomennasai, sono basho wa shirimasen.",
         "cn": "对不起，我不知道那个地方。"
@@ -2121,14 +2121,14 @@ window.JP_TOP_VERBS = [
         "cn": "我每天早上7点起床。"
       },
       {
-        "form": "ない形",
+        "form": "可能(否定)",
         "jp": "時差（じさ）ボケでなかなか起（お）きられませんでした。",
         "romaji": "Jisaboke de nakanaka okiraremasen deshita.",
         "cn": "因为倒时差怎么都起不来。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］今日（きょう）は7時（じ）に早（はや）く起（お）きられました。",
+        "jp": "［自］今日（きょう）は7時（しちじ）に早（はや）く起（お）きられました。",
         "romaji": "[Vi] Kyou wa shichiji ni hayaku okiraremashita.",
         "cn": "[自] 今天7点钟很早就能起来了（他动词：起こす）。"
       }
@@ -2217,7 +2217,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 使役被动",
-        "jp": "東京駅（とうきょうえき）の中（なか）で道（みち）に迷（まよ）って、15分（ふん）も歩（ある）かされました。",
+        "jp": "東京駅（とうきょうえき）の中（なか）で道（みち）に迷（まよ）って、15分（じゅうごふん）も歩（ある）かされました。",
         "romaji": "Toukyou-eki no naka de michi ni mayotte, juugofun mo arukasaremashita.",
         "cn": "在东京站里迷路了，被迫走了15分钟。"
       }
@@ -2294,8 +2294,8 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ない形",
-        "jp": "危（あぶ）ないから、廊下（ろうか）で走（はし）らないでね。",
-        "romaji": "Abunai kara, rouka de hashiranaide ne.",
+        "jp": "危（あぶ）ないから、廊下（ろうか）を走（はし）らないでね。",
+        "romaji": "Abunai kara, rouka wo hashiranaide ne.",
         "cn": "很危险，不要在走廊里跑哦。"
       },
       {
@@ -2305,10 +2305,10 @@ window.JP_TOP_VERBS = [
         "cn": "每周末我都会在公园跑步。"
       },
       {
-        "form": "N4 建议",
-        "jp": "床（ゆか）が滑（すべ）りやすいから、廊下（ろうか）を走（はし）らないでね。",
-        "romaji": "Yuka ga suberiyasui kara, rouka wo hashiranaide ne.",
-        "cn": "地板很滑，不要在走廊里跑哦。"
+        "form": "💬 口语缩略",
+        "jp": "電車（でんしゃ）に間（ま）に合（あ）うように駅（えき）まで走（はし）っちゃった！",
+        "romaji": "Densha ni ma ni au you ni eki made hashitchatta!",
+        "cn": "为了赶上电车一路跑到车站了！"
       }
     ],
     "transitivity": "vi",
@@ -2395,9 +2395,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］次（つぎ）の新幹線（しんかんせん）に乗（の）ります。",
-        "romaji": "[Vi] Tsugi no shinkansen ni norimasu.",
-        "cn": "[自] 我们乘坐下一班新干线（他动词：乗せる）。"
+        "jp": "［自］ホテルの前（まえ）から無料（むりょう）シャトルバスに乗（の）ります。",
+        "romaji": "[Vi] Hoteru no mae kara muryou shatoru basu ni norimasu.",
+        "cn": "[自] 从酒店门口乘坐免费接驳巴士（他动词：〜を乗せる）。"
       }
     ],
     "transitivity": "vi",
@@ -2477,16 +2477,16 @@ window.JP_TOP_VERBS = [
         "cn": "我们在下一站下车。"
       },
       {
-        "form": "て形",
+        "form": "ます形",
         "jp": "すみません、降（お）ります！",
         "romaji": "Sumimasen, orimasu!",
         "cn": "不好意思，我要下车！"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］次（つぎ）の駅（えき）で降（お）りますよ！",
-        "romaji": "[Vi] Tsugi no eki de orimasu yo!",
-        "cn": "[自] 下一站我们要下车了哦！（他动词：降ろす）。"
+        "jp": "［自］空港（くうこう）バスを降（お）りたら、すぐロビーが見（み）えますよ。",
+        "romaji": "[Vi] Kuukou basu wo oritara, sugu robii ga miemasu yo.",
+        "cn": "[自] 下了机场大巴就能直接看到大堂哦（他动词：〜を降ろす）。"
       }
     ],
     "transitivity": "vi",
@@ -2745,15 +2745,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "お店（みせ）は午前（ごぜん）10時（じゅうじ）にドアを開（あ）けます。",
-        "romaji": "Omise wa gozen juuji ni doa wo akemasu.",
-        "cn": "商店上午10点开门。"
+        "jp": "毎朝（まいあさ）起（お）きたら、まずカーテンを開（あ）けます。",
+        "romaji": "Maiasa okitara, mazu kaaten wo akemasu.",
+        "cn": "每天早上起床后先拉开窗帘。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］ちょっと暑（あつ）いので、窓（まど）を開（あ）けてもいいですか？",
-        "romaji": "[Vt] Chotto atsui node, mado wo akete mo ii desu ka?",
-        "cn": "[他] 有点热，我可以打开窗户吗？（自动词：開く が開く）"
+        "jp": "［他］お土産（みやげ）の箱（はこ）を一緒（いっしょ）に開（あ）けましょう！",
+        "romaji": "[Vt] Omiyage no hako wo issho ni akemashou!",
+        "cn": "[他] 咱们一起打开伴手礼的盒子吧（自动词：箱が開く）。"
       }
     ],
     "transitivity": "vt",
@@ -2834,9 +2834,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "出（で）かける前（まえ）に鍵（かぎ）をしっかり閉（し）めました。",
-        "romaji": "Dekakeru mae ni kagi wo shikkari shimemashita.",
-        "cn": "出门前我把门锁好了。"
+        "jp": "出（で）かける前（まえ）に窓（まど）をしっかり閉（し）めました。",
+        "romaji": "Dekakeru mae ni mado wo shikkari shimemashita.",
+        "cn": "出门前我把窗户严严实实关好了。"
       },
       {
         "form": "⇄ 自他对比",
@@ -3184,7 +3184,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "子どもたちと公園（こうえん）で遊（あそ）んでいます。",
+        "jp": "子（こ）どもたちと公園（こうえん）で遊（あそ）んでいます。",
         "romaji": "Kodomotachi to kouen de asonde imasu.",
         "cn": "正和孩子们在公园里玩。"
       },
@@ -3196,7 +3196,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 持续",
-        "jp": "子どもたちは雪（ゆき）の中（なか）でずっと楽（たの）しそうに遊（あそ）んでいます。",
+        "jp": "子（こ）どもたちは雪（ゆき）の中（なか）でずっと楽（たの）しそうに遊（あそ）んでいます。",
         "romaji": "Kodomotachi wa yuki no naka de zutto tanoshisou ni asonde imasu.",
         "cn": "孩子们一直在雪地里开心地玩着。"
       }
@@ -3450,20 +3450,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
-        "jp": "今（いま）、毎日（まいにち）日本語（にほんご）を勉強（べんきょう）しています。",
-        "romaji": "Ima, mainichi Nihongo wo benkyou shite imasu.",
-        "cn": "我现在每天都在学日语。"
+        "form": "ている形",
+        "jp": "旅行（りょこう）の前（まえ）に毎日（まいにち）単語（たんご）を勉強（べんきょう）しています。",
+        "romaji": "Ryokou no mae ni mainichi tango wo benkyou shite imasu.",
+        "cn": "旅行前每天都在学习背单词。"
       },
       {
         "form": "たい形",
-        "jp": "もっと自然な会話（かいわ）を勉強（べんきょう）したいです。",
+        "jp": "もっと自然（しぜん）な会話（かいわ）を勉強（べんきょう）したいです。",
         "romaji": "Motto shizen na kaiwa wo benkyou shitai desu.",
         "cn": "我想学习更自然的口语对话。"
       },
       {
         "form": "N3 持续",
-        "jp": "日本旅行（にほんりょこう）のために、毎日（まいにち）15分（ふん）ずつ日本語（にほんご）を勉強（べんきょう）しています。",
+        "jp": "日本旅行（にほんりょこう）のために、毎日（まいにち）15分（じゅうごふん）ずつ日本語（にほんご）を勉強（べんきょう）しています。",
         "romaji": "Nihon ryokou no tame ni, mainichi juugofun zutsu Nihongo wo benkyou shite imasu.",
         "cn": "为了去日本旅行，每天坚持学15分钟日语。"
       }
@@ -3545,7 +3545,7 @@ window.JP_TOP_VERBS = [
         "cn": "能请您告诉我推荐的菜品吗？"
       },
       {
-        "form": "ます形",
+        "form": "て形",
         "jp": "Wi-Fiのパスワードを教（おし）えてください。",
         "romaji": "Waifai no pasuwaado wo oshiete kudasai.",
         "cn": "请告诉我 Wi-Fi 密码。"
@@ -3730,7 +3730,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 期待",
-        "jp": "来年（らいねん）また日本（にほん）でみんなに会（あ）えるのを楽し（たの）しみにしています。",
+        "jp": "来年（らいねん）また日本（にほん）でみんなに会（あ）えるのを楽（たの）しみにしています。",
         "romaji": "Rainen mata Nihon de minna ni aeru no wo tanoshimi ni shite imasu.",
         "cn": "很期待明年还能在日本和大家见面。"
       }
@@ -4080,7 +4080,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "部屋のテーブルに鍵（かぎ）を置（お）きました。",
+        "jp": "部屋（へや）のテーブルに鍵（かぎ）を置（お）きました。",
         "romaji": "Heya no teeburu ni kagi wo okimashita.",
         "cn": "我把钥匙放在房间桌上了。"
       },
@@ -4168,7 +4168,7 @@ window.JP_TOP_VERBS = [
         "cn": "电车很挤，所以我一直站着。"
       },
       {
-        "form": "ます形",
+        "form": "て形",
         "jp": "ここで写真（しゃしん）を撮（と）るから、並（なら）んで立（た）ってね。",
         "romaji": "Koko de shashin wo toru kara, narande tatte ne.",
         "cn": "要在这里拍照啦，排好站一起哦。"
@@ -4435,14 +4435,14 @@ window.JP_TOP_VERBS = [
         "cn": "滑雪课几点开始？"
       },
       {
-        "form": "た形",
+        "form": "ます形",
         "jp": "もうすぐショーが始（はじ）まりますよ！",
         "romaji": "Mou sugu shoo ga hajimarimasu yo!",
         "cn": "表演马上就要开始了哦！"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］予約（よやく）していたお食事（しょくじ）が12時（じ）から始（はじ）まります。",
+        "jp": "［自］予約（よやく）していたお食事（しょくじ）が12時（じゅうにじ）から始（はじ）まります。",
         "romaji": "[Vi] Yoyaku shite ita oshokuji ga juuniji kara hajimarimasu.",
         "cn": "[自] 预约好的午餐12点开始（他动词：始める を始める）。"
       }
@@ -4525,13 +4525,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "食事（しょくじ）が終（お）わったら、お会計（かいけい）をお願いします。",
+        "jp": "食事（しょくじ）が終（お）わったら、お会計（かいけい）をお願（ねが）いします。",
         "romaji": "Shokuji ga owattara, okaikei wo onegaishimasu.",
         "cn": "吃完饭后就请结账。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］保育園（ほいくえん）が夕方（ゆうがた）4時（じ）に終（お）わります。",
+        "jp": "［自］保育園（ほいくえん）が夕方（ゆうがた）4時（よじ）に終（お）わります。",
         "romaji": "[Vi] Hoikuen ga yuugata yoji ni owarimasu.",
         "cn": "[自] 保育园下午4点放学（他动词：終える を終える）。"
       }
@@ -4620,7 +4620,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 条件",
-        "jp": "ホテルに着（つ）いたら、すぐ荷ほどきをしてお風呂（ふろ）に入（はい）ろう。",
+        "jp": "ホテルに着（つ）いたら、すぐ荷（に）ほどきをしてお風呂（ふろ）に入（はい）ろう。",
         "romaji": "Hoteru ni tsuitara, sugu nihodoki wo shite ofuro ni hairou.",
         "cn": "一到酒店，马上收拾行李去泡澡吧。"
       }
@@ -5065,7 +5065,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N4 借用",
-        "jp": "フロントで子ども用（よう）のスリッパと歯（は）ブラシを借（か）りました。",
+        "jp": "フロントで子（こ）ども用（よう）のスリッパと歯（は）ブラシを借（か）りました。",
         "romaji": "Furonto de kodomoyou no surippa to haburashi wo karimashita.",
         "cn": "在前台借了儿童拖鞋和牙刷。"
       }
@@ -5510,9 +5510,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとでお願いしといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de onegai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先拜托一下比较好哦（〜ておく→〜とく）。"
+        "jp": "寒（さむ）くなってきたから、毛布（もうふ）をお願（ねが）いしとこうか。",
+        "romaji": "Samuku natte kita kara, moufu wo onegai shitokou ka.",
+        "cn": "天变冷了，先跟前台要床毛毯备着吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -5599,9 +5599,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで予約しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de yoyaku shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先预约一下比较好哦（〜ておく→〜とく）。"
+        "jp": "人気（にんき）のレストランは1ヶ月前（いっかげつまえ）から予約（よやく）しとかないとね。",
+        "romaji": "Ninki no resutoran wa ikkagetsu mae kara yoyaku shitokanai to ne.",
+        "cn": "人气餐厅得提前一个月先订好才行呢（〜ておかないと→〜とかないと）。"
       }
     ],
     "transitivity": "vt",
@@ -5688,9 +5688,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで確認しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de kakunin shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先确认一下比较好哦（〜ておく→〜とく）。"
+        "jp": "乗（の）り換（か）えの時間（じかん）、スマホでもう一度（いちど）確認（かくにん）しとこう。",
+        "romaji": "Norikae no jikan, sumaho de mou ichido kakunin shitokou.",
+        "cn": "再用手机确认一遍换乘时间吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -5777,9 +5777,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに調べとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni shirabetokou!",
-        "cn": "出发前趁现在先提前调查吧（〜ておこう→〜とこう）。"
+        "jp": "明日（あした）の雪（ゆき）の天気予報（てんきよほう）、アプリで調（しら）べといたよ。",
+        "romaji": "Ashita no yuki no tenkiyohou, apuri de shirabetoita yo.",
+        "cn": "明天下雪的天气预报，我已经在 App 上查好啦（〜ておいた→〜といた）。"
       }
     ],
     "transitivity": "vt",
@@ -5866,9 +5866,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに探しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni sagashitokou!",
-        "cn": "出发前趁现在先提前寻找吧（〜ておこう→〜とこう）。"
+        "jp": "駅（えき）の近（ちか）くで子（こ）どもと入（はい）れるカフェを探（さが）してみようか。",
+        "romaji": "Eki no chikaku de kodomo to haireru kafe wo sagashite miyou ka.",
+        "cn": "在车站附近找找看能带孩子进去的咖啡馆吧。"
       }
     ],
     "transitivity": "vt",
@@ -5949,15 +5949,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "可能形",
-        "jp": "探（さが）していたおもちゃがやっと見（み）つけられました。",
-        "romaji": "Sagashite ita omocha ga yatto mitsukeraremashita.",
-        "cn": "找了半天的玩具终于找到了。"
+        "jp": "駅（えき）の近（ちか）くでおいしいカフェを見（み）つけられました。",
+        "romaji": "Eki no chikaku de oishii kafe wo mitsukeraremashita.",
+        "cn": "在车站附近成功找到了一家好喝的咖啡馆。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに見つけとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni mitsuketokou!",
-        "cn": "出发前趁现在先提前找到吧（〜ておこう→〜とこう）。"
+        "jp": "あ！さっきなくしたと思（おも）ってた手袋（てぶくろ）、見（み）つけちゃった！",
+        "romaji": "A! Sakki nakushita to omotteta tebukuro, mitsukechatta!",
+        "cn": "啊！刚才以为弄丢的手套，已经找到啦（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vt",
@@ -6044,9 +6044,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに忘れとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni wasuretokou!",
-        "cn": "出发前趁现在先提前忘记吧（〜ておこう→〜とこう）。"
+        "jp": "お箸（はし）をもらうのをうっかり忘（わす）れちゃった。",
+        "romaji": "Ohashi wo morau no wo ukkari wasurechatta.",
+        "cn": "一不小心忘了拿筷子了（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vt",
@@ -6133,9 +6133,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに覚えとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni oboetokou!",
-        "cn": "出发前趁现在先提前记住吧（〜ておこう→〜とこう）。"
+        "jp": "毎日（まいにち）声（こえ）に出（だ）して読（よ）んでたら、自然（しぜん）に覚（おぼ）えちゃった！",
+        "romaji": "Mainichi koe ni dashite yondetara, shizen ni oboechatta!",
+        "cn": "每天出声朗读着读着，不知不觉就背下来啦（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vt",
@@ -6222,9 +6222,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに考えとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kangaetokou!",
-        "cn": "出发前趁现在先提前思考吧（〜ておこう→〜とこう）。"
+        "jp": "雨（あめ）だったときのプランも、今（いま）のうちに考（かんが）えとこう。",
+        "romaji": "Ame datta toki no puran mo, ima no uchi ni kangaetokou.",
+        "cn": "趁现在把下雨天的备选方案也提前想好吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -6750,15 +6750,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "意向形",
-        "jp": "甘い（あまい）ものは夜（よる）食（た）べるのをやめよう。",
+        "jp": "甘（あま）いものは夜（よる）食（た）べるのをやめよう。",
         "romaji": "Amai mono wa yoru taberu no wo yameyou.",
         "cn": "晚上还是别吃甜食了吧。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちにやめとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni yametokou!",
-        "cn": "出发前趁现在先提前停止吧（〜ておこう→〜とこう）。"
+        "form": "N4 建议",
+        "jp": "夜（よる）遅（おそ）くにコーヒーを飲（の）むのは、今日（きょう）だけやめとこうかな。",
+        "romaji": "Yoru osoku ni koohii wo nomu no wa, kyou dake yametokou ka na.",
+        "cn": "大晚上喝咖啡这件事，今晚要不就先算了吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -6845,9 +6845,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり急いでるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari isoideru kara, daijoubu da yo.",
-        "cn": "已经好好赶时间了，放心吧（〜ている→〜てる）。"
+        "jp": "新幹線（しんかんせん）に遅（おく）れないように、ちょっと急（いそ）がなきゃ！",
+        "romaji": "Shinkansen ni okurenai you ni, chotto isoganakya!",
+        "cn": "为了不误新干线，得稍微抓紧点赶路啦（〜なければ→〜なきゃ）！"
       }
     ],
     "transitivity": "vi",
@@ -6934,9 +6934,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり遅れてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari okureteru kara, daijoubu da yo.",
-        "cn": "已经好好迟到了，放心吧（〜ている→〜てる）。"
+        "jp": "すみません、交通（こうつう）渋滞（じゅうたい）で15分（じゅうごふん）ほど遅（おく）れちゃいそうです。",
+        "romaji": "Sumimasen, koutsuu juutai de juugofun hodo okurechaisou desu.",
+        "cn": "不好意思，因为堵车好像会晚到大约15分钟（〜てしまいそう→〜ちゃいそう）。"
       }
     ],
     "transitivity": "vi",
@@ -7011,7 +7011,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "今から出（で）れば、12時（じゅうにじ）の予約（よやく）に間（ま）に合（あ）います。",
+        "jp": "今（いま）から出（で）れば、12時（じゅうにじ）の予約（よやく）に間（ま）に合（あ）います。",
         "romaji": "Ima kara dereba, juuniji no yoyaku ni maniaimasu.",
         "cn": "现在出发的话，12点的预约来得及。"
       },
@@ -7023,9 +7023,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり間に合ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari maniatteru kara, daijoubu da yo.",
-        "cn": "已经好好来得及了，放心吧（〜ている→〜てる）。"
+        "jp": "走（はし）らなくても、このペースなら十分（じゅうぶん）間（ま）に合（あ）うよ。",
+        "romaji": "Hashiranakute mo, kono peesu nara juubun ma ni au yo.",
+        "cn": "不用跑，照这个速度完全来得及哦。"
       }
     ],
     "transitivity": "vi",
@@ -7112,9 +7112,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり迷ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari mayotteru kara, daijoubu da yo.",
-        "cn": "已经好好迷路了，放心吧（〜ている→〜てる）。"
+        "jp": "お土産（みやげ）の種類（しゅるい）が多（おお）すぎて、どれにするか迷（まよ）っちゃうね。",
+        "romaji": "Omiyage no shurui ga oosugite, dore ni suru ka mayotchau ne.",
+        "cn": "伴手礼种类太多，简直挑花眼拿不定主意呢（〜てしまう→〜ちゃう）。"
       }
     ],
     "transitivity": "vi",
@@ -7194,7 +7194,7 @@ window.JP_TOP_VERBS = [
         "cn": "空调好像转不起来。"
       },
       {
-        "form": "ます形",
+        "form": "ない形",
         "jp": "写真（しゃしん）を撮（と）るから、少（すこ）しだけ動（うご）かないでね。",
         "romaji": "Shashin wo toru kara, sukoshi dake ugokanaide ne.",
         "cn": "要拍照了，先稍微别动哦。"
@@ -7289,10 +7289,10 @@ window.JP_TOP_VERBS = [
         "cn": "两个人一起抬这个大行李箱。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに運んどこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni hakondokou!",
-        "cn": "出发前趁现在先提前搬运吧（〜ておこう→〜とこう）。"
+        "form": "N4 授受",
+        "jp": "店員（てんいん）さんが熱々（あつあつ）のお料理（りょうり）をテーブルまで運（はこ）んでくれたよ。",
+        "romaji": "Ten'in-san ga atsuatsu no oryouri wo teeburu made hakonde kureta yo.",
+        "cn": "店员把热腾腾的菜端到桌边来了哦。"
       }
     ],
     "transitivity": "vt",
@@ -7462,7 +7462,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "注文（ちゅうもん）した荷（に）物（もつ）が無事（ぶじ）に届（とど）きました。",
+        "jp": "注文（ちゅうもん）した荷物（にもつ）が無事（ぶじ）に届（とど）きました。",
         "romaji": "Chuumon shita nimotsu ga buji ni todokimashita.",
         "cn": "订购的包裹顺利寄到了。"
       },
@@ -7646,9 +7646,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに受け取っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni uketottokou!",
-        "cn": "出发前趁现在先提前领取吧（〜ておこう→〜とこう）。"
+        "jp": "宅配（たくはい）ボックスから荷物（にもつ）を受（う）け取（と）ってきたよ。",
+        "romaji": "Takuhai bokkusu kara nimotsu wo uketotte kita yo.",
+        "cn": "我从快递柜把包裹取回来啦。"
       }
     ],
     "transitivity": "vt",
@@ -7735,9 +7735,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに送っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni okuttokou!",
-        "cn": "出发前趁现在先提前寄送吧（〜ておこう→〜とこう）。"
+        "jp": "重（おも）いスーツケースは先（さき）に宅急便（たっきゅうびん）で送（おく）っとこうよ。",
+        "romaji": "Omoi suutsukeesu wa saki ni takkyuubin de okuttokou yo.",
+        "cn": "大行李箱咱们还是先用宅急便寄过去吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -7824,9 +7824,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに返しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kaeshitokou!",
-        "cn": "出发前趁现在先提前归还吧（〜ておこう→〜とこう）。"
+        "jp": "借（か）りたスキー板（いた）、5時（ごじ）までにカウンターへ返（かえ）さなきゃ。",
+        "romaji": "Karita sukii-ita, goji made ni kauntaa e kaesanakya.",
+        "cn": "租来的滑雪板得在5点前还到柜台才行（〜なければ→〜なきゃ）。"
       }
     ],
     "transitivity": "vt",
@@ -7913,9 +7913,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに捨てとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni sutetokou!",
-        "cn": "出发前趁现在先提前扔掉吧（〜ておこう→〜とこう）。"
+        "jp": "レシートも要（い）らない袋（ふくろ）も、駅（えき）のゴミ箱（ばこ）に捨（す）てちゃった。",
+        "romaji": "Reshiito mo iranai fukuro mo, eki no gomibako ni sutechatta.",
+        "cn": "不要的小票和袋子已经扔进车站垃圾桶啦（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vt",
@@ -8091,9 +8091,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに洗っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni arattokou!",
-        "cn": "出发前趁现在先提前洗吧（〜ておこう→〜とこう）。"
+        "jp": "お外（そと）から帰（かえ）ったら、すぐ手（て）を洗（あら）わなきゃね。",
+        "romaji": "Osoto kara kaettara, sugu te wo arawanakya ne.",
+        "cn": "从外面回来后得马上去洗手哦（〜なければ→〜なきゃ）。"
       }
     ],
     "transitivity": "vt",
@@ -8168,7 +8168,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "今日（きょう）は部屋（へや）の掃除（そうじ）をお願いできますか？",
+        "jp": "今日（きょう）は部屋（へや）の掃除（そうじ）をお願（ねが）いできますか？",
         "romaji": "Kyou wa heya no souji wo onegai dekimasu ka?",
         "cn": "今天能麻烦打扫一下房间吗？"
       },
@@ -8180,9 +8180,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで掃除しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de souji shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先打扫一下比较好哦（〜ておく→〜とく）。"
+        "jp": "チェックアウトの前（まえ）に、テーブルの上（うえ）をサッと掃除（そうじ）しとこう。",
+        "romaji": "Chekkuauto no mae ni, teeburu no ue wo satto souji shitokou.",
+        "cn": "退房前咱们把桌面简单打扫收拾一下吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -8263,15 +8263,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "今朝（けさ）、子どもたちの服（ふく）を全部（ぜんぶ）洗濯（せんたく）しました。",
+        "jp": "今朝（けさ）、子（こ）どもたちの服（ふく）を全部（ぜんぶ）洗濯（せんたく）しました。",
         "romaji": "Kesa, kodomotachi no fuku wo zenbu sentaku shimashita.",
         "cn": "今早把孩子们的衣服全都洗了。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで洗濯しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de sentaku shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先洗衣服一下比较好哦（〜ておく→〜とく）。"
+        "jp": "今日（きょう）着（き）たダウンジャケット以外（いがい）の服（ふく）、今夜（こんや）洗濯（せんたく）しちゃおう。",
+        "romaji": "Kyou kita daun jaketto igai no fuku, kon'ya sentaku shichaou.",
+        "cn": "除了今天穿的羽绒服，其他衣服今晚全洗了吧（〜てしまおう→〜ちゃおう）。"
       }
     ],
     "transitivity": "vt",
@@ -8352,15 +8352,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "て形",
-        "jp": "料理（りょうり）するのが好（す）きなので、日本の調味料（ちょうみりょう）を買（か）いました。",
+        "jp": "料理（りょうり）するのが好（す）きなので、日本（にほん）の調味料（ちょうみりょう）を買（か）いました。",
         "romaji": "Ryouri suru no ga suki na node, Nihon no choumiryou wo kaimashita.",
         "cn": "我很喜欢做饭，所以买了日本调味料。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで料理しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de ryouri shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先做饭一下比较好哦（〜ておく→〜とく）。"
+        "jp": "今夜（こんや）は宿（やど）のキッチンで子（こ）ども用（よう）のご飯（はん）を簡単（かんたん）に料理（りょうり）しよう。",
+        "romaji": "Kon'ya wa yado no kitchin de kodomoyou no gohan wo kantan ni ryouri shiyou.",
+        "cn": "今晚在民宿厨房给孩子简单做点饭吧。"
       }
     ],
     "transitivity": "vt",
@@ -8447,9 +8447,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに着とこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kitokou!",
-        "cn": "出发前趁现在先提前穿（上衣/外套）吧（〜ておこう→〜とこう）。"
+        "jp": "軽井沢（かるいざわ）は朝（あさ）寒（さむ）いから、暖（あたた）かいセーターを着（き）ていこうね。",
+        "romaji": "Karuizawa wa asa samui kara, atatakai seetaa wo kite ikou ne.",
+        "cn": "轻井泽早上冷，穿上暖和的毛衣出门哦。"
       }
     ],
     "transitivity": "vt",
@@ -8536,9 +8536,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに脱いどこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni nuidokou!",
-        "cn": "出发前趁现在先提前脱（衣/鞋）吧（〜ておこう→〜とこう）。"
+        "jp": "お店（みせ）の中（なか）が暖（あたた）かいから、コートを脱（ぬ）いじゃおう。",
+        "romaji": "Omise no naka ga atatakai kara, kooto wo nuijaou.",
+        "cn": "店里面好暖和，咱们把大衣脱掉吧（〜てしまおう→〜じゃおう）。"
       }
     ],
     "transitivity": "vt",
@@ -8625,9 +8625,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに履いとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni haitokou!",
-        "cn": "出发前趁现在先提前穿（鞋/裤/袜）吧（〜ておこう→〜とこう）。"
+        "jp": "玄関（げんかん）で靴（くつ）を脱（ぬ）いで、室内（しつない）スリッパに履（は）き替（か）えるんだよ。",
+        "romaji": "Genkan de kutsu wo nuide, shitsunai surippa ni hakikaeru nda yo.",
+        "cn": "在玄关脱下鞋子，换上室内拖鞋哦。"
       }
     ],
     "transitivity": "vt",
@@ -8707,16 +8707,16 @@ window.JP_TOP_VERBS = [
         "cn": "睡前冲个淋浴。"
       },
       {
-        "form": "て形",
-        "jp": "温泉（おんせん）に入（はい）る前（まえ）に、体（からだ）にお湯（ゆ）を浴（あ）びます。",
-        "romaji": "Onsen ni hairu mae ni, karada ni oyu wo abimasu.",
-        "cn": "进温泉池前先用热水冲洗身体。"
+        "form": "ます形",
+        "jp": "温泉（おんせん）に入（はい）る前（まえ）に、軽（かる）くシャワーを浴（あ）びます。",
+        "romaji": "Onsen ni hairu mae ni, karuku shawaa wo abimasu.",
+        "cn": "进温泉池前先简单冲个淋浴。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに浴びとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni abitokou!",
-        "cn": "出发前趁现在先提前淋浴吧（〜ておこう→〜とこう）。"
+        "jp": "外（そと）が寒（さむ）かったから、早（はや）く熱（あつ）いシャワーを浴（あ）びたいな。",
+        "romaji": "Soto ga samukatta kara, hayaku atsui shawaa wo abitai na.",
+        "cn": "外面好冷，好想赶紧冲个热水澡呀。"
       }
     ],
     "transitivity": "vt",
@@ -8803,9 +8803,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに磨いとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni migaitokou!",
-        "cn": "出发前趁现在先提前刷（牙）吧（〜ておこう→〜とこう）。"
+        "jp": "もう寝（ね）る時間（じかん）だよ、歯（は）を磨（みが）いてベッドに入（はい）ろう。",
+        "romaji": "Mou neru jikan da yo, ha wo migaite beddo ni hairou.",
+        "cn": "到睡觉时间啦，刷完牙上床吧。"
       }
     ],
     "transitivity": "vt",
@@ -8880,7 +8880,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "娘（むすめ）たちが楽しそうに笑（わら）っています。",
+        "jp": "娘（むすめ）たちが楽（たの）しそうに笑（わら）っています。",
         "romaji": "Musumetachi ga tanoshisou ni waratte imasu.",
         "cn": "女儿们正开心地笑着。"
       },
@@ -8892,9 +8892,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり笑ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari waratteru kara, daijoubu da yo.",
-        "cn": "已经好好笑了，放心吧（〜ている→〜てる）。"
+        "jp": "日本語（にほんご）で冗談（じょうだん）を言（い）ったら、大将（たいしょう）も一緒（いっしょ）に笑（わら）ってたよ！",
+        "romaji": "Nihongo de joudan wo ittara, taishou mo issho ni waratteta yo!",
+        "cn": "我用日语开了个玩笑，主厨也跟着笑起来了呢（〜ていた→〜てた）！"
       }
     ],
     "transitivity": "vi",
@@ -8981,9 +8981,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり泣いてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari naiteru kara, daijoubu da yo.",
-        "cn": "已经好好哭了，放心吧（〜ている→〜てる）。"
+        "jp": "眠（ねむ）くて泣（な）いちゃったけど、抱（だ）っこしたらすぐ機嫌（きげん）が直（なお）ったよ。",
+        "romaji": "Nemukute naichatta kedo, dakko shitara sugu kigen ga naotta yo.",
+        "cn": "虽然困得哭鼻子了，不过一抱起来心情马上就好了（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vi",
@@ -9070,9 +9070,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり怒ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari okotteru kara, daijoubu da yo.",
-        "cn": "已经好好生气了，放心吧（〜ている→〜てる）。"
+        "jp": "パパ、おもちゃを落（お）としても怒（おこ）んないでね。",
+        "romaji": "Papa, omocha wo otoshite mo okonnaide ne.",
+        "cn": "爸爸，玩具掉地上了你也别生气哦（口语「怒らないで→怒んないで」）。"
       }
     ],
     "transitivity": "vi",
@@ -9159,9 +9159,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり喜んでるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari yorokonderu kara, daijoubu da yo.",
-        "cn": "已经好好高兴了，放心吧（〜ている→〜てる）。"
+        "jp": "初（はじ）めての本物（ほんもの）の雪（ゆき）を見（み）て、二人（ふたり）ともすごく喜（よろこ）んでたね。",
+        "romaji": "Hajimete no honmono no yuki wo mite, futari tomo sugoku yorokondeta ne.",
+        "cn": "看到真正的白雪，两个孩子都开心坏了呢（〜ていた→〜てた）。"
       }
     ],
     "transitivity": "both",
@@ -9248,9 +9248,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに楽しんどこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni tanoshindokou!",
-        "cn": "出发前趁现在先提前享受吧（〜ておこう→〜とこう）。"
+        "jp": "せっかくの家族（かぞく）旅行（りょこう）だから、無理（むり）せず思（おも）いっきり楽（たの）しもうね。",
+        "romaji": "Sekkaku no kazoku ryokou da kara, muri sezu omoikkiri tanoshimou ne.",
+        "cn": "难得全家一起旅行，别赶行程，痛痛快快享受吧！"
       }
     ],
     "transitivity": "vt",
@@ -9337,9 +9337,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで心配しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de shinpai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先担心一下比较好哦（〜ておく→〜とく）。"
+        "jp": "駅員（えきいん）さんが案内（あんない）してくれるから、心配（しんぱい）しなくて大丈夫（だいじょうぶ）だよ。",
+        "romaji": "Ekiin-san ga annai shite kureru kara, shinpai shinakute daijoubu da yo.",
+        "cn": "车站工作人员会指引我们的，不用担心没问题哦。"
       }
     ],
     "transitivity": "vt",
@@ -9426,9 +9426,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで安心しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de anshin shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先放心一下比较好哦（〜ておく→〜とく）。"
+        "jp": "メールで予約（よやく）確定（かくてい）の連絡（れんらく）が来（き）て、ほっと安心（あんしん）したよ。",
+        "romaji": "Meeru de yoyaku kakutei no renraku ga kite, hotto anshin shita yo.",
+        "cn": "邮件收到预约确认通知，心里一下子踏实了。"
       }
     ],
     "transitivity": "vi",
@@ -9515,9 +9515,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり驚いてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari odoroiteru kara, daijoubu da yo.",
-        "cn": "已经好好吃惊了，放心吧（〜ている→〜てる）。"
+        "jp": "日本（にほん）のお寿司（すし）がおいしすぎて驚（おどろ）いちゃった！",
+        "romaji": "Nihon no osushi ga oishisugite odoroichatta!",
+        "cn": "日本的寿司好吃到惊艳，都惊呆了（〜てしまった→〜ちゃった）！"
       }
     ],
     "transitivity": "vi",
@@ -9604,9 +9604,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり困ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari komatteru kara, daijoubu da yo.",
-        "cn": "已经好好困扰了，放心吧（〜ている→〜てる）。"
+        "jp": "小銭（こぜに）が足（た）りなくて、自動販売機（じどうはんばいき）の前（まえ）でちょっと困（こま）っちゃった。",
+        "romaji": "Kozeni ga tarinakute, jidouhanbaiki no mae de chotto komatchatta.",
+        "cn": "零钱不够，在自动售货机前犯了会儿难（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vi",
@@ -9681,7 +9681,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "困（こま）っているときに助（たす）けてくれて、本当にありがとう。",
+        "jp": "困（こま）っているときに助（たす）けてくれて、本当（ほんとう）にありがとう。",
         "romaji": "Komatte iru toki ni tasukete kurete, hontou ni arigatou.",
         "cn": "真的很感谢你在我遇到困难时帮了我。"
       },
@@ -9770,7 +9770,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "荷（に）物（もつ）を預（あず）かっていただけると、とても助（たす）かります！",
+        "jp": "荷物（にもつ）を預（あず）かっていただけると、とても助（たす）かります！",
         "romaji": "Nimotsu wo azukatte itadakeru to, totemo tasukarimasu!",
         "cn": "如果能帮我们寄存行李，真是帮大忙了！"
       },
@@ -9871,9 +9871,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに手伝っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni tetsudattokou!",
-        "cn": "出发前趁现在先提前帮忙吧（〜ておこう→〜とこう）。"
+        "jp": "お姉（ねえ）ちゃんが自分（じぶん）のリュックを運（はこ）ぶのを手伝（てつだ）ってくれて助（たす）かるな。",
+        "romaji": "Onee-chan ga jibun no ryukku wo hakobu no wo tetsudatte kurete tasukaru na.",
+        "cn": "姐姐帮忙拎着小书包，真是帮大忙啦。"
       }
     ],
     "transitivity": "vt",
@@ -9960,9 +9960,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに呼んどこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni yondokou!",
-        "cn": "出发前趁现在先提前叫吧（〜ておこう→〜とこう）。"
+        "jp": "雪（ゆき）が降（ふ）ってきたから、ホテルの前（まえ）でタクシー呼（よ）んでもらおうか。",
+        "romaji": "Yuki ga futte kita kara, hoteru no mae de takushii yonde moraou ka.",
+        "cn": "下起雪了，让酒店门口帮忙叫辆出租车好吗？"
       }
     ],
     "transitivity": "vt",
@@ -10049,9 +10049,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに誘っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni sasottokou!",
-        "cn": "出发前趁现在先提前邀请吧（〜ておこう→〜とこう）。"
+        "jp": "今度（こんど）、日本（にほん）の友達（ともだち）を軽井沢（かるいざわ）の食事（しょくじ）に誘（さそ）ってみようよ。",
+        "romaji": "Kondo, Nihon no tomodachi wo Karuizawa no shokuji ni sasotte miyou yo.",
+        "cn": "下次咱们约日本朋友一起吃顿饭看看吧！"
       }
     ],
     "transitivity": "vt",
@@ -10125,10 +10125,10 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます形",
-        "jp": "せっかくですが、予定（よてい）があるので今回（こんかい）は断（ことわ）ります。",
-        "romaji": "Sekkaku desu ga, yotei ga aru node konkai wa kotowarimasu.",
-        "cn": "难得您相邀，但这次已有安排只能婉拒了。"
+        "form": "た形",
+        "jp": "予定（よてい）があったので、今回（こんかい）の誘（さそ）いは丁寧（ていねい）に断（ことわ）りました。",
+        "romaji": "Yotei ga atta node, konkai no sasoi wa teinei ni kotowarimashita.",
+        "cn": "因为已有安排，这次的邀请我礼貌地婉拒了。"
       },
       {
         "form": "た形",
@@ -10138,9 +10138,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに断っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kotowattokou!",
-        "cn": "出发前趁现在先提前拒绝吧（〜ておこう→〜とこう）。"
+        "jp": "予定（よてい）が合（あ）わなくて、今回（こんかい）の食事（しょくじ）は丁重（ていちょう）に断（ことわ）っといたよ。",
+        "romaji": "Yotei ga awanakute, konkai no shokuji wa teichou ni kotowattoita yo.",
+        "cn": "因为时间安排不过来，这次聚餐我已经礼貌婉拒了（〜ておいた→〜といた）。"
       }
     ],
     "transitivity": "vt",
@@ -10226,10 +10226,10 @@ window.JP_TOP_VERBS = [
         "cn": "去跟妹妹为抢玩具的事道个歉哦。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "もうすっかり謝ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari ayamatteru kara, daijoubu da yo.",
-        "cn": "已经好好道歉了，放心吧（〜ている→〜てる）。"
+        "form": "N4 经历",
+        "jp": "道（みち）でぶつかっちゃったから、すぐ日本語（にほんご）で「すみません」って謝（あやま）ったよ。",
+        "romaji": "Michi de butsukatchatta kara, sugu Nihongo de sumimasen tte ayamatta yo.",
+        "cn": "走路不小心撞到别人，我马上用日语道歉说了“不好意思”。"
       }
     ],
     "transitivity": "vi",
@@ -10309,16 +10309,16 @@ window.JP_TOP_VERBS = [
         "cn": "不好意思迟到了，这次就原谅我吧。"
       },
       {
-        "form": "ない形",
+        "form": "ば形",
         "jp": "時間（じかん）が許（ゆる）せば、由布院（ゆふいん）でもう1泊（いっぱく）したいです。",
         "romaji": "Jikan ga yuruseba, Yufuin de mou ippaku shitai desu.",
         "cn": "如果时间允许的话，真想在由布院再多住一晚。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに許しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni yurushitokou!",
-        "cn": "出发前趁现在先提前原谅吧（〜ておこう→〜とこう）。"
+        "jp": "ジェイシーがまだ2歳（にさい）だから、お姉（ねえ）ちゃんも許（ゆる）してあげてね。",
+        "romaji": "Jeishii ga mada nisai da kara, onee-chan mo yurushite agete ne.",
+        "cn": "Jaycie 才2岁呢，姐姐也原谅她这一回吧。"
       }
     ],
     "transitivity": "vt",
@@ -10405,9 +10405,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに褒めとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni hometokou!",
-        "cn": "出发前趁现在先提前夸奖吧（〜ておこう→〜とこう）。"
+        "jp": "ジニーが上手（じょうず）に滑（すべ）れてたから、コーチがたくさん褒（ほ）めてくれたよ！",
+        "romaji": "Jinii ga jouzu ni subereteta kara, koochi ga takusan homete kureta yo!",
+        "cn": "Jinny 滑得超稳，教练可劲儿夸奖她了呢！"
       }
     ],
     "transitivity": "vt",
@@ -10494,9 +10494,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに伝えとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni tsutaetokou!",
-        "cn": "出发前趁现在先提前转达吧（〜ておこう→〜とこう）。"
+        "jp": "タクシーの運転手（うんてんしゅ）さんに、行（い）き先（さき）の住所（じゅうしょ）をちゃんと伝（つた）えといたよ。",
+        "romaji": "Takushii no untenshu-san ni, ikisaki no juusho wo chanto tsutaetoita yo.",
+        "cn": "我已经把目的地地址清楚地转告给司机师傅了（〜ておいた→〜といた）。"
       }
     ],
     "transitivity": "vt",
@@ -10577,15 +10577,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "スタッフさんが丁寧にコース料理（りょうり）を説明（せつめい）してくれました。",
+        "jp": "スタッフさんが丁寧（ていねい）にコース料理（りょうり）を説明（せつめい）してくれました。",
         "romaji": "Sutaffusan ga teinei ni koosu ryouri wo setsumei shite kuremashita.",
         "cn": "店员很细致地为我们介绍了套餐菜品。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで説明しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de setsumei shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先说明一下比较好哦（〜ておく→〜とく）。"
+        "form": "N4 请求",
+        "jp": "すみません、この温泉（おんせん）の入（はい）り方（かた）をもう少（すこ）し説明（せつめい）していただけますか？",
+        "romaji": "Sumimasen, kono onsen no hairikata wo mou sukoshi setsumei shite itadakemasu ka?",
+        "cn": "不好意思，能再给我们稍微说明一下这个温泉的泡法吗？"
       }
     ],
     "transitivity": "vt",
@@ -10672,9 +10672,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで相談しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de soudan shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先商量一下比较好哦（〜ておく→〜とく）。"
+        "jp": "チェックインの前（まえ）に、明日（あした）の予定（よてい）をフロントで相談（そうだん）しとこう。",
+        "romaji": "Chekkuin no mae ni, ashita no yotei wo furonto de soudan shitokou.",
+        "cn": "入住前先把明天的行程跟前台咨询商量一下吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vi",
@@ -10761,9 +10761,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで質問しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de shitsumon shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先提问一下比较好哦（〜ておく→〜とく）。"
+        "jp": "分（わ）からないことがあったら、スマホで見（み）る前（まえ）に店員（てんいん）さんに質問（しつもん）しちゃおう。",
+        "romaji": "Wakaranai koto ga attara, sumaho de miru mae ni ten'in-san ni shitsumon shichaou.",
+        "cn": "要是不明白的话，与其自己查手机，不如直接问店员吧（〜てしまおう→〜ちゃおう）。"
       }
     ],
     "transitivity": "vi",
@@ -10850,9 +10850,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり答えてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari kotaeteru kara, daijoubu da yo.",
-        "cn": "已经好好回答了，放心吧（〜ている→〜てる）。"
+        "jp": "店（みせ）のスタッフさんが、お水（みず）の場所（ばしょ）をニコニコ答（こた）えてくれたよ。",
+        "romaji": "Mise no sutaffu-san ga, omizu no basho wo nikoniko kotaete kureta yo.",
+        "cn": "店员小姐姐笑着回答了饮用水在哪里呢。"
       }
     ],
     "transitivity": "vi",
@@ -10939,9 +10939,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで連絡しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de renraku shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先联系一下比较好哦（〜ておく→〜とく）。"
+        "jp": "電車（でんしゃ）が10分（じゅっぷん）遅（おく）れてるから、レストランに先（さき）に連絡（れんらく）しとこう。",
+        "romaji": "Densha ga juppun okureteru kara, resutoran ni saki ni renraku shitokou.",
+        "cn": "电车晚点了10分钟，先给餐厅联系打个招呼吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vi",
@@ -11028,9 +11028,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで電話しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de denwa shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先打电话一下比较好哦（〜ておく→〜とく）。"
+        "jp": "道（みち）に迷（まよ）っちゃったから、ホテルのフロントに電話（でんわ）してみてるよ。",
+        "romaji": "Michi ni mayotchatta kara, hoteru no furonto ni denwa shite miteru yo.",
+        "cn": "迷路了，我正在试着给酒店前台打电话呢（〜ている→〜てる）。"
       }
     ],
     "transitivity": "vi",
@@ -11110,16 +11110,16 @@ window.JP_TOP_VERBS = [
         "cn": "不好意思，能帮我们拍张全家福吗？"
       },
       {
-        "form": "て形",
-        "jp": "ここで写真（しゃしん）を撮（と）ってもいいですか？",
-        "romaji": "Koko de shashin wo totte mo ii desu ka?",
-        "cn": "这里可以拍照吗？"
+        "form": "た形",
+        "jp": "東京（とうきょう）タワーの前（まえ）で記念（きねん）写真（しゃしん）を撮（と）りました。",
+        "romaji": "Toukyou Tawaa no mae de kinen shashin wo torimashita.",
+        "cn": "在东京塔前面拍了纪念照。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに撮っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni tottokou!",
-        "cn": "出发前趁现在先提前拍照吧（〜ておこう→〜とこう）。"
+        "jp": "天気（てんき）がいいから、富士山（ふじさん）の前（まえ）で家族（かぞく）写真（しゃしん）を撮（と）っとこう！",
+        "romaji": "Tenki ga ii kara, Fujisan no mae de kazoku shashin wo tottokou!",
+        "cn": "天气真好，在富士山前多拍几张全家福吧（〜ておこう→〜とこう）！"
       }
     ],
     "transitivity": "vt",
@@ -11206,9 +11206,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで注文しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de chuumon shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先点菜一下比较好哦（〜ておく→〜とく）。"
+        "jp": "おなか空（す）いたから、もうタブレットで先（さき）に注文（ちゅうもん）しちゃおうか。",
+        "romaji": "Onaka suita kara, mou taburetto de saki ni chuumon shichaou ka.",
+        "cn": "肚子好饿，咱们先用平板点单吧（〜てしまおう→〜ちゃおう）？"
       }
     ],
     "transitivity": "vt",
@@ -11294,10 +11294,10 @@ window.JP_TOP_VERBS = [
         "cn": "一位热心人一直把我们带到了车站出口。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで案内しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de annai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先带路一下比较好哦（〜ておく→〜とく）。"
+        "form": "N4 经历",
+        "jp": "ホテルのスタッフさんが、エレベーターの前（まえ）まで丁寧（ていねい）に案内（あんない）してくれました。",
+        "romaji": "Hoteru no sutaffu-san ga, erebeetaa no mae made teinei ni annai shite kuremashita.",
+        "cn": "酒店工作人员非常贴心地一路把我们带到了电梯口。"
       }
     ],
     "transitivity": "vt",
@@ -11383,10 +11383,10 @@ window.JP_TOP_VERBS = [
         "cn": "请推荐一下这附近适合带娃去的餐厅。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで紹介しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de shoukai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先介绍一下比较好哦（〜ておく→〜とく）。"
+        "form": "N4 请求",
+        "jp": "子（こ）どもが喜（よろこ）びそうな公園（こうえん）があれば、ぜひ紹介（しょうかい）してください。",
+        "romaji": "Kodomo ga yorokobisou na kouen ga areba, zehi shoukai shite kudasai.",
+        "cn": "如果附近有小朋友会喜欢的公园，请务必推荐给我们。"
       }
     ],
     "transitivity": "vt",
@@ -11467,15 +11467,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "お会計（かいけい）を準備（じゅんび）いたします。",
-        "romaji": "Okaikei wo junbi itashimasu.",
-        "cn": "我这就为您准备账单。"
+        "jp": "出発（しゅっぱつ）の前日（ぜんじつ）にパスポートと切符（きっぷ）を準備（じゅんび）します。",
+        "romaji": "Shuppatsu no zenjitsu ni pasupooto to kippu wo junbi shimasu.",
+        "cn": "出发前一天会把护照和车票都准备好。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで準備しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de junbi shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先准备一下比较好哦（〜ておく→〜とく）。"
+        "jp": "明日（あした）は朝（あさ）早（はや）いから、スキーの手袋（てぶくろ）も今夜（こんや）のうちに準備（じゅんび）しといたよ。",
+        "romaji": "Ashita wa asa hayai kara, sukii no tebukuro mo kon'ya no uchi ni junbi shitoita yo.",
+        "cn": "明天起得早，滑雪手套我今晚已经提前准备好了（〜ておいた→〜といた）。"
       }
     ],
     "transitivity": "vt",
@@ -11562,9 +11562,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで練習しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de renshuu shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先练习一下比较好哦（〜ておく→〜とく）。"
+        "jp": "新幹線（しんかんせん）に乗（の）ってる間（あいだ）も、単語（たんご）のアプリでちょっと練習（れんしゅう）しとこう。",
+        "romaji": "Shinkansen ni notteru aida mo, tango no apuri de chotto renshuu shitokou.",
+        "cn": "坐新干线的空档也用单词应用稍微练几句吧（〜ておこう→〜とこう）。"
       }
     ],
     "transitivity": "vt",
@@ -11651,9 +11651,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり慣れてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari nareteru kara, daijoubu da yo.",
-        "cn": "已经好好习惯了，放心吧（〜ている→〜てる）。"
+        "jp": "最初（さいしょ）はドキドキしてたけど、もう日本（にほん）の電車（でんしゃ）にもすっかり慣（な）れたね！",
+        "romaji": "Saisho wa dokidoki shiteta kedo, mou Nihon no densha ni mo sukkari nareta ne!",
+        "cn": "一开始还有点紧张，现在对日本的电车已经完全习惯适应啦！"
       }
     ],
     "transitivity": "vi",
@@ -11740,9 +11740,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり疲れてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari tsukareteru kara, daijoubu da yo.",
-        "cn": "已经好好累了，放心吧（〜ている→〜てる）。"
+        "jp": "1日（いちにち）じゅう歩（ある）き回（まわ）ったから、パパもママもちょっと疲（つか）れちゃったね。",
+        "romaji": "Ichinichijuu arukimawatta kara, papa mo mama mo chotto tsukarechatta ne.",
+        "cn": "逛了一整天，爸爸妈妈也有点累坏了呢（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vi",
@@ -11829,9 +11829,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり眠ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari nemutteru kara, daijoubu da yo.",
-        "cn": "已经好好入睡了，放心吧（〜ている→〜てる）。"
+        "jp": "温（あたた）かい温泉（おんせん）に入（はい）ったせいか、ジェイシーもうぐっすり眠（ねむ）っちゃったよ。",
+        "romaji": "Atatakai onsen ni haitta sei ka, Jeishii mou gussuri nemutchatta yo.",
+        "cn": "大概是泡了热乎乎的温泉，Jaycie 已经呼呼睡着啦（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vi",
@@ -12096,9 +12096,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり痛んでるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari itanderu kara, daijoubu da yo.",
-        "cn": "已经好好疼痛了，放心吧（〜ている→〜てる）。"
+        "jp": "昨日（きのう）より足（あし）が痛（いた）まなくなってきて、ほんとによかったよ。",
+        "romaji": "Kinou yori ashi ga itamanakunatte kite, honto ni yokatta yo.",
+        "cn": "比昨天脚已经不怎么疼了，真是太好了。"
       }
     ],
     "transitivity": "vi",
@@ -12185,9 +12185,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに引いとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni hiitokou!",
-        "cn": "出发前趁现在先提前拉吧（〜ておこう→〜とこう）。"
+        "jp": "暖（あたた）かくしないと、また風邪（かぜ）を引（ひ）いちゃうよ！",
+        "romaji": "Atatakaku shinai to, mata kaze wo hiichau yo!",
+        "cn": "不穿暖和点的话，又要感冒了哦（〜てしまう→〜ちゃう）！"
       }
     ],
     "transitivity": "vt",
@@ -12274,9 +12274,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに押しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni oshitokou!",
-        "cn": "出发前趁现在先提前按吧（〜ておこう→〜とこう）。"
+        "jp": "順番（じゅんばん）が来（き）たら、その緑（みどり）のボタンをピッと押（お）すだけだよ。",
+        "romaji": "Junban ga kitara, sono midori no botan wo pitto osu dake da yo.",
+        "cn": "轮到我们的时候，只要按一下那个绿色按钮就行了哦。"
       }
     ],
     "transitivity": "vt",
@@ -12363,9 +12363,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり触ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari sawatteru kara, daijoubu da yo.",
-        "cn": "已经好好触摸了，放心吧（〜ている→〜てる）。"
+        "jp": "あつあつの鉄板（てっぱん）だから、絶対（ぜったい）に手（て）で触（さわ）っちゃダメだよ。",
+        "romaji": "Atsuatsu no teppan da kara, zettai ni te de sawatcha dame da yo.",
+        "cn": "铁板滚烫滚烫的，绝对不可以伸手去摸哦（〜てはダメ→〜ちゃダメ）。"
       }
     ],
     "transitivity": "vi",
@@ -12452,9 +12452,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに投げとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni nagetokou!",
-        "cn": "出发前趁现在先提前扔吧（〜ておこう→〜とこう）。"
+        "jp": "雪玉（ゆきだま）は危（あぶ）ないから、人（ひと）のいないほうへ投（な）げてね。",
+        "romaji": "Yukidama wa abunai kara, hito no inai hou e nagete ne.",
+        "cn": "扔雪球有危险，要往没人的方向扔哦。"
       }
     ],
     "transitivity": "vt",
@@ -12712,16 +12712,16 @@ window.JP_TOP_VERBS = [
         "cn": "行李箱的轮子坏掉了。"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "頑丈（がんじょう）なので簡単（かんたん）には壊（こわ）れません。",
         "romaji": "Ganjou na node kantan ni wa kowaremasen.",
         "cn": "很结实，不会轻易坏掉。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］スーツケースのキャスターが壊（こわ）れてしまったんです。",
-        "romaji": "[Vi] Suutsukeesu no kyasutaa ga kowarete shimatta ndesu.",
-        "cn": "[自] 行李箱的轮子坏掉了（他动词：壊す を壊す）。"
+        "jp": "［自］強風（きょうふう）でビニール傘（がさ）が壊（こわ）れてしまいました。",
+        "romaji": "[Vi] Kyoufuu de biniirugasa ga kowarete shimaimashita.",
+        "cn": "[自] 塑料伞被大风吹坏了（他动词：〜を壊す）。"
       }
     ],
     "transitivity": "vi",
@@ -12795,7 +12795,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "た形",
+        "form": "ない形",
         "jp": "旅行中（りょこうちゅう）にお腹（なか）を壊（こわ）さないように気（き）をつけます。",
         "romaji": "Ryokouchuu ni onaka wo kowasanai you ni ki wo tsukemasu.",
         "cn": "注意在旅途中不要吃坏肚子。"
@@ -12897,9 +12897,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］Wi-Fiの調子（ちょうし）、再起動（さいきどう）したらすぐ直（なお）りました。",
-        "romaji": "[Vi] Wi-Fi no choushi, saikidou shitara sugu naorimashita.",
-        "cn": "[自] Wi-Fi 状态重启一下马上就好了（他动词：直す を直す）。"
+        "jp": "［自］電池（でんち）を替（か）えたら、時計（とけい）がすぐ直（なお）りました。",
+        "romaji": "[Vi] Denchi wo kaetara, tokei ga sugu naorimashita.",
+        "cn": "[自] 换完电池后，手表马上走准修好了（他动词：〜を直す）。"
       }
     ],
     "transitivity": "vi",
@@ -12980,8 +12980,8 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "可能形",
-        "jp": "このジッパーはここでお直（なお）しできますか？",
-        "romaji": "Kono jippaa wa koko de onaoshi dekimasu ka?",
+        "jp": "このジッパーはここで直（なお）せますか？",
+        "romaji": "Kono jippaa wa koko de naosemasu ka?",
         "cn": "这条拉链可以在这里修吗？"
       },
       {
@@ -13157,7 +13157,7 @@ window.JP_TOP_VERBS = [
         "cn": "手套被雪打湿了。"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "傘（かさ）を差（さ）していれば、あまり濡（ぬ）れません。",
         "romaji": "Kasa wo sashite ireba, amari nuremasen.",
         "cn": "打着伞的话就不怎么会淋湿。"
@@ -13247,13 +13247,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "喉（のど）が乾（かわ）いたので、お茶（ちゃ）を買（か）いましょう。",
-        "romaji": "Nodo ga kawaita node, ocha wo kaimashou.",
-        "cn": "口渴了，咱们去买杯茶喝吧。"
+        "jp": "風（かぜ）が強（つよ）いので、洗濯物（せんたくもの）がすぐ乾（かわ）きました。",
+        "romaji": "Kaze ga tsuyoi node, sentakumono ga sugu kawakimashita.",
+        "cn": "风很大，洗的衣服很快干了。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］乾燥機（かんそうき）に入（い）れたら、1時間（じかん）でしっかり乾（かわ）きました。",
+        "jp": "［自］乾燥機（かんそうき）に入（い）れたら、1時間（いちじかん）でしっかり乾（かわ）きました。",
         "romaji": "[Vi] Kansouki ni iretara, ichijikan de shikkari kawakimashita.",
         "cn": "[自] 放进烘干机后1小时就彻底干了（他动词：乾かす を乾かす）。"
       }
@@ -13330,9 +13330,9 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "すみません、このお弁当（べんとう）を温（あたた）めていただけますか？",
-        "romaji": "Sumimasen, kono obentou wo atatamete itadakemasu ka?",
-        "cn": "不好意思，能帮我把这份便当加热一下吗？"
+        "jp": "スープが冷（さ）めたので、もう少（すこ）し温（あたた）めていただけますか？",
+        "romaji": "Suupu ga sameta node, mou sukoshi atatamete itadakemasu ka?",
+        "cn": "汤凉了，能再帮我稍微加热一下吗？"
       },
       {
         "form": "たい形",
@@ -13425,13 +13425,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "デザートは食べる前（まえ）まで冷蔵庫（れいぞうこ）で冷（ひ）やします。",
+        "jp": "デザートは食（た）べる前（まえ）まで冷蔵庫（れいぞうこ）で冷（ひ）やします。",
         "romaji": "Dezaato wa taberu mae made reizouko de hiyashimasu.",
         "cn": "甜点吃之前先放冰箱冷藏。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］買ったばかりのプリンを部屋（へや）の冷蔵庫（れいぞうこ）で冷（ひ）やしておこう。",
+        "jp": "［他］買（か）ったばかりのプリンを部屋（へや）の冷蔵庫（れいぞうこ）で冷（ひ）やしておこう。",
         "romaji": "[Vt] Katta bakari no purin wo heya no reizouko de hiyashite okou.",
         "cn": "[他] 把刚买的布丁放房间冰箱冰一下吧（自动词：冷える）。"
       }
@@ -13520,9 +13520,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］鉄板焼（てっぱんや）きは、ミディアムレアで焼（や）いてください。",
-        "romaji": "[Vt] Teppanyaki wa, midiamu rea de yaite kudasai.",
-        "cn": "[他] 铁板烧牛排请帮我煎五分熟（自动词：焼ける）。"
+        "jp": "［他］朝（あさ）ごはんにトーストをこんがり焼（や）きました。",
+        "romaji": "[Vt] Asagohan ni toosuto wo kongari yakimashita.",
+        "cn": "[他] 早饭把吐司烤得金黄酥脆（自动词：パンが焼ける）。"
       }
     ],
     "transitivity": "vt",
@@ -13609,9 +13609,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに煮とこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni nitokou!",
-        "cn": "出发前趁现在先提前煮吧（〜ておこう→〜とこう）。"
+        "jp": "大根（だいこん）とお肉（にく）をコトコト煮（に）たら、すごくおいしくなっちゃった！",
+        "romaji": "Daikon to oniku wo kotokoto nitara, sugoku oishiku natchatta!",
+        "cn": "把白萝卜和肉小火慢炖完，变得超级入味好吃！"
       }
     ],
     "transitivity": "vt",
@@ -13698,9 +13698,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに切っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kittokou!",
-        "cn": "出发前趁现在先提前切吧（〜ておこう→〜とこう）。"
+        "jp": "大（おお）きいお肉（にく）は、ママが小（ちい）さく切（き）っといてあげるね。",
+        "romaji": "Ookii oniku wa, mama ga chiisaku kittoite ageru ne.",
+        "cn": "大块肉妈妈先帮你剪小块哦（〜ておいて→〜といて）。"
       }
     ],
     "transitivity": "vt",
@@ -13781,7 +13781,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "抹茶（まっちゃ）とお湯（ゆ）を丁寧に混（ま）ぜます。",
+        "jp": "抹茶（まっちゃ）とお湯（ゆ）を丁寧（ていねい）に混（ま）ぜます。",
         "romaji": "Maccha to oyu wo teinei ni mazemasu.",
         "cn": "把抹茶粉和热水仔细搅匀。"
       },
@@ -13875,10 +13875,10 @@ window.JP_TOP_VERBS = [
         "cn": "细细体会了由布院清晨的静谧。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに味わっとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni ajiwattokou!",
-        "cn": "出发前趁现在先提前品尝吧（〜ておこう→〜とこう）。"
+        "form": "N4 愿望",
+        "jp": "由布院（ゆふいん）の旅館（りょかん）では、季節（きせつ）の和食（わしょく）をゆっくり味（あじ）わいたいね。",
+        "romaji": "Yufuin no ryokan de wa, kisetsu no washoku wo yukkuri ajiwaitai ne.",
+        "cn": "在由布院的温泉旅馆，真想慢慢品尝季节会席料理呀。"
       }
     ],
     "transitivity": "vt",
@@ -13965,9 +13965,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり足りてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari tariteru kara, daijoubu da yo.",
-        "cn": "已经好好足够了，放心吧（〜ている→〜てる）。"
+        "jp": "バスタオルが足（た）りなかったら、フロントでもう1枚（いちまい）もらっとこうか。",
+        "romaji": "Basutaoru ga tarinakattara, furonto de mou ichimai morattokou ka.",
+        "cn": "浴巾要是不够的话，再去前台要一条备着好吗？"
       }
     ],
     "transitivity": "vi",
@@ -14042,7 +14042,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "た形",
-        "jp": "注文（ちゅうもん）しすぎて、ごはんが少し余（あま）ってしまいました。",
+        "jp": "注文（ちゅうもん）しすぎて、ごはんが少（すこ）し余（あま）ってしまいました。",
         "romaji": "Chuumon shisugite, gohan ga sukoshi amatte shimaimashita.",
         "cn": "点太多了，饭菜剩了一点。"
       },
@@ -14054,9 +14054,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり余ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari amatteru kara, daijoubu da yo.",
-        "cn": "已经好好剩余了，放心吧（〜ている→〜てる）。"
+        "jp": "もしパンが余（あま）ったら、明日（あした）の朝（あさ）ごはんにとっておこうよ。",
+        "romaji": "Moshi pan ga amattara, ashita no asagohan ni totte okou yo.",
+        "cn": "面包要是剩下了，就留到明天早上当早饭吧。"
       }
     ],
     "transitivity": "vi",
@@ -14143,7 +14143,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］お土産（みやげ）を買（か）いすぎて、荷物がどんどん増（ふ）えてきたね。",
+        "jp": "［自］お土産（みやげ）を買（か）いすぎて、荷物（にもつ）がどんどん増（ふ）えてきたね。",
         "romaji": "[Vi] Omiyage wo kaisugite, nimotsu ga dondon fuete kita ne.",
         "cn": "[自] 伴手礼买太多，行李越变越多了呢（他动词：増やす を増やす）。"
       }
@@ -14403,7 +14403,7 @@ window.JP_TOP_VERBS = [
         "cn": "今天早上终于退烧了。"
       },
       {
-        "form": "ます形",
+        "form": "て形",
         "jp": "夜（よる）は気温（きおん）がぐっと下（さ）がるので暖（あたた）かくしてください。",
         "romaji": "Yoru wa kion ga gutto sagaru node atatakaku shite kudasai.",
         "cn": "晚上气温会骤降，请注意保暖。"
@@ -14499,9 +14499,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］暖房（だんぼう）の温度（おんど）をもう2度（ど）上（あ）げていただけますか？",
-        "romaji": "[Vt] Danbou no ondo wo mou nido agete itadakemasu ka?",
-        "cn": "[他] 请问能把暖气温度再调高2度吗？（自动词：上がる が上がる）。"
+        "jp": "［他］高（たか）い棚（たな）の上（うえ）に荷物（にもつ）を上（あ）げました。",
+        "romaji": "[Vt] Takai tana no ue ni nimotsu wo agemashita.",
+        "cn": "[他] 把行李举放到了高架子上面（自动词：〜が上がる）。"
       }
     ],
     "transitivity": "vt",
@@ -14677,9 +14677,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］有名（ゆうめい）なラーメン屋（や）の前（まえ）に長い列（れつ）が並（なら）んでいます。",
-        "romaji": "[Vi] Yuumei na raamen-ya no mae ni nagai retsu ga narande imasu.",
-        "cn": "[自] 有名拉面店前面排着长队（他动词：並べる を並べる）。"
+        "jp": "［自］ショーケースにきれいなケーキがたくさん並（なら）んでいます。",
+        "romaji": "[Vi] Shookeesu ni kirei na keeki ga takusan narande imasu.",
+        "cn": "[自] 玻璃柜里整齐摆着好多漂亮的蛋糕（他动词：〜を並べる）。"
       }
     ],
     "transitivity": "vi",
@@ -14766,9 +14766,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］玄関（げんかん）で靴（くつ）をきれいに並（なら）べて脱（ぬ）ぎました。",
-        "romaji": "[Vt] Genkan de kutsu wo kirei ni narabete nugimashita.",
-        "cn": "[他] 在玄关把鞋子脱下来整齐排好了（自动词：並ぶ が並ぶ）。"
+        "jp": "［他］玄関（げんかん）で靴（くつ）を脱（ぬ）いで、きれいに並（なら）べました。",
+        "romaji": "[Vt] Genkan de kutsu wo nuide, kirei ni narabemashita.",
+        "cn": "[他] 在玄关脱下鞋子后整齐排好了（自动词：靴が並ぶ）。"
       }
     ],
     "transitivity": "vt",
@@ -14855,7 +14855,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］9時（じ）までにロビーに家族（かぞく）みんなで集（あつ）まりましょう。",
+        "jp": "［自］9時（くじ）までにロビーに家族（かぞく）みんなで集（あつ）まりましょう。",
         "romaji": "[Vi] Kuji made ni robii ni kazoku minna de atsumarimashou.",
         "cn": "[自] 9点前全家在大厅集合吧（他动词：集める を集める）。"
       }
@@ -14944,7 +14944,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］駅のスタンプを集（あつ）めるのが娘（むすめ）のブームです。",
+        "jp": "［他］駅（えき）のスタンプを集（あつ）めるのが娘（むすめ）のブームです。",
         "romaji": "[Vt] Eki no sutanpu wo atsumeru no ga musume no buumu desu.",
         "cn": "[他] 收集车站印章现在是女儿的心头好（自动词：集まる が集まる）。"
       }
@@ -15033,9 +15033,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］すみません、ちょっと前（まえ）を通（とお）ります。",
-        "romaji": "[Vi] Sumimasen, chotto mae wo toorimasu.",
-        "cn": "[自] 不好意思，从您前面过一下（他动词：通す を通す）。"
+        "jp": "［自］この裏道（うらみち）を通（とお）ると、5分（ごふん）ほどで駅（えき）に着（つ）きますよ。",
+        "romaji": "[Vi] Kono uramichi wo tooru to, gofun hodo de eki ni tsukimasu yo.",
+        "cn": "[自] 走这条小路的话，大概5分钟就能到车站哦（他动词：〜を通す）。"
       }
     ],
     "transitivity": "vi",
@@ -15122,9 +15122,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり渡ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari watatteru kara, daijoubu da yo.",
-        "cn": "已经好好过（马路/桥）了，放心吧（〜ている→〜てる）。"
+        "jp": "信号（しんごう）が青（あお）になってから、左右（さゆう）を見（み）て横断歩道（おうだんほどう）を渡（わた）ろうね。",
+        "romaji": "Shingou ga ao ni natte kara, sayuu wo mite oudanhodou wo watarou ne.",
+        "cn": "等绿灯亮起后，看看左右再过斑马线哦。"
       }
     ],
     "transitivity": "vi",
@@ -15211,9 +15211,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり曲がってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari magatteru kara, daijoubu da yo.",
-        "cn": "已经好好拐弯了，放心吧（〜ている→〜てる）。"
+        "jp": "次（つぎ）のコンビニの角（かど）を右（みぎ）に曲（ま）がったら、すぐホテルに着（つ）くよ。",
+        "romaji": "Tsugi no konbini no kado wo migi ni magattara, sugu hoteru ni tsuku yo.",
+        "cn": "在前面便利店拐角往右一拐，马上就到酒店啦。"
       }
     ],
     "transitivity": "both",
@@ -15389,9 +15389,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり寄ってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari yotteru kara, daijoubu da yo.",
-        "cn": "已经好好顺路去了，放心吧（〜ている→〜てる）。"
+        "jp": "空港（くうこう）へ行（い）く前（まえ）に、ちょっとお土産屋（みやげや）さんに寄（よ）っていかない？",
+        "romaji": "Kuukou e iku mae ni, chotto omiyageya-san ni yotte ikanai?",
+        "cn": "去机场之前，要不要顺便去一下特产店？"
       }
     ],
     "transitivity": "vi",
@@ -15478,9 +15478,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり泊まってるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari tomatteru kara, daijoubu da yo.",
-        "cn": "已经好好住宿了，放心吧（〜ている→〜てる）。"
+        "jp": "せっかく由布院（ゆふいん）まで来（き）たんだから、2泊（にはく）くらい泊（と）まりたいなあ。",
+        "romaji": "Sekkaku Yufuin made kita nda kara, nihaku kurai tomaritai naa.",
+        "cn": "难得大老远来一趟由布院，真想住上2晚呢。"
       }
     ],
     "transitivity": "vi",
@@ -15560,16 +15560,16 @@ window.JP_TOP_VERBS = [
         "cn": "三年前我们搬到了 Foster City。"
       },
       {
-        "form": "ます形",
-        "jp": "いつかは日本（にほん）にもしばらく住（す）めるように引（ひ）っ越（こ）してみたいです。",
-        "romaji": "Itsuka wa Nihon ni mo shibaraku sumeru you ni hikkoshite mitai desu.",
-        "cn": "以后也想试试搬来日本小住一段时间。"
+        "form": "辞书形",
+        "jp": "来年（らいねん）は駅（えき）の近（ちか）くに引（ひ）っ越（こ）す予定（よてい）です。",
+        "romaji": "Rainen wa eki no chikaku ni hikkosu yotei desu.",
+        "cn": "明年打算搬到离车站近的地方。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "もうすっかり引っ越してるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari hikkoshiteru kara, daijoubu da yo.",
-        "cn": "已经好好搬家了，放心吧（〜ている→〜てる）。"
+        "form": "N4 体验",
+        "jp": "いつか日本（にほん）に引（ひ）っ越（こ）して、半年（はんとし）くらい暮（く）らしてみたいね。",
+        "romaji": "Itsuka Nihon ni hikkoshite, hantoshi kurai kurashite mitai ne.",
+        "cn": "真想有朝一日搬来日本体验住上半年左右呢。"
       }
     ],
     "transitivity": "vi",
@@ -15656,9 +15656,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり住んでるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari sunderu kara, daijoubu da yo.",
-        "cn": "已经好好居住了，放心吧（〜ている→〜てる）。"
+        "jp": "冬（ふゆ）の間（あいだ）だけ、温泉（おんせん）のある静（しず）かな町（まち）に住（す）んでみたいなぁ。",
+        "romaji": "Fuyu no aida dake, onsen no aru shizuka na machi ni sunde mitai naa.",
+        "cn": "真想就冬天这阵子住进有温泉的安静小镇里呀。"
       }
     ],
     "transitivity": "vi",
@@ -15745,9 +15745,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに過ごしとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni sugoshitokou!",
-        "cn": "出发前趁现在先提前度过（时间）吧（〜ておこう→〜とこう）。"
+        "jp": "今日（きょう）は観光（かんこう）しないで、温泉（おんせん）旅館（りょかん）でのんびり過（す）ごそうよ。",
+        "romaji": "Kyou wa kankou shinaide, onsen ryokan de nonbiri sugosou yo.",
+        "cn": "今天不赶景点了，就在温泉旅馆里悠悠哉哉地度过吧。"
       }
     ],
     "transitivity": "vt",
@@ -16005,16 +16005,16 @@ window.JP_TOP_VERBS = [
         "cn": "我们在美国养育两个女儿。"
       },
       {
-        "form": "ます形",
+        "form": "辞书形",
         "jp": "子（こ）どもをバイリンガルに育（そだ）てるのは楽（たの）しい挑戦（ちょうせん）です。",
         "romaji": "Kodomo wo bairingaru ni sodateru no wa tanoshii chousen desu.",
         "cn": "把孩子培养成双语宝宝是个有趣的挑战。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］サンフランシスコで二人（ふたり）の娘（むすめ）を育（そだ）てています。",
-        "romaji": "[Vt] San Furanshisuko de futari no musume wo sodatete imasu.",
-        "cn": "[他] 我们在旧金山抚养着两个女儿（自动词：育つ が育つ）。"
+        "jp": "［他］おばあちゃんは庭（にわ）できれいな花（はな）を育（そだ）てています。",
+        "romaji": "[Vt] Obaachan wa niwa de kirei na hana wo sodatete imasu.",
+        "cn": "[他] 奶奶在院子里种着漂亮的花（自动词：花が育つ）。"
       }
     ],
     "transitivity": "vt",
@@ -16101,7 +16101,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］子どもが35日（にち）の旅（たび）を通（とお）してたくましく育（そだ）ちました。",
+        "jp": "［自］子（こ）どもが35日（さんじゅうごにち）の旅（たび）を通（とお）してたくましく育（そだ）ちました。",
         "romaji": "[Vi] Kodomo ga sanjuugonichi no tabi wo tooshite takumashiku sodachimashita.",
         "cn": "[自] 孩子在35天的旅行中茁壮成长了（他动词：育てる を育てる）。"
       }
@@ -16189,10 +16189,10 @@ window.JP_TOP_VERBS = [
         "cn": "新的灵感往往在对话中诞生。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "もうすっかり生まれてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari umareteru kara, daijoubu da yo.",
-        "cn": "已经好好出生了，放心吧（〜ている→〜てる）。"
+        "form": "N4 过去",
+        "jp": "お姉（ねえ）ちゃんのジニーも、妹（いもうと）のジェイシーも、カリフォルニアで生（う）まれたんです。",
+        "romaji": "Onee-chan no Jinii mo, imouto no Jeishii mo, Kariforunia de umareta ndesu.",
+        "cn": "姐姐 Jinny 和妹妹 Jaycie 都是在加州出生的。"
       }
     ],
     "transitivity": "vi",
@@ -16279,9 +16279,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり生きてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari ikiteru kara, daijoubu da yo.",
-        "cn": "已经好好生活了，放心吧（〜ている→〜てる）。"
+        "jp": "子（こ）どもたちが笑顔（えがお）で毎日（まいにち）元気（げんき）に生（い）きてるだけで嬉（うれ）しいね。",
+        "romaji": "Kodomotachi ga egao de mainichi genki ni ikiteru dake de ureshii ne.",
+        "cn": "只要孩子们每天开开心心、健健康康地生活就觉得好幸福呀（〜ている→〜てる）。"
       }
     ],
     "transitivity": "vi",
@@ -16368,9 +16368,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに守っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni mamottokou!",
-        "cn": "出发前趁现在先提前遵守吧（〜ておこう→〜とこう）。"
+        "jp": "博物館（はくぶつかん）の中（なか）のルールは、みんなでちゃんと守（まも）ろうね。",
+        "romaji": "Hakubutsukan no naka no ruuru wa, minna de chanto mamorou ne.",
+        "cn": "博物馆里的规定，大家都要好好遵守哦。"
       }
     ],
     "transitivity": "vt",
@@ -16457,9 +16457,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに信じとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni shinjitokou!",
-        "cn": "出发前趁现在先提前相信吧（〜ておこう→〜とこう）。"
+        "jp": "自分（じぶん）の日本語（にほんご）を信（しん）じて、お店（みせ）の人（ひと）に話（はな）しかけてみよう！",
+        "romaji": "Jibun no Nihongo wo shinjite, omise no hito ni hanashikakete miyou!",
+        "cn": "相信自己的日语，大胆跟店员开口试试吧！"
       }
     ],
     "transitivity": "vt",
@@ -16539,16 +16539,16 @@ window.JP_TOP_VERBS = [
         "cn": "在增上寺祈愿全家人身体健康。"
       },
       {
-        "form": "ます形",
-        "jp": "皆（みな）さまのご多幸（たこう）をお願（ねが）い申（もう）し上（あ）げます。",
-        "romaji": "Minasama no gotakou wo onegai moushiagemasu.",
-        "cn": "祝愿各位幸福安康。"
+        "form": "ている形",
+        "jp": "家族（かぞく）みんなの健康（けんこう）と安全（あんぜん）を心（こころ）から願（ねが）っています。",
+        "romaji": "Kazoku minna no kenkou to anzen wo kokoro kara negatte imasu.",
+        "cn": "衷心祝愿全家人健康平安。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに願っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni negattokou!",
-        "cn": "出发前趁现在先提前祈愿吧（〜ておこう→〜とこう）。"
+        "jp": "明日（あした）は富士山（ふじさん）がきれいに見（み）えるように願（ねが）ってるよ。",
+        "romaji": "Ashita wa Fujisan ga kirei ni mieru you ni negatteru yo.",
+        "cn": "希望明天能清清楚楚看到富士山呀（〜ている→〜てる）。"
       }
     ],
     "transitivity": "vt",
@@ -16635,9 +16635,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに祈っとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni inottokou!",
-        "cn": "出发前趁现在先提前祈祷吧（〜ておこう→〜とこう）。"
+        "jp": "みんな今年（ことし）も元気（げんき）で過（す）ごせますようにって、神社（じんじゃ）で祈（いの）ってきたよ。",
+        "romaji": "Minna kotoshi mo genki de sugosemasu you ni tte, jinja de inotte kita yo.",
+        "cn": "刚刚在神社祈福希望大家今年也都平平安安呢。"
       }
     ],
     "transitivity": "vt",
@@ -16724,9 +16724,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに比べとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni kurabetokou!",
-        "cn": "出发前趁现在先提前比较吧（〜ておこう→〜とこう）。"
+        "jp": "メニューの写真（しゃしん）と値段（ねだん）を見（み）比（くら）べてから決（き）めようか。",
+        "romaji": "Menyuu no shashin to nedan wo mikurabete kara kimeyou ka.",
+        "cn": "把菜单的图片和价格对比看看再决定好吗？"
       }
     ],
     "transitivity": "vt",
@@ -16813,9 +16813,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに試しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni tameshitokou!",
-        "cn": "出发前趁现在先提前尝试吧（〜ておこう→〜とこう）。"
+        "jp": "せっかく博多（はかた）に来（き）たんだし、名物（めいぶつ）の明太子（めんたいこ）も試（ため）してみよう！",
+        "romaji": "Sekkaku Hakata ni kita ndashi, meibutsu no mentaiko mo tameshite miyou!",
+        "cn": "难得来一趟福冈博多，特产明太子也尝尝看吧！"
       }
     ],
     "transitivity": "vt",
@@ -16902,9 +16902,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで挑戦しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de chousen shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先挑战一下比较好哦（〜ておく→〜とく）。"
+        "jp": "今回（こんかい）の旅行（りょこう）では、自分（じぶん）だけで日本語（にほんご）の電話（でんわ）予約（よやく）に挑戦（ちょうせん）してみるよ！",
+        "romaji": "Konkai no ryokou de wa, jibun dake de Nihongo no denwa yoyaku ni chousen shite miru yo!",
+        "cn": "这次旅行我要试着独立挑战用日语打电话预约！"
       }
     ],
     "transitivity": "vi",
@@ -16991,9 +16991,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで成功しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de seikou shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先成功一下比较好哦（〜ておく→〜とく）。"
+        "jp": "朝（あさ）早（はや）く並（なら）んだおかげで、限定（げんてい）パンを買（か）うのに成功（せいこう）したね！",
+        "romaji": "Asa hayaku naranda okage de, gentei pan wo kau no ni seikou shita ne!",
+        "cn": "多亏早起排队，终于成功买到限量面包了呢！"
       }
     ],
     "transitivity": "vi",
@@ -17074,15 +17074,15 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "電車（でんしゃ）の乗（の）り換（か）えを一度（いちど）失敗（しっぱい）してしまいました。",
-        "romaji": "Densha no norikae wo ichido shippai shite shimaimashita.",
-        "cn": "有一次电车换乘坐反了。"
+        "jp": "電車（でんしゃ）の乗（の）り換（か）えに一度（いちど）失敗（しっぱい）してしまいました。",
+        "romaji": "Densha no norikae ni ichido shippai shite shimaimashita.",
+        "cn": "有一次电车换乘搞错了路线。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで失敗しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de shippai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先失败一下比较好哦（〜ておく→〜とく）。"
+        "jp": "間違（まちが）えたり失敗（しっぱい）しちゃったりしても、次（つぎ）うまくやれば大丈夫（だいじょうぶ）だよ。",
+        "romaji": "Machigaetari shippai shichattari shite mo, tsugi umaku yareba daijoubu da yo.",
+        "cn": "哪怕弄错或失败了一回，下次做好就行啦，不用在意（〜てしまった→〜ちゃった）。"
       }
     ],
     "transitivity": "vi",
@@ -17169,9 +17169,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに間違えとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni machigaetokou!",
-        "cn": "出发前趁现在先提前弄错吧（〜ておこう→〜とこう）。"
+        "jp": "あっ！電車（でんしゃ）の乗（の）り場（ば）をまた間違（まちが）えちゃった！",
+        "romaji": "A! Densha no noriba wo mata machigaechatta!",
+        "cn": "啊呀！电车站台又走错了（〜てしまった→〜ちゃった）！"
       }
     ],
     "transitivity": "vt",
@@ -17251,16 +17251,16 @@ window.JP_TOP_VERBS = [
         "cn": "到了车站才发现忘带手套了。"
       },
       {
-        "form": "ない形",
-        "jp": "小さな看板（かんばん）だったので、最初（さいしょ）は気（き）づきませんでした。",
+        "form": "ます形(否定)",
+        "jp": "小（ちい）さな看板（かんばん）だったので、最初（さいしょ）は気（き）づきませんでした。",
         "romaji": "Chiisana kanban datta node, saisho wa kizukimasen deshita.",
         "cn": "招牌很小，一开始没注意到。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "もうすっかり気づいてるから、大丈夫（だいじょうぶ）だよ。",
-        "romaji": "Mou sukkari kizuiteru kara, daijoubu da yo.",
-        "cn": "已经好好注意到了，放心吧（〜ている→〜てる）。"
+        "jp": "さっき傘（かさ）を忘（わす）れたのに今（いま）気（き）づいたから、取（と）りに戻（もど）ってくるね。",
+        "romaji": "Sakki kasa wo wasureta no ni ima kizuita kara, tori ni modotte kuru ne.",
+        "cn": "刚才把伞忘了我现在才发现，我回去拿一趟马上回来。"
       }
     ],
     "transitivity": "vi",
@@ -17347,9 +17347,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発（しゅっぱつ）の前（まえ）に、今のうちに思い出しとこう！",
-        "romaji": "Shuppatsu no mae ni, ima no uchi ni omoidashitokou!",
-        "cn": "出发前趁现在先提前想起吧（〜ておこう→〜とこう）。"
+        "jp": "あ！レストランの予約番号（よやくばんごう）、やっと今（いま）思（おも）い出（だ）したよ！",
+        "romaji": "A! Resutoran no yoyaku bangou, yatto ima omoidashita yo!",
+        "cn": "啊！餐厅的预约号我现在终于想起来了！"
       }
     ],
     "transitivity": "vt",
@@ -17436,9 +17436,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで想像しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de souzou shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先想象一下比较好哦（〜ておく→〜とく）。"
+        "jp": "写真（しゃしん）で見（み）て想像（そうぞう）してたより、ずっと景色（けしき）がきれいだね！",
+        "romaji": "Shashin de mite souzou shiteta yori, zutto keshiki ga kirei da ne!",
+        "cn": "比看照片想象的风景美太多了呢（〜ていた→〜てた）！"
       }
     ],
     "transitivity": "vt",
@@ -17512,10 +17512,10 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
-        "jp": "明日（あした）の鉄板焼（てっぱんや）きランチをとても期待（きたい）しています！",
-        "romaji": "Ashita no teppanyaki ranchi wo totemo kitai shite imasu!",
-        "cn": "我非常期待明天的铁板烧午餐！"
+        "form": "ている形",
+        "jp": "新（あたら）しいホテルのサービスにとても期待（きたい）しています！",
+        "romaji": "Atarashii hoteru no saabisu ni totemo kitai shite imasu!",
+        "cn": "我很期待新酒店的服务体验！"
       },
       {
         "form": "ます形",
@@ -17525,9 +17525,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで期待しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de kitai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先期待一下比较好哦（〜ておく→〜とく）。"
+        "jp": "ジニーもジェイシーも、温泉（おんせん）旅館（りょかん）のお料理（りょうり）にすごく期待（きたい）してるみたいだよ。",
+        "romaji": "Jinii mo Jeishii mo, onsen ryokan no oryouri ni sugoku kitai shiteru mitai da yo.",
+        "cn": "Jinny 和 Jaycie 好像都超级期待温泉旅馆的料理呢（〜ている→〜てる）。"
       }
     ],
     "transitivity": "vt",
@@ -17614,9 +17614,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで賛成しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de sansei shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先赞成一下比较好哦（〜ておく→〜とく）。"
+        "jp": "午前中（ごぜんちゅう）は公園（こうえん）に行（い）く案（あん）、家族（かぞく）みんな賛成（さんせい）してたよ。",
+        "romaji": "Gozenchuu wa kouen ni iku an, kazoku minna sansei shiteta yo.",
+        "cn": "上午去公园玩的方案，全家人都举手赞成了呢（〜ていた→〜てた）。"
       }
     ],
     "transitivity": "vi",
@@ -17691,21 +17691,21 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "急（きゅう）な変更（へんこう）には少（すこ）し反対（はんたい）します。",
-        "romaji": "Kyuu na henkou ni wa sukoshi hantai shimasu.",
-        "cn": "对于突然变更计划我有点不太赞同。"
+        "jp": "危（あぶ）ない計画（けいかく）には反対（はんたい）します。",
+        "romaji": "Abunai keikaku ni wa hantai shimasu.",
+        "cn": "危险的计划我会反对。"
       },
       {
         "form": "ない形",
-        "jp": "誰も反対（はんたい）しなかったので、予定通（よていどお）り進（すす）めます。",
+        "jp": "誰（だれ）も反対（はんたい）しなかったので、予定通（よていどお）り進（すす）めます。",
         "romaji": "Dare mo hantai shinakatta node, yoteidoori susumemasu.",
         "cn": "没有人反对，那就按计划推进。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで反対しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de hantai shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先反对一下比较好哦（〜ておく→〜とく）。"
+        "jp": "こんなに寒（さむ）いのに外（そと）で長（なが）く待（ま）つのには、みんな反対（はんたい）してたよね。",
+        "romaji": "Konna ni samui noni soto de nagaku matsu no ni wa, minna hantai shiteta yo ne.",
+        "cn": "天这么冷在外面干等，大家之前都不太赞成的吧（〜ていた→〜てた）。"
       }
     ],
     "transitivity": "vi",
@@ -17791,10 +17791,10 @@ window.JP_TOP_VERBS = [
         "cn": "感谢一直支持着这个家的太太。"
       },
       {
-        "form": "💬 口语缩略",
-        "jp": "念（ねん）のため、あとで感謝しといたほうがいいかもね。",
-        "romaji": "Nen no tame, ato de kansha shitoita hou ga ii kamo ne.",
-        "cn": "保险起见，待会还是先感谢一下比较好哦（〜ておく→〜とく）。"
+        "form": "N4 敬语",
+        "jp": "優（やさ）しくお世話（せわ）してくださった保育（ほいく）園（えん）の先生（せんせい）に、心（こころ）から感謝（かんしゃ）しています。",
+        "romaji": "Yasashiku osewa shite kudasatta hoikuen no sensei ni, kokoro kara kansha shite imasu.",
+        "cn": "打心底感激悉心照顾女儿们的保育园老师。"
       }
     ],
     "transitivity": "vi",
@@ -17884,7 +17884,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］自動（じどう）ドアがゆっくり開（あ）きました（他：開ける）。",
+        "jp": "［自］自動（じどう）ドアがゆっくり開（あ）きました。",
         "romaji": "[Vi] Jidou doa ga yukkuri akimashita.",
         "cn": "[自] 自动门慢慢开了（对比他动词：ドアを開ける）。"
       }
@@ -17973,7 +17973,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］エレベーターのドアが閉（し）まります（他：閉める）。",
+        "jp": "［自］エレベーターのドアが閉（し）まります。",
         "romaji": "[Vi] Erebeetaa no doa ga shimarimasu.",
         "cn": "[自] 电梯门要关了（对比他动词：ドアを閉める）。"
       }
@@ -18049,7 +18049,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ています",
+        "form": "ている形",
         "jp": "廊下（ろうか）の電気（でんき）がまだついています。",
         "romaji": "Rouka no denki ga mada tsuite imasu.",
         "cn": "走廊的灯还亮着。"
@@ -18062,7 +18062,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］あ、ストーブがやっとつきました！（他：つける）。",
+        "jp": "［自］あ、ストーブがやっとつきました！",
         "romaji": "[Vi] A, sutoobu ga yatto tsukimashita!",
         "cn": "[自] 啊，取暖器终于亮起来了！（他动词：〜をつける）。"
       }
@@ -18151,7 +18151,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］雪（ゆき）が溶（と）けて足跡（あしあと）が消（き）えました（他：消す）。",
+        "jp": "［自］雪（ゆき）が溶（と）けて足跡（あしあと）が消（き）えました。",
         "romaji": "[Vi] Yuki ga tokete ashiato ga kiemashita.",
         "cn": "[自] 雪化了脚印就消失了（对比他动词：電気を消す）。"
       }
@@ -18240,7 +18240,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］35日（にち）の旅（たび）を無事（ぶじ）に終（お）えました（自：終わる）。",
+        "jp": "［他］35日（さんじゅうごにち）の旅（たび）を無事（ぶじ）に終（お）えました。",
         "romaji": "[Vt] Sanjuugonichi no tabi wo buji ni oemashita.",
         "cn": "[他] 平安结束了35天的旅程（自动词：旅が終わる）。"
       }
@@ -18322,14 +18322,14 @@ window.JP_TOP_VERBS = [
         "cn": "啊，以为丢了的护照找到了！"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "なかなかベビーカーで入（はい）れるお店（みせ）が見（み）つかりません。",
         "romaji": "Nakanaka bebiikaa de haireru omise ga mitsukarimasen.",
         "cn": "一直没找到能推婴儿车进去的店。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］駅（えき）の落（お）とし物（もの）センターで手袋（てぶくろ）が見（み）つかったよ（他：見つける）。",
+        "jp": "［自］駅（えき）の落（お）とし物（もの）センターで手袋（てぶくろ）が見（み）つかったよ。",
         "romaji": "[Vi] Eki no otoshimono sentaa de tebukuro ga mitsukatta yo.",
         "cn": "[自] 在车站失物招领处找到手套了哦！（他动词：〜を見つける）。"
       }
@@ -18418,7 +18418,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］席（せき）が決（き）まったらご連絡（れんらく）ください（他：決める）。",
+        "jp": "［自］席（せき）が決（き）まったらご連絡（れんらく）ください。",
         "romaji": "[Vi] Seki ga kimattara gorenraku kudasai.",
         "cn": "[自] 座位定下来后请联系我（他动词：〜を決める）。"
       }
@@ -18507,7 +18507,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］楽しい毎日（まいにち）がもう3週間（しゅうかん）も続（つづ）いています（他：続ける）。",
+        "jp": "［自］楽（たの）しい毎日（まいにち）がもう3週間（さんしゅうかん）も続（つづ）いています。",
         "romaji": "[Vi] Tanoshii mainichi ga mou sanshuukan mo tsuzuite imasu.",
         "cn": "[自] 愉快的每一天已经持续3周了（他动词：〜を続ける）。"
       }
@@ -18596,7 +18596,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］テーブルを少（すこ）し右（みぎ）へ動（うご）かしました（自：動く）。",
+        "jp": "［他］テーブルを少（すこ）し右（みぎ）へ動（うご）かしました。",
         "romaji": "[Vt] Teeburu wo sukoshi migi e ugokashimashita.",
         "cn": "[他] 把桌子往右挪了一点（自动词：〜が動く）。"
       }
@@ -18673,21 +18673,21 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "【店员说】お荷物（にもつ）、フロントでお預（あず）かりしますね。",
+        "jp": "お荷物（にもつ）、フロントでお預（あず）かりしますね。",
         "romaji": "Onimotsu, furonto de oazukari shimasu ne.",
         "cn": "【店员】您的行李我们前台帮您保管哦。"
       },
       {
         "form": "た形",
-        "jp": "チェックインまで大きいバッグを預（あず）かってもらえました。",
+        "jp": "チェックインまで大（おお）きいバッグを預（あず）かってもらえました。",
         "romaji": "Chekkuin made ookii baggu wo azukatte moraemashita.",
         "cn": "入住前酒店帮我们把大包收下保管了。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "ホテルが荷物を「預（あず）かる」、私たちが「預（あず）ける」です。",
-        "romaji": "Hoteru ga nimotsu wo azukaru, watashitachi ga azukeru desu.",
-        "cn": "酒店方“替客人保管”是「預かる」，客人“寄放”是「預ける」！"
+        "jp": "［他］チェックアウトの後（あと）も、フロントで荷物（にもつ）を預（あず）かってくれますよ。",
+        "romaji": "[Vt] Chekkuauto no ato mo, furonto de nimotsu wo azukatte kuremasu yo.",
+        "cn": "[他] 退房之后前台也能替客人保管行李哦（酒店替客保管用「預かる」，客人寄放用「預ける」）。"
       }
     ]
   },
@@ -18767,14 +18767,14 @@ window.JP_TOP_VERBS = [
         "cn": "哇，房间收拾得真整洁呀！"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "おもちゃが多（おお）くて、なかなか部屋（へや）が片付（かたづ）きません。",
         "romaji": "Omocha ga ookute, nakanaka heya ga katazukimasen.",
         "cn": "玩具太多了，房间怎么也收拾不完。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］荷物（にもつ）が一通（ひととお）り片付（かたづ）いたら出（で）かけよう（他：片付ける）。",
+        "jp": "［自］荷物（にもつ）が一通（ひととお）り片付（かたづ）いたら出（で）かけよう。",
         "romaji": "[Vi] Nimotsu ga hitotoori katazuitara dekakeyou.",
         "cn": "[自] 行李大致收好后就出门吧（他动词：〜を片付ける）。"
       }
@@ -18857,13 +18857,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ない形",
-        "jp": "畳（たたみ）を汚（よご）さないように気（き）をつけて食べようね。",
+        "jp": "畳（たたみ）を汚（よご）さないように気（き）をつけて食（た）べようね。",
         "romaji": "Tatami wo yogosanai you ni ki wo tsukete tabeyou ne.",
         "cn": "小心别把榻榻米弄脏，仔细吃哦。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］泥（どろ）で靴（くつ）を汚（よご）さないでね（自：汚れる）。",
+        "jp": "［他］泥（どろ）で靴（くつ）を汚（よご）さないでね。",
         "romaji": "[Vt] Doro de kutsu wo yogosanaide ne.",
         "cn": "[他] 别用泥巴把鞋弄脏了哦（自动词：靴が汚れる）。"
       }
@@ -18952,7 +18952,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］温泉（おんせん）で髪（かみ）を濡（ぬ）らさないように気（き）をつけます（自：濡れる）。",
+        "jp": "［他］温泉（おんせん）で髪（かみ）を濡（ぬ）らさないように気（き）をつけます。",
         "romaji": "[Vt] Onsen de kami wo nurasanai you ni ki wo tsukemasu.",
         "cn": "[他] 泡温泉时注意别弄湿头发（自动词：髪が濡れる）。"
       }
@@ -19041,7 +19041,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］コインランドリーで洗濯物（せんたくもの）を乾（かわ）かしました（自：乾く）。",
+        "jp": "［他］コインランドリーで洗濯物（せんたくもの）を乾（かわ）かしました。",
         "romaji": "[Vt] Koin randorii de sentakumono wo kawakashimashita.",
         "cn": "[他] 在投币洗衣房把衣服烘干了（自动词：服が乾く）。"
       }
@@ -19124,13 +19124,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "熱（あつ）い豚骨（とんこつ）ラーメンを食べると心（こころ）まで温（あたた）まりますね。",
+        "jp": "熱（あつ）い豚骨（とんこつ）ラーメンを食（た）べると心（こころ）まで温（あたた）まりますね。",
         "romaji": "Atsui tonkotsu raamen wo taberu to kokoro made atatamarimasu ne.",
         "cn": "吃一碗滚烫的豚骨拉面连心都暖了呢。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］部屋（へや）がやっと温（あたた）まってきました（他：温める）。",
+        "jp": "［自］部屋（へや）がやっと温（あたた）まってきました。",
         "romaji": "[Vi] Heya ga yatto atatamatte kimashita.",
         "cn": "[自] 房间终于暖和起来了（对比他动词：牛乳を温める）。"
       }
@@ -19206,8 +19206,8 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます形",
-        "jp": "夕方（ゆうがた）になると急に冷（ひ）えるので、上着（うわぎ）を持（も）って行（い）こう。",
+        "form": "辞书形",
+        "jp": "夕方（ゆうがた）になると急（きゅう）に冷（ひ）えるので、上着（うわぎ）を持（も）って行（い）こう。",
         "romaji": "Yuugata ni naru to kyuu ni hieru node, uwagi wo motte ikou.",
         "cn": "一到傍晚就会突然变冷，带着外套出门吧。"
       },
@@ -19219,7 +19219,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］おなかが冷（ひ）えないように毛布（もうふ）をかけよう（他：冷やす）。",
+        "jp": "［自］おなかが冷（ひ）えないように毛布（もうふ）をかけよう。",
         "romaji": "[Vi] Onaka ga hienai you ni moufu wo kakeyou.",
         "cn": "[自] 盖好毯子免得肚子着凉（他动词：飲み物を冷やす）。"
       }
@@ -19308,7 +19308,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］焼き鳥（やきとり）がもうすぐ焼（や）けますよ（他：焼く）。",
+        "jp": "［自］焼（や）き鳥（とり）がもうすぐ焼（や）けますよ。",
         "romaji": "[Vi] Yakitori ga mou sugu yakemasu yo.",
         "cn": "[自] 烤鸡串马上就烤好了哦（他动词：お肉を焼く）。"
       }
@@ -19390,14 +19390,14 @@ window.JP_TOP_VERBS = [
         "cn": "酱汁和蛋黄酱融合得很好，太香了。"
       },
       {
-        "form": "ない形",
+        "form": "ます形(否定)",
         "jp": "油（あぶら）と水（みず）はなかなか混（ま）ざりません。",
         "romaji": "Abura to mizu wa nakanaka mazarimasen.",
         "cn": "油和水很难混到一起。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］大人（おとな）の列（れつ）に子（こ）どもが混（ま）ざっています（他：混ぜる）。",
+        "jp": "［自］大人（おとな）の列（れつ）に子（こ）どもが混（ま）ざっています。",
         "romaji": "[Vi] Otona no retsu ni kodomo ga mazatte imasu.",
         "cn": "[自] 大人的队伍里混着小朋友（他动词：〜を混ぜる）。"
       }
@@ -19473,8 +19473,8 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます形",
-        "jp": "旅行（りょこう）の思い出（おもいで）の写真（しゃしん）をもっと増（ふ）やしたいです。",
+        "form": "たい形",
+        "jp": "旅行（りょこう）の思（おも）い出（で）の写真（しゃしん）をもっと増（ふ）やしたいです。",
         "romaji": "Ryokou no omoide no shashin wo motto fuyashitai desu.",
         "cn": "我想多拍一些旅行回忆的照片。"
       },
@@ -19486,7 +19486,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］スーツケースの中身（なかみ）はあまり増（ふ）やさないようにしよう（自：増える）。",
+        "jp": "［他］スーツケースの中身（なかみ）はあまり増（ふ）やさないようにしよう。",
         "romaji": "[Vt] Suutsukeesu no nakami wa amari fuyasanai you ni shiyou.",
         "cn": "[他] 尽量别让行李箱里的东西变太多（自动词：荷物が増える）。"
       }
@@ -19575,7 +19575,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］無駄遣（むだづか）いを減（へ）らして貯金（ちょきん）します（自：減る）。",
+        "jp": "［他］無駄遣（むだづか）いを減（へ）らして貯金（ちょきん）します。",
         "romaji": "[Vt] Mudazukai wo herashite chokin shimasu.",
         "cn": "[他] 减少乱花钱存起来（自动词：お金が減る）。"
       }
@@ -19657,14 +19657,14 @@ window.JP_TOP_VERBS = [
         "cn": "司机师傅，请在那边的拐角把车停一下。"
       },
       {
-        "form": "ます形",
-        "jp": "危（あぶ）ないから、すぐエレベーターを止（と）めましょう。",
-        "romaji": "Abunai kara, sugu erebeetaa wo tomemashou.",
-        "cn": "很危险，赶紧停掉电梯吧。"
+        "form": "辞书形",
+        "jp": "あ、水道（すいどう）の水（みず）を止（と）めるのを忘（わす）れていました！",
+        "romaji": "A, suidou no mizu wo tomeru no wo wasurete imashita!",
+        "cn": "啊，我忘了关水龙头了！"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］駅（えき）の前（まえ）に自転車（じてんしゃ）を止（と）めました（自：止まる）。",
+        "jp": "［他］駅（えき）の前（まえ）に自転車（じてんしゃ）を止（と）めました。",
         "romaji": "[Vt] Eki no mae ni jitensha wo tomemashita.",
         "cn": "[他] 在车站前面停了自行车（自动词：車が止まる）。"
       }
@@ -19746,14 +19746,14 @@ window.JP_TOP_VERBS = [
         "cn": "可以请您带我们进里面的包厢吗？"
       },
       {
-        "form": "ます形",
-        "jp": "すみません、ちょっと通（とお）してもらえますか？（人混み）",
-        "romaji": "Sumimasen, chotto tooshite moraemasu ka?",
-        "cn": "不好意思，能让我过一下吗？"
+        "form": "N4 授受",
+        "jp": "すみません、少（すこ）し通（とお）してもらえますか？",
+        "romaji": "Sumimasen, sukoshi tooshite moraemasu ka?",
+        "cn": "不好意思（人挤时），能让我过一下吗？"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］風（かぜ）を通（とお）すために窓（まど）を開（あ）けました（自：通る）。",
+        "jp": "［他］風（かぜ）を通（とお）すために窓（まど）を開（あ）けました。",
         "romaji": "[Vt] Kaze wo toosu tame ni mado wo akemashita.",
         "cn": "[他] 为了通风把窗户打开了（自动词：風が通る）。"
       }
@@ -19842,7 +19842,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］椅子（いす）をテーブルの下（した）に戻（もど）しました（自：戻る）。",
+        "jp": "［他］椅子（いす）をテーブルの下（した）に戻（もど）しました。",
         "romaji": "[Vt] Isu wo teeburu no shita ni modoshimashita.",
         "cn": "[他] 把椅子推回桌子下面了（自动词：部屋に戻る）。"
       }
@@ -19919,19 +19919,19 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "明日（あした）は7時（じ）に起（お）こしてくださいね。",
+        "jp": "明日（あした）は7時（しちじ）に起（お）こしてくださいね。",
         "romaji": "Ashita wa shichiji ni okoshite kudasai ne.",
         "cn": "明天请7点叫醒我哦。"
       },
       {
         "form": "ない形",
-        "jp": "Jaycieがぐっすり寝（ね）てるから、起（お）こさないでそっとしよう。",
+        "jp": "ジェイシーがぐっすり寝（ね）てるから、起（お）こさないでそっとしよう。",
         "romaji": "Jaycie ga gussuri neteru kara, okosanaide sotto shiyou.",
         "cn": "Jaycie 睡得正香，别吵醒她轻轻的。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］転（ころ）んだ子（こ）どもを優（やさ）しく起（お）こしてあげました（自：起きる）。",
+        "jp": "［他］転（ころ）んだ子（こ）どもを優（やさ）しく起（お）こしてあげました。",
         "romaji": "[Vt] Koronda kodomo wo yasashiku okoshite agemashita.",
         "cn": "[他] 温柔地把摔倒的孩子扶了起来（自动词：起きる）。"
       }
@@ -20020,7 +20020,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］8時（じ）にはベッドに寝（ね）かせたいです（自：寝る）。",
+        "jp": "［他］8時（はちじ）にはベッドに寝（ね）かせたいです。",
         "romaji": "[Vt] Hachiji ni wa beddo ni nekasetai desu.",
         "cn": "[他] 想在8点前把她哄到床上睡着（自动词：寝る）。"
       }
@@ -20109,7 +20109,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］トランクに大（おお）きいスーツケースを乗（の）せました（自：乗る）。",
+        "jp": "［他］トランクに大（おお）きいスーツケースを乗（の）せました。",
         "romaji": "[Vt] Toranku ni ookii suutsukeesu wo nosemashita.",
         "cn": "[他] 把大行李箱装上了后备箱（自动词：電車に乗る）。"
       }
@@ -20186,19 +20186,19 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "て形",
-        "jp": "すみません、ここで荷物を降（お）ろしてもいいですか？",
+        "jp": "すみません、ここで荷物（にもつ）を降（お）ろしてもいいですか？",
         "romaji": "Sumimasen, koko de nimotsu wo oroshite mo ii desu ka?",
         "cn": "不好意思，请问可以在这里卸行李吗？"
       },
       {
         "form": "ます形",
-        "jp": "コンビニのATMで日本円（にほんえん）を少し降（お）ろしておきます。",
-        "romaji": "Konbini no ATM de Nihon'en wo sukoshi oroshite okimasu.",
-        "cn": "我在便利店 ATM 先取一点日元现金。"
+        "jp": "タクシーのトランクから大（おお）きいスーツケースを降（お）ろします。",
+        "romaji": "Takushii no toranku kara ookii suutsukeesu wo oroshimasu.",
+        "cn": "从出租车后备箱把大行李箱搬下来。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］眠（ねむ）った娘（むすめ）をそっとベッドに降（お）ろしました（自：降りる）。",
+        "jp": "［他］眠（ねむ）った娘（むすめ）をそっとベッドに降（お）ろしました。",
         "romaji": "[Vt] Nemutta musume wo sotto beddo ni oroshimashita.",
         "cn": "[他] 把睡着的女儿轻轻放到了床上（自动词：電車を降りる）。"
       }
@@ -20275,7 +20275,7 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "品川（しながわ）から銀座（ぎんざ）まで電車（でんしゃ）で15分（ふん）ほど掛（か）かります。",
+        "jp": "品川（しながわ）から銀座（ぎんざ）まで電車（でんしゃ）で15分（じゅうごふん）ほど掛（か）かります。",
         "romaji": "Shinagawa kara Ginza made densha de juugofun hodo kakarimasu.",
         "cn": "从品川到银座坐电车大概要花15分钟。"
       },
@@ -20287,7 +20287,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］ホテルの入口（いりぐち）に鍵（かぎ）が掛（か）かっています（他：掛ける）。",
+        "jp": "［自］ホテルの入口（いりぐち）に鍵（かぎ）が掛（か）かっています。",
         "romaji": "[Vi] Hoteru no iriguchi ni kagi ga kakatte imasu.",
         "cn": "[自] 酒店入口锁着门（他动词：鍵を掛ける）。"
       }
@@ -20363,20 +20363,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
+        "form": "た形",
         "jp": "部屋（へや）を出（で）るとき、ちゃんと鍵（かぎ）を掛（か）けた？",
         "romaji": "Heya wo deru toki, chanto kagi wo kaketa?",
         "cn": "出门的时候锁好门了吗？"
       },
       {
         "form": "ます形",
-        "jp": "ご迷惑（めいわく）をお掛（か）けして申し訳（もうしわけ）ありません。",
+        "jp": "ご迷惑（めいわく）をお掛（か）けして申（もう）し訳（わけ）ありません。",
         "romaji": "Gomeiwaku wo okake shite moushiwake arimasen.",
         "cn": "给您添麻烦了，非常抱歉（高频礼貌固定搭配）。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］コートをハンガーに掛（か）けておきました（自：掛かる）。",
+        "jp": "［他］コートをハンガーに掛（か）けておきました。",
         "romaji": "[Vt] Kooto wo hangaa ni kakete okimashita.",
         "cn": "[他] 把大衣挂在衣架上了（自动词：壁に掛かる）。"
       }
@@ -20465,7 +20465,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］疲れ（つかれ）が一気（いっき）に抜（ぬ）けました（他：抜く）。",
+        "jp": "［自］疲（つか）れが一気（いっき）に抜（ぬ）けました。",
         "romaji": "[Vi] Tsukare ga ikki ni nukemashita.",
         "cn": "[自] 疲劳一下子消散了（他动词：〜を抜く）。"
       }
@@ -20554,9 +20554,9 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］ネギ抜（ぬ）きでお願いできますか？（自：抜ける）。",
-        "romaji": "[Vt] Negi nuki de onegai dekimasu ka?",
-        "cn": "[他] 可以不要葱吗？（〜抜き＝去掉某配料）。"
+        "jp": "［他］部屋（へや）を出（で）る前（まえ）に、充電（じゅうでん）のコードを抜（ぬ）きました。",
+        "romaji": "[Vt] Heya wo deru mae ni, juuden no koodo wo nukimashita.",
+        "cn": "[他] 出门前把充电器线拔掉了（自动词：コードが抜ける）。"
       }
     ]
   },
@@ -20643,7 +20643,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］雪（ゆき）の重（おも）みで木（き）の枝（えだ）が折（お）れています（他：折る）。",
+        "jp": "［自］雪（ゆき）の重（おも）みで木（き）の枝（えだ）が折（お）れています。",
         "romaji": "[Vi] Yuki no omomi de ki no eda ga orete imasu.",
         "cn": "[自] 树枝被积雪压折了（他动词：枝を折る）。"
       }
@@ -20719,7 +20719,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
+        "form": "た形",
         "jp": "新幹線（しんかんせん）の中（なか）で娘（むすめ）と折（お）り紙（がみ）でツルを折（お）りました。",
         "romaji": "Shinkansen no naka de musume to origami de tsuru wo orimashita.",
         "cn": "在新干线上和女儿一起用折纸折了千纸鹤。"
@@ -20731,8 +20731,8 @@ window.JP_TOP_VERBS = [
         "cn": "把小票对折放进钱包里。"
       },
       {
-        "form": "⇄ 自他对比",
-        "jp": "［他］領収書（りょうしゅうしょ）は折（お）らずにパスポートに挟（はさ）みましょう（自：折れる）。",
+        "form": "ない形",
+        "jp": "［他］領収書（りょうしゅうしょ）は折（お）らずにパスポートに挟（はさ）みましょう。",
         "romaji": "[Vt] Ryoushuusho wa orazu ni pasupooto ni hasamimashou.",
         "cn": "[他] 发票不要折，夹在护照里吧（自动词：折れる）。"
       }
@@ -20814,14 +20814,14 @@ window.JP_TOP_VERBS = [
         "cn": "哇，杯子掉在地上摔碎了！"
       },
       {
-        "form": "ている形",
+        "form": "ている(否定)",
         "jp": "スマホの画面（がめん）に保護（ほご）フィルムがあるから割（わ）れていません。",
         "romaji": "Sumaho no gamen ni hogo firumu ga aru kara warete imasen.",
         "cn": "手机贴了保护膜所以屏幕没碎。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］お皿（さら）が割（わ）れて大変（たいへん）！（他：割る）。",
+        "jp": "［自］お皿（さら）が割（わ）れて大変（たいへん）！",
         "romaji": "[Vi] Osara ga warete taihen!",
         "cn": "[自] 盘子碎了糟了！（对比他动词：卵を割る）。"
       }
@@ -20910,7 +20910,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］温泉卵（おんせんたまご）をパカッと割（わ）っていただきます（自：割れる）。",
+        "jp": "［他］温泉卵（おんせんたまご）をパカッと割（わ）っていただきます。",
         "romaji": "[Vt] Onsen tamago wo pakatto watte itadakimasu.",
         "cn": "[他] 啪地敲开温泉蛋开动啦（自动词：殻が割れる）。"
       }
@@ -20993,13 +20993,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "スイッチを押（お）すと15分（ふん）でお風呂（ふろ）が沸（わ）きますよ。",
+        "jp": "スイッチを押（お）すと15分（じゅうごふん）でお風呂（ふろ）が沸（わ）きますよ。",
         "romaji": "Suitchi wo osu to juugofun de ofuro ga wakimasu yo.",
         "cn": "按下开关15分钟浴缸热水就烧好了哦。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］ケトルのお湯（ゆ）がもうすぐ沸（わ）きます（他：沸かす）。",
+        "jp": "［自］ケトルのお湯（ゆ）がもうすぐ沸（わ）きます。",
         "romaji": "[Vi] Ketoru no oyu ga mou sugu wakimasu.",
         "cn": "[自] 电水壶的水马上要开了（他动词：お湯を沸かす）。"
       }
@@ -21088,7 +21088,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］ポットでお湯（ゆ）を沸（わ）かしてもいいですか？（自：沸く）。",
+        "jp": "［他］ポットでお湯（ゆ）を沸（わ）かしてもいいですか？",
         "romaji": "[Vt] Potto de oyu wo wakashite mo ii desu ka?",
         "cn": "[他] 可以用烧水壶烧点热水吗？（自动词：お湯が沸く）。"
       }
@@ -21171,13 +21171,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "この大トロ、口（くち）の中（なか）でとろっと溶（と）けますよ！",
+        "jp": "この大（おお）トロ、口（くち）の中（なか）でとろっと溶（と）けますよ！",
         "romaji": "Kono ootoro, kuchi no naka de torotto tokemasu yo!",
         "cn": "这块大肥金枪鱼，入口即化呀！"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］道（みち）の氷（こおり）が溶（と）けて歩（ある）きやすくなりました（他：溶かす）。",
+        "jp": "［自］道（みち）の氷（こおり）が溶（と）けて歩（ある）きやすくなりました。",
         "romaji": "[Vi] Michi no koori ga tokete arukiyasuku narimashita.",
         "cn": "[自] 路上的冰化了，好走多了（他动词：〜を溶かす）。"
       }
@@ -21266,7 +21266,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］熱いスープにバターを溶（と）かしていただきます（自：溶ける）。",
+        "jp": "［他］熱（あつ）いスープにバターを溶（と）かしていただきます。",
         "romaji": "[Vt] Atsui suupu ni bataa wo tokashite itadakimasu.",
         "cn": "[他] 把黄油融化在热汤里吃（自动词：雪が溶ける）。"
       }
@@ -21355,7 +21355,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］天気予報（てんきよほう）が外（はず）れて晴（は）れました！（他：外す）。",
+        "jp": "［自］天気予報（てんきよほう）が外（はず）れて晴（は）れました！",
         "romaji": "[Vi] Tenki yohou ga hazurete haremashita!",
         "cn": "[自] 天气预报没准，反而晴天了！（他动词：〜を外す）。"
       }
@@ -21438,13 +21438,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "お昼（ひる）の混（こ）む時間（じかん）を外（はず）して11時（じ）半（はん）に行（い）きましょう。",
+        "jp": "お昼（ひる）の混（こ）む時間（じかん）を外（はず）して11時半（じゅういちじはん）に行（い）きましょう。",
         "romaji": "Ohiru no komu jikan wo hazushite juuichijihan ni ikimashou.",
         "cn": "错开中午高峰期，11点半去吧。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］お寺（てら）に入（はい）るときは帽子（ぼうし）を外（はず）します（自：外れる）。",
+        "jp": "［他］お寺（てら）に入（はい）るときは帽子（ぼうし）を外（はず）します。",
         "romaji": "[Vt] Otera ni hairu toki wa boushi wo hazushimasu.",
         "cn": "[他] 进寺庙时要摘下帽子（自动词：ボタンが外れる）。"
       }
@@ -21533,7 +21533,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］渋滞（じゅうたい）で車（くるま）がなかなか進（すす）みません（他：進める）。",
+        "jp": "［自］渋滞（じゅうたい）で車（くるま）がなかなか進（すす）みません。",
         "romaji": "[Vi] Juutai de kuruma ga nakanaka susumimasen.",
         "cn": "[自] 堵车车子完全走不动（他动词：〜を進める）。"
       }
@@ -21622,7 +21622,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］手続（てつづ）きをスムーズに進（すす）めることができました（自：進む）。",
+        "jp": "［他］手続（てつづ）きをスムーズに進（すす）めることができました。",
         "romaji": "[Vt] Tetsuzuki wo sumuuzu ni susumeru koto ga dekimashita.",
         "cn": "[他] 顺利推进了手续办理（自动词：計画が進む）。"
       }
@@ -21711,7 +21711,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］スキーでバランスを崩（くず）して倒（たお）れちゃった（他：倒す）。",
+        "jp": "［自］スキーでバランスを崩（くず）して倒（たお）れちゃった。",
         "romaji": "[Vi] Sukii de baransu wo kuzushite taorechatta.",
         "cn": "[自] 滑雪失去平衡摔倒了（他动词：背もたれを倒す）。"
       }
@@ -21787,20 +21787,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "てもいい",
-        "jp": "すみません、後ろ（うしろ）の座席（ざせき）を少（すこ）し倒（たお）してもよろしいですか？",
-        "romaji": "Sumimasen, ushiro no zaseki wo sukoshi taoshite mo yoroshii desu ka?",
-        "cn": "不好意思，请问我可以把座椅靠背稍微往后放一点吗？（新干线神句！）"
+        "form": "N4 许可",
+        "jp": "すみません、座席（ざせき）を少（すこ）し後（うし）ろに倒（たお）してもよろしいですか？",
+        "romaji": "Sumimasen, zaseki wo sukoshi ushiro ni taoshite mo yoroshii desu ka?",
+        "cn": "不好意思，请问我可以把座椅靠背稍微往后放倒一点吗？"
       },
       {
         "form": "て形",
-        "jp": "子どもが寝（ね）たので、シートを倒（たお）してあげました。",
+        "jp": "子（こ）どもが寝（ね）たので、シートを倒（たお）してあげました。",
         "romaji": "Kodomo ga neta node, shiito wo taoshite agemashita.",
         "cn": "孩子睡着了，帮她把座椅放倒了。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］うっかりコップを倒（たお）してこぼしちゃった（自：倒れる）。",
+        "jp": "［他］うっかりコップを倒（たお）してこぼしちゃった。",
         "romaji": "[Vt] Ukkari koppu wo taoshite koboshichatta.",
         "cn": "[他] 不小心把杯子碰倒洒出来了（自动词：コップが倒れる）。"
       }
@@ -21888,8 +21888,8 @@ window.JP_TOP_VERBS = [
         "cn": "摔了一跤裤子膝盖磨破了！"
       },
       {
-        "form": "⇄ 自他对比",
-        "jp": "［自］お土産（みやげ）の袋（ふくろ）が破（やぶ）れそうなので二重（にじゅう）にします（他：破る）。",
+        "form": "そう(样态)",
+        "jp": "［自］お土産（みやげ）の袋（ふくろ）が破（やぶ）れそうなので二重（にじゅう）にします。",
         "romaji": "[Vi] Omiyage no fukuro ga yaburesou na node nijuu ni shimasu.",
         "cn": "[自] 伴手礼袋子快破了，套两层吧（他动词：〜を破る）。"
       }
@@ -21978,7 +21978,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］要（い）らない紙（かみ）をビリビリ破（やぶ）りました（自：破れる）。",
+        "jp": "［他］要（い）らない紙（かみ）をビリビリ破（やぶ）りました。",
         "romaji": "[Vt] Iranai kami wo biribiri yaburimashita.",
         "cn": "[他] 把不需要的纸嘶啦嘶啦撕掉了（自动词：紙が破れる）。"
       }
@@ -22054,20 +22054,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ないうち",
+        "form": "ないうちに",
         "jp": "天（てん）ぷらは冷（さ）めないうちに熱々（あつあつ）をいただきましょう！",
         "romaji": "Tenpura wa samenai uchi ni atsuatsu wo itadakimashou!",
         "cn": "天妇罗趁还没凉赶紧热乎乎地吃吧！"
       },
       {
-        "form": "てしまった",
+        "form": "てしまった形",
         "jp": "話（はな）に夢中（むちゅう）になって、コーヒーがすっかり冷（さ）めちゃいました。",
         "romaji": "Hanashi ni muchuu ni natte, koohii ga sukkari samechaimashita.",
         "cn": "聊得太入迷，咖啡完全凉掉了。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］お粥（かゆ）が食べやすい温度（おんど）に冷（さ）めました（他：冷ます）。",
+        "jp": "［自］お粥（かゆ）が食（た）べやすい温度（おんど）に冷（さ）めました。",
         "romaji": "[Vi] Okayu ga tabeyasui ondo ni samemashita.",
         "cn": "[自] 粥晾到了适合吃的温度（他动词：スープを冷ます）。"
       }
@@ -22156,7 +22156,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］お湯（ゆ）を少（すこ）し冷（さ）ましてから薬（くすり）を飲（の）みます（自：冷める）。",
+        "jp": "［他］お湯（ゆ）を少（すこ）し冷（さ）ましてから薬（くすり）を飲（の）みます。",
         "romaji": "[Vt] Oyu wo sukoshi samashite kara kusuri wo nomimasu.",
         "cn": "[他] 把热水晾凉一点再吃药（自动词：お湯が冷める）。"
       }
@@ -22239,13 +22239,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "除夜（じょや）の鐘（かね）が108回（かい）ゴーンと鳴（な）りました。",
+        "jp": "除夜（じょや）の鐘（かね）が108回（ひゃくはちかい）ゴーンと鳴（な）りました。",
         "romaji": "Joya no kane ga hyakuhachikai goon to narimashita.",
         "cn": "除夕夜的钟声咚咚响了108下。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］お腹（なか）がグーッと鳴（な）っちゃった！（他：鳴らす）。",
+        "jp": "［自］お腹（なか）がグーッと鳴（な）っちゃった！",
         "romaji": "[Vi] Onaka ga guutto nacchatta!",
         "cn": "[自] 肚子咕噜叫起来了！（他动词：ベルを鳴らす）。"
       }
@@ -22334,7 +22334,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］ピンポーンとチャイムを鳴（な）らしました（自：鳴る）。",
+        "jp": "［他］ピンポーンとチャイムを鳴（な）らしました。",
         "romaji": "[Vt] Pinpoon to chaimu wo narashimashita.",
         "cn": "[他] 叮咚按响了门铃（自动词：チャイムが鳴る）。"
       }
@@ -22417,13 +22417,13 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "ます形",
-        "jp": "近場（ちかば）なので、歩（ある）けばタクシー代（だい）がかからず安く済（す）みます。",
+        "jp": "近場（ちかば）なので、歩（ある）けばタクシー代（だい）がかからず安（やす）く済（す）みます。",
         "romaji": "Chikaba na node, arukeba takushii-dai ga kakarazu yasuku sumimasu.",
         "cn": "因为很近，走过去省了打车费花得少。"
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［自］お会計（かいけい）がスマホで簡単（かんたん）に済（す）みました（他：済ませる）。",
+        "jp": "［自］お会計（かいけい）がスマホで簡単（かんたん）に済（す）みました。",
         "romaji": "[Vi] Okaikei ga sumaho de kantan ni sumimashita.",
         "cn": "[自] 结账用手机轻松搞定了（他动词：用事を済ませる）。"
       }
@@ -22512,7 +22512,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "⇄ 自他对比",
-        "jp": "［他］早（はや）めにチェックインを済（す）ませたいです（自：済む）。",
+        "jp": "［他］早（はや）めにチェックインを済（す）ませたいです。",
         "romaji": "[Vt] Hayame ni chekkuin wo sumasetai desu.",
         "cn": "[他] 想早点把入住办完（自动词：チェックインが済む）。"
       }
@@ -22594,7 +22594,7 @@ window.JP_TOP_VERBS = [
         "cn": "我们在东京站换乘北陆新干线。"
       },
       {
-        "form": "て形",
+        "form": "意向形",
         "jp": "品川（しながわ）で山手線（やまのてせん）に乗（の）り換（か）えて浜松町（はままつちょう）へ行（い）きましょう。",
         "romaji": "Shinagawa de Yamanote-sen ni norikaete Hamamatsuchou e ikimashou.",
         "cn": "在品川换乘山手线去浜松町吧。"
@@ -22772,7 +22772,7 @@ window.JP_TOP_VERBS = [
         "cn": "不好意思，这个面包不在店里吃，打包带走（＝テイクアウト）。"
       },
       {
-        "form": "ていい",
+        "form": "て形",
         "jp": "食（た）べ切（き）れなかったお菓子（かし）、持（も）ち帰（かえ）ってもいいですか？",
         "romaji": "Tabekirenakatta okashi, mochikaette mo ii desu ka?",
         "cn": "没吃完的点心可以打包带回去吗？"
@@ -22945,15 +22945,15 @@ window.JP_TOP_VERBS = [
     "examples": [
       {
         "form": "ます形",
-        "jp": "セブン銀行（ぎんこう）のATMで現金（げんきん）を3万円（まんえん）引（ひ）き出（だ）します。",
+        "jp": "セブン銀行（ぎんこう）のATMで現金（げんきん）を3万円（さんまんえん）引（ひ）き出（だ）します。",
         "romaji": "Sebun Ginkou no ATM de genkin wo sanman-en hikidashimasu.",
         "cn": "在7-11银行 ATM 取3万日元现金。"
       },
       {
-        "form": "て形",
-        "jp": "テーブルの下（した）の引（ひ）き出（だ）しをそっと引（ひ）き出（だ）しました。",
-        "romaji": "Teeburu no shita no hikidashi wo sotto hikidashimashita.",
-        "cn": "轻轻拉开了桌子下面的抽屉。"
+        "form": "た形",
+        "jp": "棚（たな）の奥（おく）からスーツケースを引（ひ）き出（だ）しました。",
+        "romaji": "Tana no oku kara suutsukeesu wo hikidashimashita.",
+        "cn": "从架子里面把行李箱拉出来了。"
       },
       {
         "form": "N3 理解",
@@ -23122,22 +23122,22 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て形",
+        "form": "てくれた",
         "jp": "女将（おかみ）さんが車（くるま）が見（み）えなくなるまで笑顔（えがお）で見送（みおく）ってくれました。",
         "romaji": "Okami-san ga kuruma ga mienaku naru made egao de miokutte kuremashita.",
         "cn": "老板娘一直微笑目送我们直到车子看不见为止。"
       },
       {
         "form": "ます形",
-        "jp": "混（こ）んでいるので、この電車（でんしゃ）は1本（ぽん）見送（みおく）りましょう。",
+        "jp": "混（こ）んでいるので、この電車（でんしゃ）は1本（いっぽん）見送（みおく）りましょう。",
         "romaji": "Konde iru node, kono densha wa ippon miokurimashou.",
         "cn": "车太挤了，咱们先错过这班等下一班吧。"
       },
       {
-        "form": "N3 用法",
-        "jp": "今度（こんど）の新幹線（しんかんせん）で友達（ともだち）をホームまで見送（みおく）りました。",
-        "romaji": "Kondo no shinkansen de tomodachi wo hoomu made miokurimashita.",
-        "cn": "坐这趟新干线把朋友送到站台上送行。"
+        "form": "た形",
+        "jp": "東京駅（とうきょうえき）のホームまで友達（ともだち）を見送（みおく）りました。",
+        "romaji": "Toukyou-eki no hoomu made tomodachi wo miokurimashita.",
+        "cn": "一直把朋友送到东京站的站台送行。"
       }
     ]
   },
@@ -23300,14 +23300,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ないで",
+        "form": "ない形",
         "jp": "車（くるま）が来（く）るから、道路（どうろ）に急（きゅう）に飛（と）び出（だ）さないでね！",
         "romaji": "Kuruma ga kuru kara, douro ni kyuu ni tobidasanaide ne!",
         "cn": "有车过来，千万不要突然冲到马路上哦！（带娃必记安全警句！）"
       },
       {
         "form": "た形",
-        "jp": "公園（こうえん）が見（み）えた瞬間（しゅんかん）、子どもたちが元気（げんき）よく飛（と）び出（だ）しました。",
+        "jp": "公園（こうえん）が見（み）えた瞬間（しゅんかん）、子（こ）どもたちが元気（げんき）よく飛（と）び出（だ）しました。",
         "romaji": "Kouen ga mieta shunkan, kodomotachi ga genki yoku tobidashimashita.",
         "cn": "一看到公园，孩子们瞬间欢呼着冲出去了。"
       },
@@ -23396,7 +23396,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "た形",
-        "jp": "雪（ゆき）のクッションに子どもがダイブして飛（と）び込（こ）みました。",
+        "jp": "雪（ゆき）のクッションに子（こ）どもがダイブして飛（と）び込（こ）みました。",
         "romaji": "Yuki no kusshon ni kodomo ga daibu shite tobikomimashita.",
         "cn": "孩子扑通一下扑进了厚厚的雪堆里。"
       },
@@ -23478,7 +23478,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "てしまった",
+        "form": "てしまった形",
         "jp": "あっ、話（はな）していたら目的（もくてき）の角（かど）を通（とお）り過（す）ぎちゃった！",
         "romaji": "A, hanashite itara mokuteki no kado wo toorisugichatta!",
         "cn": "啊，光顾着聊天把要转弯的路口走过头了！"
@@ -23567,20 +23567,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "名前（なまえ）を呼（よ）ばれて、思わず後（うし）ろを振（ふ）り返（かえ）りました。",
+        "form": "て形",
+        "jp": "名前（なまえ）を呼（よ）ばれて、思（おも）わず後（うし）ろを振（ふ）り返（かえ）りました。",
         "romaji": "Namae wo yobarete, omowazu ushiro wo furikaerimashita.",
         "cn": "听到有人叫名字，不由得回头看了一眼。"
       },
       {
         "form": "ます形",
-        "jp": "2026年（ねん）の1年間（ねんかん）を家族（かぞく）みんなで振（ふ）り返（かえ）ります。",
+        "jp": "2026年（にせんにじゅうろくねん）の1年間（いちねんかん）を家族（かぞく）みんなで振（ふ）り返（かえ）ります。",
         "romaji": "Nisen-nijuurokunen no ichinenkan wo kazoku minna de furikaerimasu.",
         "cn": "全家一起回顾2026年这一整年。"
       },
       {
         "form": "N3 用法",
-        "jp": "結婚（けっこん）7周年（ななしゅうねん）を振（ふ）り返（かえ）ると、本当（ほんとう）に幸せ（しあわせ）です。",
+        "jp": "結婚（けっこん）7周年（ななしゅうねん）を振（ふ）り返（かえ）ると、本当（ほんとう）に幸（しあわ）せです。",
         "romaji": "Kekkon nanashuunen wo furikaeru to, hontou ni shiawase desu.",
         "cn": "回顾结婚七周年，真的觉得好幸福。"
       }
@@ -23656,7 +23656,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
+        "form": "意向形",
         "jp": "今夜（こんや）、夫婦（ふうふ）で明日（あした）のスケジュールをゆっくり話（はな）し合（あ）おう。",
         "romaji": "Kon'ya, fuufu de ashita no sukejuuru wo yukkuri hanashiaou.",
         "cn": "今晚夫妻俩好好商量一下明天的安排吧。"
@@ -23745,8 +23745,8 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "ママのショッピングに1時間（じかん）付（つ）き合（あ）ってくれてありがとう！",
+        "form": "て形",
+        "jp": "ママのショッピングに1時間（いちじかん）付（つ）き合（あ）ってくれてありがとう！",
         "romaji": "Mama no shoppingu ni ichijikan tsukiatte kurete arigatou!",
         "cn": "谢谢陪妈妈逛街逛了一小时！"
       },
@@ -23757,10 +23757,10 @@ window.JP_TOP_VERBS = [
         "cn": "一直在陪女儿玩过家家。"
       },
       {
-        "form": "N3 惯用",
-        "jp": "丁寧（ていねい）にお付（つ）き合（あ）いいただきありがとうございます。",
-        "romaji": "Teinei ni otsukiai itadaki arigatou gozaimasu.",
-        "cn": "感谢您的耐心陪伴/周到往来。"
+        "form": "N3 敬语",
+        "jp": "長（なが）い時間（じかん）お付（つ）き合（あ）いいただきありがとうございます。",
+        "romaji": "Nagai jikan otsukiai itadaki arigatou gozaimasu.",
+        "cn": "非常感谢您长时间的陪伴与关照。"
       }
     ]
   },
@@ -23834,8 +23834,8 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "雨（あめ）でも気持（きも）ちを切（き）り替（か）えて室内（しつない）パークを楽しもう！",
+        "form": "て形",
+        "jp": "雨（あめ）でも気持（きも）ちを切（き）り替（か）えて室内（しつない）パークを楽（たの）しもう！",
         "romaji": "Ame demo kimochi wo kirikaete shitsunai paaku wo tanoshimou!",
         "cn": "就算下雨也转换好心情，去室内乐园玩吧！"
       },
@@ -23923,20 +23923,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます形",
-        "jp": "オムツを取（と）り替（か）えるスペース（おむつ交換台）はどこですか？",
-        "romaji": "Omutsu wo torikaeru supeesu wa doko desu ka?",
-        "cn": "请问换尿布台在哪里？"
+        "form": "辞书形",
+        "jp": "すみません、おむつを取（と）り替（か）える場所（ばしょ）はどこですか？",
+        "romaji": "Sumimasen, omutsu wo torikaeru basho wa doko desu ka?",
+        "cn": "不好意思，请问给宝宝换尿布的地方（おむつ交換台）在哪里？"
       },
       {
-        "form": "て",
+        "form": "て形",
         "jp": "濡（ぬ）れたタオルを新（あたら）しいのに取（と）り替（か）えてもらえますか？",
         "romaji": "Nureta taoru wo atarashii no ni torikaete moraemasu ka?",
         "cn": "能帮我把湿毛巾换成新的吗？"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "出発前（しゅっぱつまえ）に今のうちにオムツ取（と）り替（か）えとこう。",
+        "jp": "出発前（しゅっぱつまえ）に今（いま）のうちにオムツ取（と）り替（か）えとこう。",
         "romaji": "Shuppatsu mae ni ima no uchi ni omutsu torikaetokou.",
         "cn": "趁还没出发，现在先把尿布换好吧。"
       }
@@ -24018,8 +24018,8 @@ window.JP_TOP_VERBS = [
         "cn": "买票步骤点错了，从头重新来一遍。"
       },
       {
-        "form": "て",
-        "jp": "写真（しゃしん）、目（め）をつぶっちゃったからもう1回（かい）やり直（なお）そう！",
+        "form": "意向形",
+        "jp": "写真（しゃしん）、目（め）をつぶっちゃったからもう1回（いっかい）やり直（なお）そう！",
         "romaji": "Shashin, me wo tsubutchatta kara mou ikkai yarinaosou!",
         "cn": "照片眨眼了，再来拍一次吧！"
       },
@@ -24107,7 +24107,7 @@ window.JP_TOP_VERBS = [
         "cn": "博多拉面和明太子太好吃，结果吃撑了！"
       },
       {
-        "form": "ない",
+        "form": "ない形",
         "jp": "晩（ばん）ごはんがあるから、おやつは食（た）べ過（す）ぎないようにね。",
         "romaji": "Bangohan ga aru kara, oyatsu wa tabesuginai you ni ne.",
         "cn": "一会儿还有晚饭，零食别吃太多哦。"
@@ -24196,7 +24196,7 @@ window.JP_TOP_VERBS = [
         "cn": "银座午餐的日本酒太醇香，稍微多喝了两杯。"
       },
       {
-        "form": "ない",
+        "form": "ない形",
         "jp": "お水（みず）を飲（の）み過（す）ぎるとトイレに行（い）きたくなるよ。",
         "romaji": "Omizu wo nomisugiru to toire ni ikitaku naru yo.",
         "cn": "水喝太多一会儿又想上厕所啦。"
@@ -24279,14 +24279,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "朝から銀座（ぎんざ）や表参道（おもてさんどう）をずっと歩（ある）き回（まわ）って足（あし）がパンパンです。",
+        "form": "て形",
+        "jp": "朝（あさ）から銀座（ぎんざ）や表参道（おもてさんどう）をずっと歩（ある）き回（まわ）って足（あし）がパンパンです。",
         "romaji": "Asa kara Ginza ya Omotesandou wo zutto arukimawatte ashi ga panpan desu.",
         "cn": "从早上就在银座和表参道到处逛，腿都走胀了。"
       },
       {
         "form": "ます形",
-        "jp": "アウトレットの中（なか）を1日（にち）じゅう歩（ある）き回（まわ）りました。",
+        "jp": "アウトレットの中（なか）を1日（いちにち）じゅう歩（ある）き回（まわ）りました。",
         "romaji": "Autoretto no naka wo ichinichijuu arukimawarimashita.",
         "cn": "在奥特莱斯里逛了一整天。"
       },
@@ -24368,7 +24368,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
+        "form": "て形",
         "jp": "芝公園（しばこうえん）からライトアップされた東京（とうきょう）タワーを見上（みあ）げました。",
         "romaji": "Shiba Kouen kara raitoappu sareta Toukyou Tawaa wo miagemashita.",
         "cn": "从芝公园抬头仰望了亮起灯的东京塔。"
@@ -24457,7 +24457,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ています",
+        "form": "ている形",
         "jp": "荷物（にもつ）の発送（はっそう）は何時（なんじ）まで受（う）け付（つ）けていますか？",
         "romaji": "Nimotsu no hassou wa nanji made uketsukete imasu ka?",
         "cn": "请问行李寄送受理到几点？"
@@ -24546,7 +24546,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ている",
+        "form": "てしまった",
         "jp": "すみません、限定（げんてい）プリンは本日（ほんじつ）分（ぶん）売（う）り切（き）れてしまいました。",
         "romaji": "Sumimasen, gentei purin wa honjitsubun urikirete shimaimashita.",
         "cn": "抱歉，限定布丁今天份已经卖光了。"
@@ -24635,8 +24635,8 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "帰り道（かえりみち）にスーパーへ立（た）ち寄（よ）って、フルーツを買（か）って帰（かえ）ろう。",
+        "form": "て形",
+        "jp": "帰（かえ）り道（みち）にスーパーへ立（た）ち寄（よ）って、フルーツを買（か）って帰（かえ）ろう。",
         "romaji": "Kaerimichi ni suupaa e tachiyotte, furuutsu wo katte kaerou.",
         "cn": "回程顺路去趟超市买点水果回去吧。"
       },
@@ -24648,7 +24648,7 @@ window.JP_TOP_VERBS = [
       },
       {
         "form": "N3 礼貌",
-        "jp": "お近くにお越（こ）しの際（さい）は、ぜひお立（た）ち寄（よ）りください。",
+        "jp": "お近（ちか）くにお越（こ）しの際（さい）は、ぜひお立（た）ち寄（よ）りください。",
         "romaji": "Ochikaku ni okoshi no sai wa, zehi otachiyori kudasai.",
         "cn": "您到附近时欢迎随时顺道光临。"
       }
@@ -24724,13 +24724,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "てしまった",
+        "form": "てしまった形",
         "jp": "うっかり寝（ね）てしまって、品川駅（しながわえき）を乗（の）り過（す）ごしてしまいました！",
         "romaji": "Ukkari nete shimatte, Shinagawa-eki wo norisugoshite shimaimashita!",
         "cn": "一不小心睡着了，坐过品川站了！"
       },
       {
-        "form": "ない",
+        "form": "ない形",
         "jp": "案内表示（あんないひょうじ）を見（み）て、乗（の）り過（す）ごさないように気（き）をつけよう。",
         "romaji": "Annai hyouji wo mite, norisugosanai you ni ki wo tsukeyou.",
         "cn": "看着屏幕报站牌，小心别坐过站哦。"
@@ -24819,14 +24819,14 @@ window.JP_TOP_VERBS = [
         "cn": "你们先往检票口走，爸爸马上追上来！"
       },
       {
-        "form": "ない",
-        "jp": "お姉（ねえ）ちゃんの走（はし）りが速（はや）すぎて、2歳（さい）の妹（いもうと）が追（お）いつけません。",
+        "form": "可能(否定)",
+        "jp": "お姉（ねえ）ちゃんの走（はし）りが速（はや）すぎて、2歳（にさい）の妹（いもうと）が追（お）いつけません。",
         "romaji": "Onee-chan no hashiri ga hayasugite, nisai no imouto ga oitsukemasen.",
         "cn": "姐姐跑太快了，2岁的妹妹追不上。"
       },
       {
         "form": "N3 用法",
-        "jp": "時差（じさ）ボケが直（なお）って、やっと体（からだ）が現地（げんち）の時間に追（お）いつきました。",
+        "jp": "時差（じさ）ボケが治（なお）って、やっと体（からだ）が現地（げんち）の時間（じかん）に追（お）いつきました。",
         "romaji": "Jisaboke ga naotte, yatto karada ga genchi no jikan ni oitsukimashita.",
         "cn": "时差倒过来了，身体终于跟上当地时间了。"
       }
@@ -24902,14 +24902,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ていた",
+        "form": "ていた形",
         "jp": "水曜日（すいようび）が営業日（えいぎょうび）だと思（おも）い込（こ）んでいたら、定休日（ていきゅうび）でした。",
         "romaji": "Suiyoubi ga eigyoubi da to omoikonde itara, teikyuubi deshita.",
         "cn": "一直以为周三是营业日，结果人家周三公休。"
       },
       {
-        "form": "ないで",
-        "jp": "12月（がつ）だからずっと雪（ゆき）だと勝手（かって）に思（おも）い込（こ）まないほうがいいよ。",
+        "form": "ない形",
+        "jp": "12月（じゅうにがつ）だからずっと雪（ゆき）だと勝手（かって）に思（おも）い込（こ）まないほうがいいよ。",
         "romaji": "Juunigatsu dakara zutto yuki da to katte ni omoikomanai hou ga ii yo.",
         "cn": "别一厢情愿地以为12月肯定一直下雪哦。"
       },
@@ -24991,20 +24991,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます形",
-        "jp": "【店员问】何名様（なんめいさま）でいらっしゃいますか？",
-        "romaji": "Nanmei-sama de irasshaimasu ka?",
-        "cn": "【店员常用】请问几位呢？（＝何人ですか？）"
+        "form": "た形",
+        "jp": "どちらからいらっしゃいましたか？",
+        "romaji": "Dochira kara irasshaimashita ka?",
+        "cn": "【店员】请问您是从哪里过来的呢？（＝どこから来ましたか？）。"
       },
       {
-        "form": "いますか",
+        "form": "ている形",
         "jp": "担当（たんとう）の鈴木（すずき）様（さま）はいらっしゃいますでしょうか？",
         "romaji": "Tantou no Suzuki-sama wa irasshaimasu deshou ka?",
         "cn": "请问负责人铃木先生/女士在吗？"
       },
       {
         "form": "命令敬语",
-        "jp": "【店员】いらっしゃいませ！どうぞ奥（おく）のお席（せき）へ！",
+        "jp": "いらっしゃいませ！どうぞ奥（おく）のお席（せき）へ！",
         "romaji": "Irasshaimase! Douzo oku no oseki e!",
         "cn": "【店员】欢迎光临！请往里面的座位坐！"
       }
@@ -25080,22 +25080,22 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ますか",
-        "jp": "【店员问】お飲（の）み物（もの）は何（なに）を召（め）し上（あ）がりますか？",
+        "form": "ます形",
+        "jp": "お飲（の）み物（もの）は何（なに）を召（め）し上（あ）がりますか？",
         "romaji": "Onomimono wa nani wo meshiagarimasu ka?",
         "cn": "【店员常用】请问您想喝点什么？（＝飲みますか？）"
       },
       {
-        "form": "ください",
-        "jp": "【店员说】お好（この）みのお塩（しお）でどうぞお召（め）し上（あ）がりください。",
+        "form": "敬语",
+        "jp": "お好（この）みのお塩（しお）でどうぞお召（め）し上（あ）がりください。",
         "romaji": "Okonomi no oshio de douzo omeshiagari kudasai.",
         "cn": "【店员】请蘸您喜欢的海盐享用。"
       },
       {
-        "form": "听力识别",
-        "jp": "「お召（め）し上（あ）がりですか？」は「店内で食べますか？」の意味（いみ）です。",
-        "romaji": "'Omeshiagari desu ka?' wa 'tennai de tabemasu ka?' no imi desu.",
-        "cn": "便利店常问「お召し上がりですか」＝“要在店里堂食吗？”"
+        "form": "N4 敬语",
+        "jp": "どうぞ温（あたた）かいうちにお召（め）し上（あ）がりくださいませ。",
+        "romaji": "Douzo atatakai uchi ni omeshiagari kudasaimase.",
+        "cn": "【店员】请您趁热享用（召し上がる＝吃/喝）。"
       }
     ]
   },
@@ -25169,13 +25169,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
-        "jp": "【客气】店員（てんいん）さんがおっしゃる通（とお）りにしますね。",
+        "form": "ます形",
+        "jp": "店員（てんいん）さんがおっしゃる通（とお）りにしますね。",
         "romaji": "Ten'in-san ga ossharu toori ni shimasu ne.",
-        "cn": "我们就照店员说的办吧。"
+        "cn": "【客气】 我们就照店员说的办吧。"
       },
       {
-        "form": "いました",
+        "form": "ていた形",
         "jp": "先（さき）ほどシェフがおっしゃっていた料理（りょうり）はこれですね！",
         "romaji": "Sakihodo shefu ga osshatte ita ryouri wa kore desu ne!",
         "cn": "刚才主厨说的就是这道菜吧！"
@@ -25258,20 +25258,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
-        "jp": "明日（あした）の12時（じ）に予約（よやく）で伺（うかが）います、劉（りゅう）です。",
+        "form": "ます形",
+        "jp": "明日（あした）の12時（じゅうにじ）に予約（よやく）で伺（うかが）います、劉（りゅう）です。",
         "romaji": "Ashita no juuniji ni yoyaku de ukagaimasu, Ryuu desu.",
         "cn": "明天12点有预约过去用餐，我姓刘（打电话确认必用）。"
       },
       {
-        "form": "たい",
+        "form": "たい形",
         "jp": "一（ひと）つお伺（うかが）いしたいことがあるのですが、よろしいですか？",
         "romaji": "Hitotsu oukagai shitai koto ga aru no desu ga, yoroshii desu ka?",
         "cn": "有一件事想向您请教一下，方便吗？"
       },
       {
         "form": "店员常说",
-        "jp": "【店员】ご注文（ちゅうもん）をお伺（うかが）いいたします。",
+        "jp": "ご注文（ちゅうもん）をお伺（うかが）いいたします。",
         "romaji": "Gochuumon wo oukagai itashimasu.",
         "cn": "【店员】现在为您点餐（＝听您吩咐）。"
       }
@@ -25347,20 +25347,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
+        "form": "ます形",
         "jp": "とてもおいしそう！それでは遠慮（えんりょ）なくいただきます。",
         "romaji": "Totemo oishisou! Soredewa enryo naku itadakimasu.",
         "cn": "看起来太美味了！那我就不客气开动啦。"
       },
       {
-        "form": "ますか",
+        "form": "ます形",
         "jp": "お水（みず）をもう少（すこ）しいただけますか？",
         "romaji": "Omizu wo mou sukoshi itadakemasu ka?",
         "cn": "可以再给我加一点水吗？（比ください更优雅！）"
       },
       {
         "form": "N4 礼貌",
-        "jp": "子どもたちのために早（はや）めに出（だ）していただき、ありがとうございます。",
+        "jp": "子（こ）どもたちのために早（はや）めに出（だ）していただき、ありがとうございます。",
         "romaji": "Kodomotachi no tame ni hayame ni dashite itadaki, arigatou gozaimasu.",
         "cn": "感谢您为孩子们提前上菜。"
       }
@@ -25436,22 +25436,22 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
-        "jp": "【车站广播】まもなく1番線（ばんせん）に電車（でんしゃ）が参（まい）ります。",
+        "form": "ます形",
+        "jp": "まもなく1番線（いちばんせん）に電車（でんしゃ）が参（まい）ります。",
         "romaji": "Mamonaku ichibansen ni densha ga mairimasu.",
         "cn": "【必听广播】1号站台电车即将进站（＝来ます）。"
       },
       {
-        "form": "ます",
-        "jp": "【商务/礼貌】ただいま担当者（たんとうしゃ）が参（まい）りますので、少々（しょうしょう）お待（ま）ちください。",
+        "form": "ます形",
+        "jp": "ただいま担当者（たんとうしゃ）が参（まい）りますので、少々（しょうしょう）お待（ま）ちください。",
         "romaji": "Tadaima tantousha ga mairimasu node, shoushou omachi kudasai.",
-        "cn": "负责人马上过来，请稍等。"
+        "cn": "【商务/礼貌】 负责人马上过来，请稍等。"
       },
       {
-        "form": "生活",
-        "jp": "今（いま）すぐフロントへ参（まい）りますね。",
-        "romaji": "Ima sugu furonto e mairimasu ne.",
-        "cn": "我现在马上去前台一趟。"
+        "form": "N4 敬语",
+        "jp": "今（いま）すぐフロントへ参（まい）ります。",
+        "romaji": "Ima sugu furonto e mairimasu.",
+        "cn": "我现在马上就到前台来（自谦表达「行く」）。"
       }
     ]
   },
@@ -25525,20 +25525,20 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
-        "jp": "【店员】お荷物（にもつ）はお部屋（へや）までお運（はこ）びいたします。",
-        "romaji": "Onimotsu wa oheya made ohakobi itashimasu.",
-        "cn": "【店员】行李由我们为您送到房间（＝します）。"
+        "form": "た形",
+        "jp": "お待（ま）たせいたしました、ご注文（ちゅうもん）のお料理（りょうり）です。",
+        "romaji": "Omatase itashimashita, gochuumon no oryouri desu.",
+        "cn": "【店员】让您久等了，这是您点的菜。"
       },
       {
-        "form": "ます",
-        "jp": "どういたしまして！（不客气＝没什么大不了的）",
-        "romaji": "Dou itashimashite!",
-        "cn": "不客气！（日常最常说的致す派生句）。"
+        "form": "N4 敬语",
+        "jp": "どういたしまして！こちらこそありがとうございます。",
+        "romaji": "Dou itashimashite! Kochira koso arigatou gozaimasu.",
+        "cn": "不客气！我才要谢谢您呢。"
       },
       {
         "form": "店员常说",
-        "jp": "【收银】ただいまお会計（かいけい）をいたします。",
+        "jp": "ただいまお会計（かいけい）をいたします。",
         "romaji": "Tadaima okaikei wo itashimasu.",
         "cn": "【收银】现在为您结账。"
       }
@@ -25614,13 +25614,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ますか",
-        "jp": "【店员】こちらのメニューをご覧（らん）になりますか？",
+        "form": "ます形",
+        "jp": "こちらのメニューをご覧（らん）になりますか？",
         "romaji": "Kochira no menyuu wo goran ni narimasu ka?",
         "cn": "【店员】您要看一下这份菜单吗？"
       },
       {
-        "form": "ください",
+        "form": "敬语",
         "jp": "窓（まど）の外（そと）をご覧（らん）ください、富士山（ふじさん）が見（み）えますよ！",
         "romaji": "Mado no soto wo goran kudasai, Fujisan ga miemasu yo!",
         "cn": "请看窗外，能看到富士山哦！"
@@ -25703,14 +25703,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "てください",
-        "jp": "道（みち）が凍（こお）って滑りやすいので、気（き）をつけて歩（ある）いてくださいね。",
+        "form": "て形",
+        "jp": "道（みち）が凍（こお）って滑（すべ）りやすいので、気（き）をつけて歩（ある）いてくださいね。",
         "romaji": "Michi ga kootte suberiyasui node, ki wo tsukete aruite kudasai ne.",
         "cn": "路面结冰很滑，走路请小心哦。"
       },
       {
-        "form": "ます",
-        "jp": "食べ物（たべもの）のアレルギーには特（とく）に気（き）をつけています。",
+        "form": "ます形",
+        "jp": "食（た）べ物（もの）のアレルギーには特（とく）に気（き）をつけています。",
         "romaji": "Tabemono no arerugii ni wa toku ni ki wo tsukete imasu.",
         "cn": "我们对食物过敏特别注意。"
       },
@@ -25792,7 +25792,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ています",
+        "form": "ている形",
         "jp": "今（いま）このお店（みせ）、すごく混（こ）んでいますか？",
         "romaji": "Ima kono omise, sugoku konde imasu ka?",
         "cn": "请问这家店现在很挤吗？"
@@ -25881,14 +25881,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ています",
+        "form": "ている形",
         "jp": "平日（へいじつ）の午前中（ごぜんちゅう）は空（す）いていて快適（かいてき）ですね。",
         "romaji": "Heijitsu no gozenchuu wa suite ite kaiteki desu ne.",
         "cn": "工作日早上人不挤真舒服呀。"
       },
       {
-        "form": "ました",
-        "jp": "1時間（じかん）も遊（あそ）んだから、みんなお腹（なか）が空（す）きましたね！",
+        "form": "た形",
+        "jp": "1時間（いちじかん）も遊（あそ）んだから、みんなお腹（なか）が空（す）きましたね！",
         "romaji": "Ichijikan mo asonda kara, minna onaka ga sukimashita ne!",
         "cn": "玩了一小时，大家都饿了吧！"
       },
@@ -25970,22 +25970,22 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ます",
+        "form": "ます形",
         "jp": "軽井沢（かるいざわ）で家族（かぞく）みんなでスキーを滑（すべ）ります！",
         "romaji": "Karuizawa de kazoku minna de sukii wo suberimasu!",
         "cn": "在轻井泽全家一起滑雪！"
       },
       {
         "form": "やすい",
-        "jp": "雨（あめ）の日の駅（えき）のタイルは滑（すべ）りやすいから気（き）をつけてね。",
+        "jp": "雨（あめ）の日（ひ）の駅（えき）のタイルは滑（すべ）りやすいから気（き）をつけてね。",
         "romaji": "Ame no hi no eki no tairu wa suberiyasui kara ki wo tsukete ne.",
         "cn": "下雨天车站的地砖很滑，注意别摔着哦。"
       },
       {
         "form": "💬 口语缩略",
-        "jp": "Jinny、昨日（きのう）よりぜんぜん上手（じょうず）に滑（すべ）れてるよ！",
-        "romaji": "Jinny, kinou yori zenzen jouzu ni subereteru yo!",
-        "cn": "Jinny，比昨天滑得稳多啦！"
+        "jp": "ジニー、昨日（きのう）よりずっと上手（じょうず）に滑（すべ）れてるよ！",
+        "romaji": "Jinii, kinou yori zutto jouzu ni subereteru yo!",
+        "cn": "Jinny，你比昨天滑得稳多了哦！"
       }
     ]
   },
@@ -26059,7 +26059,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "た",
+        "form": "た形",
         "jp": "あっ、大丈夫（だいじょうぶ）？痛（いた）かったね、転（ころ）んじゃったね。",
         "romaji": "A, daijoubu? Itakatta ne, koronjatta ne.",
         "cn": "啊，没事吧？疼了吧，摔了一跤呀（哄娃必用！）。"
@@ -26148,13 +26148,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ない",
+        "form": "ない形",
         "jp": "前（まえ）をよく見（み）て歩（ある）かないと、人（ひと）にぶつかるよ。",
         "romaji": "Mae wo yoku mite arukanai to, hito ni butsukaru yo.",
         "cn": "不看前面好好走路的话，会撞到别人的哦。"
       },
       {
-        "form": "た",
+        "form": "た形",
         "jp": "ベビーカーがちょっと柱（はしら）にぶつかってしまいました。",
         "romaji": "Bebiikaa ga chotto hashira ni butsukatte shimaimashita.",
         "cn": "婴儿车稍微撞到柱子了。"
@@ -26237,7 +26237,7 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
+        "form": "て形",
         "jp": "歩（ある）き疲（つか）れたかな？パパが抱（だ）っこしてあげるよ。",
         "romaji": "Aruki tsukareta kana? Papa ga dakko shite ageru yo.",
         "cn": "是不是走累啦？爸爸抱你吧。"
@@ -26326,16 +26326,16 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "混雑（こんざつ）を避（さ）けるために、朝（あさ）9時（じ）に出発（しゅっぱつ）しましょう。",
+        "form": "て形",
+        "jp": "混雑（こんざつ）を避（さ）けるために、朝（あさ）9時（くじ）に出発（しゅっぱつ）しましょう。",
         "romaji": "Konzatsu wo sakeru tame ni, asa kuji ni shuppatsu shimashou.",
         "cn": "为了避开拥堵，咱们早上9点出发吧。"
       },
       {
-        "form": "ます",
-        "jp": "子どもが生（なま）ものや辛（から）いものを避（さ）けて注文（ちゅうもん）します。",
-        "romaji": "Kodomo ga namamono ya karai mono wo sakete chuumon shimasu.",
-        "cn": "帮孩子避开生食和辣的菜来点餐。"
+        "form": "ます形",
+        "jp": "子（こ）ども用（よう）に生（なま）ものや辛（から）いものを避（さ）けて注文（ちゅうもん）します。",
+        "romaji": "Kodomoyou ni namamono ya karai mono wo sakete chuumon shimasu.",
+        "cn": "为了孩子避开生食和辣的菜来点餐。"
       },
       {
         "form": "N3 思考",
@@ -26415,13 +26415,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "念（ねん）のため、乗（の）り場（ば）の番号（ばんごう）をもう1回（かい）確（たし）かめておこう。",
+        "form": "て形",
+        "jp": "念（ねん）のため、乗（の）り場（ば）の番号（ばんごう）をもう1回（いっかい）確（たし）かめておこう。",
         "romaji": "Nen no tame, noriba no bangou wo mou ikkai tashikamete okou.",
         "cn": "保险起见，再核实一遍乘车口编号吧。"
       },
       {
-        "form": "ます",
+        "form": "ます形",
         "jp": "フロントで荷物（にもつ）が届（とど）いているか確（たし）かめます。",
         "romaji": "Furonto de nimotsu ga todoite iru ka tashikamemasu.",
         "cn": "去前台确认一下行李到了没有。"
@@ -26504,13 +26504,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "て",
-        "jp": "あと10分（ぷん）で着（つ）くから、もうちょっとだけ我慢（がまん）してね。",
+        "form": "て形",
+        "jp": "あと10分（じゅっぷん）で着（つ）くから、もうちょっとだけ我慢（がまん）してね。",
         "romaji": "Ato juppun de tsuku kara, mou chotto dake gaman shite ne.",
         "cn": "再过10分钟就到了，稍微忍耐一下下哦。"
       },
       {
-        "form": "ない",
+        "form": "ない形",
         "jp": "トイレは我慢（がまん）しないで、早（はや）めに教（おし）えてね！",
         "romaji": "Toire wa gaman shinaide, hayame ni oshiete ne!",
         "cn": "想上厕所可别憋着，早点告诉爸爸妈妈哦！"
@@ -26593,14 +26593,14 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "ないで",
+        "form": "ない形",
         "jp": "何（なに）か必要（ひつよう）なものがあれば、どうぞ遠慮（えんりょ）なくおっしゃってください。",
         "romaji": "Nani ka hitsuyou na mono ga areba, douzo enryo naku osshatte kudasai.",
         "cn": "如果有什么需要的东西，请千万别客气直接告诉我们。"
       },
       {
-        "form": "ください",
-        "jp": "【看板/提示】店内（てんない）でのフラッシュ撮影（さつえい）はご遠慮（えんりょ）ください。",
+        "form": "敬语",
+        "jp": "店内（てんない）でのフラッシュ撮影（さつえい）はご遠慮（えんりょ）ください。",
         "romaji": "Tennai deno furasshu satsuei wa goenryo kudasai.",
         "cn": "【看板高频】店内请勿使用闪光灯拍照（＝禁止的委婉说法！）。"
       },
@@ -26682,13 +26682,13 @@ window.JP_TOP_VERBS = [
     },
     "examples": [
       {
-        "form": "たい",
+        "form": "たい形",
         "jp": "すみません、1万円札（いちまんえんさつ）を千円札（せんえんさつ）に両替（りょうがえ）できますか？",
         "romaji": "Sumimasen, ichiman-en-satsu wo sen-en-satsu ni ryougae dekimasu ka?",
         "cn": "不好意思，能把1万日元纸币换成1千日元的零钱吗？（投币洗衣/小店必用！）"
       },
       {
-        "form": "ます",
+        "form": "ます形",
         "jp": "空港（くうこう）のカウンターでドルを日本円（にほんえん）に両替（りょうがえ）します。",
         "romaji": "Kuukou no kauntaa de doru wo Nihon'en ni ryougae shimasu.",
         "cn": "在机场柜台把美元换成日元。"

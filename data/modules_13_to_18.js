@@ -203,7 +203,7 @@ window.PHRASE_MODULES_13_18 = [
           {
             speaker: "us",
             speakerName: "Sherry",
-            jp: "ポイントカードはありません。大（おお）きい袋（ふくろ）を1枚（いちまい）ください。お支払（しはら）いはクレジットカードでお願いします。",
+            jp: "ポイントカードはありません。大（おお）きい袋（ふくろ）を1枚（いちまい）ください。お支払（しはら）いはクレジットカードでお願（ねが）いします。",
             romaji: "Pointo kaado wa arimasen. Ookii fukuro wo ichimai kudasai. Oshiharai wa kurejitto kaado de onegai shimasu.",
             cn: "没有积分卡。请给我1个大袋子，用信用卡支付。"
           }
@@ -528,7 +528,7 @@ window.PHRASE_MODULES_13_18 = [
           {
             id: "m18-s1-5",
             tag: "桌边买单 vs 收银台买单",
-            jp: "【店员说】「お会計（かいけい）はテーブルで承（うけたまわ）ります ／ こちらの伝票（でんぴょう）をお持（も）ちになってレジへお越（こ）しください。」 → 【1秒回答】はい、カードでお願いします。",
+            jp: "【店员说】「お会計（かいけい）はテーブルで承（うけたまわ）ります ／ こちらの伝票（でんぴょう）をお持（も）ちになってレジへお越（こ）しください。」 → 【1秒回答】はい、カードでお願（ねが）いします。",
             romaji: "[Staff] Okaikei wa teeburu de uketamawarimasu / Kochira no denpyou wo omochi ni natte reji e okoshi kudasai.",
             cn: "【人话解码】在座位上为您结账（高级餐厅常见） ／ 请拿这张账单去收银台结账。"
           }
@@ -577,7 +577,7 @@ window.PHRASE_MODULES_13_18 = [
           {
             speaker: "them",
             speakerName: "收银员",
-            jp: "大変（たいへん）お待（ま）たせいたしました！当店の（とうてん）ポイントカードはお持（も）ちでしょうか？また、手提（てさ）げ袋（ぶくろ）は1枚（いちまい）10円（じゅうえん）となりますが、ご利用（りよう）なさいますか？",
+            jp: "大変（たいへん）お待（ま）たせいたしました！当店（とうてん）のポイントカードはお持（も）ちでしょうか？また、手提（てさ）げ袋（ぶくろ）は1枚（いちまい）10円（じゅうえん）となりますが、ご利用（りよう）なさいますか？",
             romaji: "Taihen omatase itashimashita! Touten no pointo kaado wa omochi deshou ka? Mata, tesage-bukuro wa ichimai juu-en to narimasu ga, goriyou nasaimasu ka?",
             cn: "让您久等了！请问有本店积分卡吗？另外手提袋10日元一个，请问需要吗？"
           },

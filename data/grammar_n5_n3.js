@@ -60,7 +60,7 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "日常",
-        "jp": "もう少しゆっくり話（はな）してください。",
+        "jp": "もう少（すこ）しゆっくり話（はな）してください。",
         "romaji": "Mou sukoshi yukkuri hanashite kudasai.",
         "cn": "请再稍微慢一点说。"
       },
@@ -896,7 +896,7 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "日常",
-        "jp": "夕方（ゆうがた）になると、急に寒（さむ）くなりますね。",
+        "jp": "夕方（ゆうがた）になると、急（きゅう）に寒（さむ）くなりますね。",
         "romaji": "Yuugata ni naru to, kyuu ni samuku narimasu ne.",
         "cn": "一到傍晚就会突然变冷呢。"
       },
@@ -952,7 +952,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "购物",
-        "jp": "今日（きょう）は見るだけで、何（なに）も買（か）わないつもりです。",
+        "jp": "今日（きょう）は見（み）るだけで、何（なに）も買（か）わないつもりです。",
         "romaji": "Kyou wa miru dake de, nani mo kawanai tsumori desu.",
         "cn": "今天我打算只逛逛，什么都不买。"
       }
@@ -1172,7 +1172,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "餐厅",
-        "jp": "そろそろお会計（かいけい）をお願いしましょうか？",
+        "jp": "そろそろお会計（かいけい）をお願（ねが）いしましょうか？",
         "romaji": "Sorosoro okaikei wo onegai shimashou ka?",
         "cn": "咱们差不多请店员结账好吗？"
       }
@@ -1433,6 +1433,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "天気予報（てんきよほう）では、明日（あした）は雪（ゆき）が降（ふ）ると言（い）っていました。",
         "romaji": "Tenki yohou de wa, ashita wa yuki ga furu to itte imashita.",
         "cn": "天气预报说明天会下雪。"
+      },
+      {
+        "ctx": "社交",
+        "jp": "店員（てんいん）さんは「この電車（でんしゃ）は品川（しながわ）に止（と）まりますよ」と言（い）っていました。",
+        "romaji": "Ten'in-san wa 'kono densha wa Shinagawa ni tomarimasu yo' to itte imashita.",
+        "cn": "工作人员说：“这趟电车停品川站哦。”"
       }
     ],
     "quiz": {
@@ -1471,6 +1477,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "カフェラテとクロワッサンをひとつずつください。",
         "romaji": "Kafe rate to kurowassan wo hitotsu zutsu kudasai.",
         "cn": "请给我一杯拿铁和一个可颂。"
+      },
+      {
+        "ctx": "购物",
+        "jp": "子供用（こどもよう）のパジャマと靴下（くつした）を買（か）いました。",
+        "romaji": "Kodomoyou no pajama to kutsushita wo kaimashita.",
+        "cn": "买了儿童睡衣和袜子（全部只有这两样→用と）。"
       }
     ],
     "quiz": {
@@ -1549,10 +1561,10 @@ window.JP_GRAMMAR_LIST = [
         "cn": "昨天是雨天，不过今天真是好天气呢。"
       },
       {
-        "ctx": "旅行",
-        "jp": "去年（きょねん）の冬（ふゆ）はそんなに寒（さむ）いどころか、雪（ゆき）じゃなかったです。",
-        "romaji": "Kyonen no fuyu wa yuki janakatta desu.",
-        "cn": "去年冬天那时不是下雪天。"
+        "ctx": "日常",
+        "jp": "昨日（きのう）は休（やす）みじゃなかったですが、今日（きょう）は休（やす）みです。",
+        "romaji": "Kinou wa yasumi janakatta desu ga, kyou wa yasumi desu.",
+        "cn": "昨天不是休息日，不过今天放假。"
       },
       {
         "ctx": "购物",
@@ -1650,7 +1662,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "この靴（くつ）の20センチ＿＿見（み）せていただけますか？",
+      "promptJp": "この靴（くつ）の20センチ＿＿を見（み）せていただけますか？",
       "answer": "の",
       "options": [
         "の",
@@ -1682,8 +1694,8 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "行程",
-        "jp": "今日（きょう）は疲（つか）れたので、午後（ごご）はどこも（どこへも）行（い）きません。",
-        "romaji": "Kyou wa tsukareta node, gogo wa doko mo ikimasen.",
+        "jp": "今日（きょう）は疲（つか）れたので、午後（ごご）はどこへも行（い）きません。",
+        "romaji": "Kyou wa tsukareta node, gogo wa doko e mo ikimasen.",
         "cn": "今天累了，下午哪儿也不去了。"
       },
       {
@@ -1726,19 +1738,19 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "交通",
-        "jp": "東京（とうきょう）から軽井沢（かるいざわ）まで新幹線（しんかんせん）で1時間（じかん）くらいです。",
+        "jp": "東京（とうきょう）から軽井沢（かるいざわ）まで新幹線（しんかんせん）で1時間（いちじかん）くらいです。",
         "romaji": "Toukyou kara Karuizawa made shinkansen de ichijikan kurai desu.",
         "cn": "从东京到轻井泽坐新干线大约1小时。"
       },
       {
         "ctx": "习惯",
-        "jp": "私（わたし）は辛い（からい）ものが好き（すき）ですが、妻（つま）はあまり食（た）べません。",
+        "jp": "私（わたし）は辛（から）いものが好（す）きですが、妻（つま）はあまり食（た）べません。",
         "romaji": "Watashi wa karai mono ga suki desu ga, tsuma wa amari tabemasen.",
         "cn": "我喜欢吃辣的，但我太太不太吃辣。"
       }
     ],
     "quiz": {
-      "promptJp": "朝食（ちょうしょく）は朝（あさ）7時（じ）＿＿10時（じ）までです。",
+      "promptJp": "朝食（ちょうしょく）は朝（あさ）7時（しちじ）＿＿10時（じゅうじ）までです。",
       "answer": "から",
       "options": [
         "から",
@@ -1776,7 +1788,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "育儿",
-        "jp": "4時（じ）に保育（ほいく）園（えん）へ娘（むすめ）を迎（むか）えに行（い）きます。",
+        "jp": "4時（よじ）に保育（ほいく）園（えん）へ娘（むすめ）を迎（むか）えに行（い）きます。",
         "romaji": "Yoji ni hoikuen e musume wo mukae ni ikimasu.",
         "cn": "4点去保育园接女儿。"
       }
@@ -1820,7 +1832,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "评价",
-        "jp": "日本（にほん）は安全（あんぜん）で便利（べんり）な国（くに）だと思います。",
+        "jp": "日本（にほん）は安全（あんぜん）で便利（べんり）な国（くに）だと思（おも）います。",
         "romaji": "Nihon wa anzen de benri na kuni da to omoimasu.",
         "cn": "我觉得日本是一个既安全又方便的国度。"
       }
@@ -1914,7 +1926,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "日本（にほん）へ＿＿とき、空港（くうこう）でお土産（みやげ）を買（か）います（准备离开回美国前）。",
+      "promptJp": "国（くに）へ＿＿とき、空港（くうこう）でお土産（みやげ）を買（か）います。",
       "answer": "帰る",
       "options": [
         "帰る",
@@ -1922,7 +1934,7 @@ window.JP_GRAMMAR_LIST = [
         "帰り",
         "帰って"
       ],
-      "cn": "回美国离开日本的时候，在机场买伴手礼。"
+      "cn": "回国离开日本前，在机场买伴手礼。"
     }
   },
   {
@@ -1946,7 +1958,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "愿望",
-        "jp": "軽井沢（かるいざわ）で思いっきりスキーを滑（すべ）りたいです！",
+        "jp": "軽井沢（かるいざわ）で思（おも）いっきりスキーを滑（すべ）りたいです！",
         "romaji": "Karuizawa de omoikkiri sukii wo suberitai desu!",
         "cn": "真想在轻井泽尽情滑雪呀！"
       },
@@ -1984,9 +1996,9 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "日常",
-        "jp": "「荷物（にもつ）の準備（じゅんび）はもう終（お）わりましたか？」「いいえ、まだです。」",
-        "romaji": "'Nimotsu no junbi wa mou owarimashita ka?' 'Iie, mada desu.'",
-        "cn": "“行李收拾完了吗？”“还没有呢。”"
+        "jp": "荷物（にもつ）の準備（じゅんび）はもう終（お）わりましたか？",
+        "romaji": "Nimotsu no junbi wa mou owarimashita ka?",
+        "cn": "行李收拾准备好了吗？"
       },
       {
         "ctx": "餐厅",
@@ -2034,19 +2046,19 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "提醒",
-        "jp": "スープが熱（あつ）いですから、気（き）をつけてくださいね。",
-        "romaji": "Suupu ga atsui desu kara, ki wo tsukete kudasai ne.",
-        "cn": "汤很烫，小心一点哦。"
+        "jp": "あ、駅（えき）の出口（でぐち）はあちらですよ！",
+        "romaji": "A, eki no deguchi wa achira desu yo!",
+        "cn": "啊，车站出口在那边哦！（用「よ」提醒不知情的同伴）"
       },
       {
-        "ctx": "确认",
-        "jp": "明日（あした）は金曜日（きんようび）でしたよね？",
-        "romaji": "Ashita wa kinyoubi deshita yo ne?",
-        "cn": "明天是周五来着对吧？"
+        "ctx": "推测",
+        "jp": "明日（あした）の軽井沢（かるいざわ）はきっと雪（ゆき）でしょうね。",
+        "romaji": "Ashita no Karuizawa wa kitto yuki deshou ne.",
+        "cn": "明天的轻井泽肯定会下雪吧。（用「でしょう」表示合理推测）"
       }
     ],
     "quiz": {
-      "promptJp": "あ、出口（でぐち）はあちらです＿＿！（指给没看到的同伴）",
+      "promptJp": "あ、出口（でぐち）はあちらです＿＿！",
       "answer": "よ",
       "options": [
         "よ",
@@ -2054,7 +2066,7 @@ window.JP_GRAMMAR_LIST = [
         "か",
         "ぞ"
       ],
-      "cn": "啊，出口在那边哦！"
+      "cn": "啊，出口在那边哦！（指给没看到的同伴）"
     }
   },
   {
@@ -2078,7 +2090,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "想法",
-        "jp": "ちょっと高（たか）いと思（おも）うけど、纪念（きねん）日（び）だからいいよね。",
+        "jp": "ちょっと高（たか）いと思（おも）うけど、記念日（きねんび）だからいいよね。",
         "romaji": "Chotto takai to omou kedo, kinenbi dakara ii yo ne.",
         "cn": "虽然觉得有点贵，不过纪念日嘛值啦。"
       },
@@ -3002,9 +3014,15 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "饮食",
-        "jp": "口コミによると、ここの天婦羅（てんぷら）は絶品（ぜっぴん）だそうですよ。",
+        "jp": "口（くち）コミによると、ここの天婦羅（てんぷら）は絶品（ぜっぴん）だそうですよ。",
         "romaji": "Kuchikomi ni yoru to, koko no tenpura wa zeppin da sou desu yo.",
         "cn": "看网上的评价说，这里的天妇罗堪称一绝呢。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "スタッフの方（かた）の話（はなし）によると、今日（きょう）は富士山（ふじさん）がきれいに見（み）えるそうです。",
+        "romaji": "Sutaffu no kata no hanashi ni yoru to, kyou wa Fujisan ga kirei ni mieru sou desu.",
+        "cn": "据工作人员说，今天能清清楚楚看到富士山呢。"
       }
     ],
     "quiz": {
@@ -3087,6 +3105,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "日本（にほん）は街（まち）が安全（あんぜん）だし、ご飯（はん）もおいしいし、大好（だいす）きです。",
         "romaji": "Nihon wa machi ga anzen da shi, gohan mo oishii shi, daisuki desu.",
         "cn": "日本街道既安全，饭菜又好吃，我超喜欢。"
+      },
+      {
+        "ctx": "生活",
+        "jp": "軽井沢（かるいざわ）の空気（くうき）はきれいだし、温泉（おんせん）も気持（きも）ちいいし、また来（き）たいです。",
+        "romaji": "Karuizawa no kuuki wa kirei dashi, onsen mo kimochi ii shi, mata kitai desu.",
+        "cn": "轻井泽空气又清新，温泉又舒服，还想再来呢。"
       }
     ],
     "quiz": {
@@ -3213,6 +3237,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "旅行中（りょこうちゅう）はおいしいものを食（た）べてばかりいます！",
         "romaji": "Ryokouchuu wa oishii mono wo tabete bakari imasu!",
         "cn": "旅途中净顾着吃美食啦！"
+      },
+      {
+        "ctx": "日常",
+        "jp": "さっき温泉（おんせん）から出（で）たばかりなので、体（からだ）がぽかぽかしています。",
+        "romaji": "Sakki onsen kara deta bakari na no de, karada ga pokapoka shite imasu.",
+        "cn": "刚才刚从温泉出来，身子还暖洋洋的。"
       }
     ],
     "quiz": {
@@ -3295,6 +3325,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "明日（あした）までにこの資料（しりょう）をチェックしてほしいのですが。",
         "romaji": "Ashita made ni kono shiryou wo chekku shite hoshii no desu ga.",
         "cn": "希望能麻烦在明天前核对一下这份资料。"
+      },
+      {
+        "ctx": "旅游",
+        "jp": "店員（てんいん）さんには、おすすめのお土産（みやげ）を教（おし）えてほしいです。",
+        "romaji": "Ten'in-san ni wa, osusume no omiyage wo oshiete hoshii desu.",
+        "cn": "希望能让店员给我们推荐几款伴手礼。"
       }
     ],
     "quiz": {
@@ -3474,7 +3510,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "（店员）お席（せき）までご＿＿いたします。",
+      "promptJp": "お席（せき）までご＿＿いたします。",
       "answer": "案内",
       "options": [
         "案内",
@@ -3509,6 +3545,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "由布院（ゆふいん）は日本（にほん）らしい静（しず）かな温泉街（おんせんがい）ですね。",
         "romaji": "Yufuin wa Nihon rashii shizuka na onsengai desu ne.",
         "cn": "由布院真是极具日本风情的静谧温泉街呢。"
+      },
+      {
+        "ctx": "沟通",
+        "jp": "明日（あした）は午後（ごご）から雨（あめ）が止（や）むらしいですから、安心（あんしん）してください。",
+        "romaji": "Ashita wa gogo kara ame ga yamu rashii desu kara, anshin shite kudasai.",
+        "cn": "听说从明天下午起雨就会停了，请放心哦。"
       }
     ],
     "quiz": {
@@ -3547,6 +3589,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "このアプリはフレーズだけでなく、動詞（どうし）や文法（ぶんぽう）も学（まな）べます。",
         "romaji": "Kono apuri wa fureezu dake de naku, doushi ya bunpou mo manabemasu.",
         "cn": "这个应用不仅能学情景短语，还能学动词和语法。"
+      },
+      {
+        "ctx": "饮食",
+        "jp": "このお店（みせ）はラーメンだけでなく、チャーハンや餃子（ぎょうざ）も絶品（ぜっぴん）です。",
+        "romaji": "Kono omise wa raamen dake de naku, chaahan ya gyouza mo zeppin desu.",
+        "cn": "这家店不仅拉面好吃，炒饭和煎饺也是一绝。"
       }
     ],
     "quiz": {
@@ -3682,7 +3730,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "チェックアウトの前（まえ）に、荷物（にもつ）をまとめ＿＿！（〜ておこう口语）",
+      "promptJp": "チェックアウトの前（まえ）に、荷物（にもつ）をまとめ＿＿！",
       "answer": "とこう",
       "options": [
         "とこう",
@@ -3690,7 +3738,7 @@ window.JP_GRAMMAR_LIST = [
         "なきゃ",
         "てる"
       ],
-      "cn": "退房前先把行李提前收拾好吧（〜ておく缩略形）。"
+      "cn": "退房前先把行李提前收拾好吧（〜ておこう口语缩略）。"
     }
   },
   {
@@ -3708,7 +3756,7 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "餐厅",
-        "jp": "人気店（にんきてん）なので、外（そと）で40分（ぷん）も待（ま）たされました。",
+        "jp": "人気店（にんきてん）なので、外（そと）で40分（よんじゅっぷん）も待（ま）たされました。",
         "romaji": "Ninkiten na node, soto de yonjuppun mo matasaremashita.",
         "cn": "因为是网红店，我们在外面被迫等了足足40分钟。"
       },
@@ -3726,7 +3774,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "混（こ）んでいて、1時間（じかん）も外（そと）で＿＿。",
+      "promptJp": "混（こ）んでいて、1時間（いちじかん）も外（そと）で＿＿。",
       "answer": "待たされた",
       "options": [
         "待たされた",
@@ -3937,6 +3985,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "週末（しゅうまつ）は仕事（しごと）のメールを見（み）ないことにしています。",
         "romaji": "Shuumatsu wa shigoto no meeru wo minai koto ni shite imasu.",
         "cn": "我给自己定规矩，周末不看工作邮件。"
+      },
+      {
+        "ctx": "生活",
+        "jp": "旅行中（りょこうちゅう）も、朝（あさ）起（お）きたらまずコップ一杯（いっぱい）のお水（みず）を飲（の）むことにしています。",
+        "romaji": "Ryokouchuu mo, asa okitara mazu koppu ippai no omizu wo nomu koto ni shite imasu.",
+        "cn": "哪怕在旅途中，我每天早上起床后也坚持先喝一杯水。"
       }
     ],
     "quiz": {
@@ -4063,6 +4117,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "私（わたし）たちにとって、今回（こんかい）の日本（にほん）旅行（りょこう）は一生（いっしょう）の宝物（たからもの）です。",
         "romaji": "Watashitachi ni totte, konkai no Nihon ryokou wa isshou no takaramono desu.",
         "cn": "对我们来说，这次日本之旅是一辈子的宝贵回忆。"
+      },
+      {
+        "ctx": "学习",
+        "jp": "日本語（にほんご）を学（まな）ぶ私（わたし）にとって、毎日（まいにち）声（こえ）に出（だ）す練習（れんしゅう）が一番（いちばん）大切（たいせつ）です。",
+        "romaji": "Nihongo wo manabu watashi ni totte, mainichi koe ni dasu renshuu ga ichiban taisetsu desu.",
+        "cn": "对于学日语的我来说，每天开口大声练习是最重要的。"
       }
     ],
     "quiz": {
@@ -4098,7 +4158,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "旅行",
-        "jp": "由布院（ゆふいん）は、日本（にほん）を代表する温泉地（おんせんち）として有名（ゆうめい）です。",
+        "jp": "由布院（ゆふいん）は、日本（にほん）を代表（だいひょう）する温泉地（おんせんち）として有名（ゆうめい）です。",
         "romaji": "Yufuin wa, Nihon wo daihyou suru onsenchi to shite yuumei desu.",
         "cn": "由布院作为日本最具代表性的温泉胜地而闻名。"
       },
@@ -4189,6 +4249,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "このホテル、駅（えき）からすごく近（ちか）いわりにとても静（しず）かですね。",
         "romaji": "Kono hoteru, eki kara sugoku chikai wari ni totemo shizuka desu ne.",
         "cn": "这家酒店虽然离车站超近，却意外地非常安静呢。"
+      },
+      {
+        "ctx": "购物",
+        "jp": "この冬用（ふゆよう）コートは軽（かる）いわりに、すごく暖（あたた）かいですね！",
+        "romaji": "Kono fuyuyou kooto wa karui wari ni, sugoku atatakai desu ne!",
+        "cn": "这件冬装大衣虽然很轻，但保暖性出奇地好呢！"
       }
     ],
     "quiz": {
@@ -4227,6 +4293,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "せっかく予約（よやく）を取（と）ったから、遅刻（ちこく）するわけにはいかないよ。",
         "romaji": "Sekkaku yoyaku wo totta kara, chikoku suru wake ni wa ikanai yo.",
         "cn": "好不容易订到的位子，绝对不能迟到哦。"
+      },
+      {
+        "ctx": "亲子",
+        "jp": "せっかく軽井沢（かるいざわ）に来（き）たのに、寒（さむ）いからといって部屋（へや）にいるわけにはいかないよ！",
+        "romaji": "Sekkaku Karuizawa ni kita noni, samui kara to itte heya ni iru wake ni wa ikanai yo!",
+        "cn": "好不容易来到轻井泽，总不能因为冷就一直待在房间里嘛！"
       }
     ],
     "quiz": {
@@ -4265,6 +4337,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "声（こえ）に出（だ）して読（よ）むたびに、少（すこ）しずつスムーズに話（はな）せるようになります。",
         "romaji": "Koe ni dashite yomu tabi ni, sukoshi zutsu sumuuzu ni hanaseru you ni narimasu.",
         "cn": "每大声朗读一次，就会一点点说得更流利。"
+      },
+      {
+        "ctx": "美食",
+        "jp": "ここのお出汁（だし）を飲（の）むたびに、ホッとした気持（きも）ちになります。",
+        "romaji": "Koko no odashi wo nomu tabi ni, hotto shita kimochi ni narimasu.",
+        "cn": "每次喝这里的日式高汤，都会觉得心里暖呼呼特别治愈。"
       }
     ],
     "quiz": {
@@ -4300,13 +4378,19 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "生活",
-        "jp": "このアパートは少し古（ふる）いかわりに、駅（えき）から歩（ある）いて3分（さんぷん）でとても広（ひろ）いです。",
+        "jp": "このアパートは少（すこ）し古（ふる）いかわりに、駅（えき）から歩（ある）いて3分（さんぷん）でとても広（ひろ）いです。",
         "romaji": "Kono apaato wa sukoshi furui kawari ni, eki kara aruite sanpun de totemo hiroi desu.",
         "cn": "这间公寓虽然稍微旧一点，但作为弥补离车站步行只要3分钟而且很宽敞。"
+      },
+      {
+        "ctx": "日常",
+        "jp": "今日（きょう）はママがゆっくり休（やす）むかわりに、パパが夕食（ゆうしょく）を作（つく）るね。",
+        "romaji": "Kyou wa mama ga yukkuri yasumu kawari ni, papa ga yuushoku wo tsukuru ne.",
+        "cn": "今天由妈妈好好休息，相应地爸爸来做晚饭哦。"
       }
     ],
     "quiz": {
-      "promptJp": "今日（きょう）はパパが運転（うんてん）する＿＿、ママがナビをお願いね。",
+      "promptJp": "今日（きょう）はパパが運転（うんてん）する＿＿、ママがナビをお願（ねが）いね。",
       "answer": "かわりに",
       "options": [
         "かわりに",
@@ -4341,6 +4425,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "日本（にほん）にいる間（あいだ）、ずっと天気（てんき）がよくて幸（しあわ）せでした。",
         "romaji": "Nihon ni iru aida, zutto tenki ga yokute shiawase deshita.",
         "cn": "在日本期间一直都是好天气，太幸福了。"
+      },
+      {
+        "ctx": "日常",
+        "jp": "お風呂（ふろ）に入（はい）っている間（あいだ）に、スタッフがお布団（ふとん）を敷（し）いてくれました。",
+        "romaji": "Ofuro ni haitte iru aida ni, sutaffu ga ofuton wo shiite kuremashita.",
+        "cn": "在我们泡澡期间，工作人员已经帮我们把被褥铺好了。"
       }
     ],
     "quiz": {
@@ -4379,6 +4469,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "電車（でんしゃ）が混（こ）んでいて、1時間（いちじかん）ずっと立（た）ちっぱなしでした。",
         "romaji": "Densha ga konde ite, ichijikan zutto tachippanashi deshita.",
         "cn": "电车太挤了，整整站了一个小时。"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "靴（くつ）を玄関（げんかん）に出（だ）しっぱなしにしないで、きれいに並（なら）べようね。",
+        "romaji": "Kutsu wo genkan ni dashippanashi ni shinaide, kirei ni narabeyou ne.",
+        "cn": "鞋子别一直扔在玄关不管，整齐摆好哦。"
       }
     ],
     "quiz": {
@@ -4417,6 +4513,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "長旅（ながたび）でちょっと疲（つか）れぎみですが、温泉（おんせん）に入（はい）れば元気（げんき）になります。",
         "romaji": "Nagatabi de chotto tsukaregimi desu ga, onsen ni haireba genki ni narimasu.",
         "cn": "长途旅行稍微有点累了，泡个温泉就满血复活了。"
+      },
+      {
+        "ctx": "日常",
+        "jp": "外食（がいしょく）が続（つづ）いて少（すこ）し太（ふと）りぎみなので、今日（きょう）はいっぱい歩（ある）こう！",
+        "romaji": "Gaishoku ga tsuzuite sukoshi futorigimi na no de, kyou wa ippai arukou!",
+        "cn": "连着外食有点发胖的苗头了，今天咱们多走走路！"
       }
     ],
     "quiz": {
@@ -4455,6 +4557,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "冬（ふゆ）の東京（とうきょう）は乾燥（かんそう）して、喉（のど）を痛（いた）めがちなので加湿器（かしつき）を使（つか）います。",
         "romaji": "Fuyu no Toukyou wa kansou shite, nodo wo itamegachi na node kashitsuki wo tsukaimasu.",
         "cn": "冬天的东京很干燥，动不动就容易嗓子不舒服，所以会用加湿器。"
+      },
+      {
+        "ctx": "育儿",
+        "jp": "小（ちい）さい子（こ）は疲（つか）れると、夕方（ゆうがた）にご機嫌（きげん）がななめになりがちです。",
+        "romaji": "Chiisai ko wa tsukareru to, yuugata ni gokigen ga naname ni narigachi desu.",
+        "cn": "小孩子一累了，傍晚就容易闹点小脾气。"
       }
     ],
     "quiz": {
@@ -4493,6 +4601,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "このスープは少（すこ）し油（あぶら）っぽいですが、コクがあっておいしいです。",
         "romaji": "Kono suupu wa sukoshi aburappoi desu ga, koku ga atte oishii desu.",
         "cn": "这碗汤稍微有点偏油，但很醇厚好喝。"
+      },
+      {
+        "ctx": "天气",
+        "jp": "朝（あさ）から曇（くも）り空（ぞら）だし、今日（きょう）はちょっと雨（あめ）っぽい天気（てんき）だね。",
+        "romaji": "Asa kara kumorizora dashi, kyou wa chotto ameppoi tenki da ne.",
+        "cn": "一早就阴天，今天看着有点像要下雨的样子呢。"
       }
     ],
     "quiz": {
@@ -4531,6 +4645,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "東京（とうきょう）には行（い）きたいお店（みせ）が数（かぞ）えきれないほどあります。",
         "romaji": "Toukyou ni wa ikitai omise ga kazoekirenai hodo arimasu.",
         "cn": "东京想去的店多得数都数不过来。"
+      },
+      {
+        "ctx": "日常",
+        "jp": "買（か）いすぎたと思（おも）ったお土産（みやげ）も、なんとかスーツケースに入（はい）りきりました！",
+        "romaji": "Kaisugita to omotta omiyage mo, nantoka suutsukeesu ni hairikirimashita!",
+        "cn": "还以为买太多了的伴手礼，总算全部塞进行李箱里了！"
       }
     ],
     "quiz": {
@@ -4569,6 +4689,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "雪道（ゆきみち）で滑（すべ）って転（ころ）びかけましたが、大丈夫（だいじょうぶ）でした！",
         "romaji": "Yukimichi de subette korobikakemashita ga, daijoubu deshita!",
         "cn": "在雪路上打滑差点摔跤，好在没事！"
+      },
+      {
+        "ctx": "日常",
+        "jp": "さっき部屋（へや）を出（で）かけたときに、大切（たいせつ）な傘（かさ）を忘（わす）れているのに気（き）づきました。",
+        "romaji": "Sakki heya wo dekaketa toki ni, taisetsu na kasa wo wasurete iru noni kizukimashita.",
+        "cn": "刚才刚要走出房间时，发现重要的伞忘了拿。"
       }
     ],
     "quiz": {
@@ -4604,9 +4730,15 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "日常",
-        "jp": "もう一度（いちど）最初から聞（き）き直（なお）してみましょう。",
+        "jp": "もう一度（いちど）最初（さいしょ）から聞（き）き直（なお）してみましょう。",
         "romaji": "Mou ichido saisho kara kikinaoshite mimashou.",
         "cn": "咱们从头再重新听一遍看看吧。"
+      },
+      {
+        "ctx": "交通",
+        "jp": "道（みち）がよく分（わ）からなくなったので、地図（ちず）を見直（みなお）しましょう。",
+        "romaji": "Michi ga yoku wakaranaku natta no de, chizu wo minaoshimashou.",
+        "cn": "路有点看不明白了，咱们重新看一下地图吧。"
       }
     ],
     "quiz": {
@@ -4645,6 +4777,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "今日（きょう）は昨日（きのう）ほど風（かぜ）が冷（つめ）たくないので歩（ある）きやすいです。",
         "romaji": "Kyou wa kinou hodo kaze ga tsumetaku nai node arukiyasui desu.",
         "cn": "今天的风没有昨天那么刺骨，挺适合散步的。"
+      },
+      {
+        "ctx": "感动",
+        "jp": "夜（よる）の露天風呂（ろてんぶろ）は、言葉（ことば）で表（あらわ）せないほど気持（きも）ちよかったです。",
+        "romaji": "Yoru no rotenburo wa, kotoba de arawasenai hodo kimochi yokatta desu.",
+        "cn": "晚上的露天温泉舒服到简直无法用语言形容。"
       }
     ],
     "quiz": {
@@ -4683,6 +4821,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "お医者（いしゃ）さんに、水分（すいぶん）をたくさん取（と）るように言（い）われました。",
         "romaji": "Oishasan ni, suibun wo takusan toru you ni iwaremashita.",
         "cn": "医生叮嘱要多补充水分。"
+      },
+      {
+        "ctx": "酒店",
+        "jp": "フロントには、荷物（にもつ）を部屋（へや）に届（とど）けておくように頼（たの）んであります。",
+        "romaji": "Furonto ni wa, nimotsu wo heya ni todokete oku you ni tanonde arimasu.",
+        "cn": "我已经拜托前台把行李送到房间了。"
       }
     ],
     "quiz": {
@@ -4721,6 +4865,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "スキーと言（い）っても、下（した）の子（こ）はまだ2歳（にさい）なので雪遊（ゆきあそ）びがメインです。",
         "romaji": "Sukii to itte mo, shita no ko wa mada nisai na node yukiasobi ga mein desu.",
         "cn": "虽说是去滑雪，但小女儿才2岁，主要还是玩雪为主。"
+      },
+      {
+        "ctx": "生活",
+        "jp": "温泉（おんせん）旅館（りょかん）といっても、ホテルのようにベッドがある部屋（へや）も増（ふ）えています。",
+        "romaji": "Onsen ryokan to itte mo, hoteru no you ni beddo ga aru heya mo fuete imasu.",
+        "cn": "虽说是温泉旅馆，但像酒店一样带床的房间也越来越多了。"
       }
     ],
     "quiz": {
@@ -4759,6 +4909,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "最近（さいきん）たくさん歩（ある）いているせいか、よく眠（ねむ）れるようになりました。",
         "romaji": "Saikin takusan aruite iru sei ka, yoku nemureru you ni narimashita.",
         "cn": "大概是因为最近走得多，睡眠变好了不少。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "天気（てんき）がいいせいか、今日（きょう）は観光（かんこう）客（きゃく）がいつもより多（おお）いですね。",
+        "romaji": "Tenki ga ii sei ka, kyou wa kankoukyaku ga itsumo yori ooi desu ne.",
+        "cn": "也许是因为天气好的缘故吧，今天的游客比平时多呢。"
       }
     ],
     "quiz": {
@@ -4797,6 +4953,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "最初（さいしょ）は間違（まちが）いだらけでもいいから、どんどん話（はな）そう！",
         "romaji": "Saisho wa machigaidarake demo ii kara, dondon hanasou!",
         "cn": "一开始满嘴错误也没关系，大胆多说吧！"
+      },
+      {
+        "ctx": "日常",
+        "jp": "一日中（いちにちじゅう）歩（ある）いたから、靴（くつ）が雪（ゆき）と泥（どろ）だらけになっちゃいました。",
+        "romaji": "Ichinichijuu aruita kara, kutsu ga yuki to doro darake ni natchaimashita.",
+        "cn": "走了一整天，鞋子上全沾满雪和泥了。"
       }
     ],
     "quiz": {
@@ -4835,6 +4997,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "自分（じぶん）で選（えら）んだくせに、文句（もんく）ばかり言（い）わないの。",
         "romaji": "Jibun de eranda kuse ni, monku bakari iwanai no.",
         "cn": "明明是自己选的，别净发牢骚啦。"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "さっき「もう眠（ねむ）くない」と言（い）ったくせに、5分（ごふん）で寝（ね）ちゃったね！",
+        "romaji": "Sakki 'mou nemukunai' to itta kuse ni, gofun de nechatta ne!",
+        "cn": "刚才明明还嘴硬说“我不困”，结果5分钟就睡着了吧！"
       }
     ],
     "quiz": {
@@ -4873,6 +5041,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "このプロジェクトに関（かん）する資料（しりょう）をメールでお送（おく）りしました。",
         "romaji": "Kono purojekuto ni kansuru shiryou wo meeru de ookuri shimashita.",
         "cn": "有关这个项目的资料我已经通过邮件发给您了。"
+      },
+      {
+        "ctx": "旅游",
+        "jp": "お子様（こさま）料金（りょうきん）に関（かん）する詳細（しょうさい）は、スタッフまでお尋（たず）ねください。",
+        "romaji": "Okosama ryoukin ni kansuru shousai wa, sutaffu made otazune kudasai.",
+        "cn": "关于儿童收费标准的详情，请向工作人员咨询。"
       }
     ],
     "quiz": {
@@ -4911,6 +5085,12 @@ window.JP_GRAMMAR_LIST = [
         "jp": "いい匂（にお）いがして、お店（みせ）に入（はい）らずにはいられませんでした。",
         "romaji": "Ii nioi ga shite, omise ni hairazu ni wa iraremasen deshita.",
         "cn": "香气太诱人了，情不自禁就走进店里了。"
+      },
+      {
+        "ctx": "美食",
+        "jp": "焼（や）きたてパンの香（かお）りがすると、ついつい買（か）わずにはいられません。",
+        "romaji": "Yakitate pan no kaori ga suru to, tsuitsui kawazu ni wa iraremasen.",
+        "cn": "一闻到刚出炉的面包香气，就忍不住一定要买。"
       }
     ],
     "quiz": {
@@ -4952,7 +5132,7 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "家庭",
-        "jp": "Jinnyも軽井沢（かるいざわ）の雪（ゆき）を見（み）たら大喜（おおよろこ）びするに違（ちが）いない。",
+        "jp": "ジニーも軽井沢（かるいざわ）の雪（ゆき）を見（み）たら大喜（おおよろこ）びするに違（ちが）いない。",
         "romaji": "Jinny mo Karuizawa no yuki wo mitara ooyorokobi suru ni chigainai.",
         "cn": "Jinny 看到轻井泽的雪肯定会乐疯的。"
       }
@@ -4984,7 +5164,7 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "家庭",
-        "jp": "こんなおいしいケーキ、2歳（さい）の子（こ）どもが嫌（きら）いなわけがないよ！",
+        "jp": "こんなおいしいケーキ、2歳（にさい）の子（こ）どもが嫌（きら）いなわけがないよ！",
         "romaji": "Konna oishii keeki, nisai no kodomo ga kirai na wake ga nai yo!",
         "cn": "这么好吃的蛋糕，2岁小孩怎么可能讨厌呢！"
       },
@@ -5002,7 +5182,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "こんな簡単（かんたん）な道（みち）、間違う（まちがう）＿＿よ。",
+      "promptJp": "こんな簡単（かんたん）な道（みち）、間違（まちが）う＿＿よ。",
       "answer": "わけがない",
       "options": [
         "わけがない",
@@ -5028,25 +5208,25 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "安慰",
-        "jp": "時間はまだ十分（じゅうぶん）あるから、そんなに急（いそ）ぐことはないよ。",
+        "jp": "時間（じかん）はまだ十分（じゅうぶん）あるから、そんなに急（いそ）ぐことはないよ。",
         "romaji": "Jikan wa mada juubun aru kara, sonna ni isogu koto wa nai yo.",
         "cn": "时间还很充裕，用不着那么着急哦。"
       },
       {
         "ctx": "旅行",
-        "jp": "同じ庭園（ていえん）の中（なか）だから、大（おお）きい荷物（にもつ）を運（はこ）ぶことはないね。",
+        "jp": "同（おな）じ庭園（ていえん）の中（なか）だから、大（おお）きい荷物（にもつ）を運（はこ）ぶことはないね。",
         "romaji": "Onaji teien no naka dakara, ookii nimotsu wo hakobu koto wa nai ne.",
         "cn": "就在同一个庭园里，没必要自己搬大行李嘛。"
       },
       {
         "ctx": "育儿",
-        "jp": "少（すこ）しくらい日本語（にほんご）が間違（まちが）っても、気（き）にする（心配する）ことはないですよ。",
-        "romaji": "Sukoshi kurai Nihongo ga machigattemo, shinpai suru koto wa nai desu yo.",
-        "cn": "日语说错一点点也完全用不着担心的。"
+        "jp": "少（すこ）しくらい日本語（にほんご）を間違（まちが）えても、気（き）にすることはないですよ。",
+        "romaji": "Sukoshi kurai Nihongo wo machigaete mo, ki ni suru koto wa nai desu yo.",
+        "cn": "日语说错一点点也完全用不着担心的（気にする＝在意/担心）。"
       }
     ],
     "quiz": {
-      "promptJp": "電車（でんしゃ）は5分（ふん）おきに来（く）るから、走（はし）る＿＿よ。",
+      "promptJp": "電車（でんしゃ）は5分（ごふん）おきに来（く）るから、走（はし）る＿＿よ。",
       "answer": "ことはない",
       "options": [
         "ことはない",
@@ -5310,7 +5490,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "銀座（ぎんざ）＿＿、いろいろなお店（みせ）を見て回（まわ）りました。",
+      "promptJp": "銀座（ぎんざ）＿＿、いろいろなお店（みせ）を見（み）て回（まわ）りました。",
       "answer": "を中心に",
       "options": [
         "を中心に",
@@ -5430,13 +5610,13 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "旅行",
-        "jp": "もう1回（かい）日本（にほん）に来（こ）られるとしたら、どこに泊（と）まりたいですか？",
+        "jp": "もう1回（いっかい）日本（にほん）に来（こ）られるとしたら、どこに泊（と）まりたいですか？",
         "romaji": "Mou ikkai Nihon ni korareru to shitara, doko ni tomaritai desu ka?",
         "cn": "假如还能再来一次日本，你想住在哪里？"
       },
       {
         "ctx": "讨论",
-        "jp": "11時（じ）に着（つ）くとすれば、その前（まえ）に荷物（にもつ）を預（あず）けられるね。",
+        "jp": "11時（じゅういちじ）に着（つ）くとすれば、その前（まえ）に荷物（にもつ）を預（あず）けられるね。",
         "romaji": "Juuichiji ni tsuku to sureba, sono mae ni nimotsu wo azukerareru ne.",
         "cn": "如果是11点到的话，那之前就能先把行李寄存了。"
       }
@@ -5524,13 +5704,13 @@ window.JP_GRAMMAR_LIST = [
       },
       {
         "ctx": "对话",
-        "jp": "「おいしかった」って日本語（にほんご）で過去形（かこけい）は何（なん）だっけ？",
-        "romaji": "'Oishikatta' tte Nihongo de kakokei wa nan dakke?",
-        "cn": "“真好吃”的日语过去式是什么来着？"
+        "jp": "あのお寿司屋（すしや）さんの名前（なまえ）、何（なん）だっけ？",
+        "romaji": "Ano osushiya-san no namae, nan dakke?",
+        "cn": "那家寿司店叫什么名字来着？"
       }
     ],
     "quiz": {
-      "promptJp": "チェックアウトは11時（じ）でし＿＿？12時だっけ？",
+      "promptJp": "チェックアウトは11時（じゅういちじ）でし＿＿？12時（じゅうにじ）だっけ？",
       "answer": "たっけ",
       "options": [
         "たっけ",
@@ -5600,13 +5780,13 @@ window.JP_GRAMMAR_LIST = [
     "dailyExamples": [
       {
         "ctx": "行程",
-        "jp": "35泊（はく）にわたる家族（かぞく）みんなでの日本旅行（にほんりょこう）が始（はじ）まります！",
+        "jp": "35泊（さんじゅうごはく）にわたる家族（かぞく）みんなでの日本旅行（にほんりょこう）が始（はじ）まります！",
         "romaji": "Sanjuugohaku ni wataru kazoku minna de no Nihon ryokou ga hajimarimasu!",
         "cn": "历时35晚的全家日本大长假即将开启！"
       },
       {
         "ctx": "天气",
-        "jp": "【天气预报】今夜（こんや）から明日（あした）の朝（あさ）にかけて、軽井沢（かるいざわ）は雪（ゆき）の予報（よほう）です。",
+        "jp": "今夜（こんや）から明日（あした）の朝（あさ）にかけて、軽井沢（かるいざわ）は雪（ゆき）の予報（よほう）です。",
         "romaji": "Kon'ya kara ashita no asa ni kakete, Karuizawa wa yuki no yohou desu.",
         "cn": "【必听天气预报】从今晚到明天早上，轻井泽预报有雪。"
       },
@@ -5618,7 +5798,7 @@ window.JP_GRAMMAR_LIST = [
       }
     ],
     "quiz": {
-      "promptJp": "12月（がつ）から1月（がつ）＿＿、日本（にほん）に滞在（たいざい）します。",
+      "promptJp": "12月（じゅうにがつ）から1月（いちがつ）＿＿、日本（にほん）に滞在（たいざい）します。",
       "answer": "にかけて",
       "options": [
         "にかけて",

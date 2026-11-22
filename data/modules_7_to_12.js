@@ -15,7 +15,7 @@ window.PHRASE_MODULES_7_12 = [
           {
             id: "m7-s1-1",
             tag: "进店报预约",
-            jp: "こんにちは。12時（じゅうにじ）［／ 11時（じゅういちじ）・11時半（じゅういちじはん）］から食べログで予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。",
+            jp: "こんにちは。12時（じゅうにじ）［／ 11時（じゅういちじ）・11時半（じゅういちじはん）］から食（た）べログで予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。",
             romaji: "Konnichiwa. Juuniji [ / Juuichiji / Juuichiji-han] kara Tabelogu de yoyaku shite iru Ryuu [LIU Haodong] desu. Nimei desu.",
             cn: "您好，我是通过 Tabelog 预约了12点［／11点·11点半］的刘［LIU Haodong］，两位。",
             tip: "預約號速查：12/15 銀座よこ田 (TD6NPNPJZH)、12/16 銀座山科 (899X3CQLAL)、12/17 銀座五明 (JSZXLQDDQV)、12/18 kappou ukai (E3YXY4QXVN)。"
@@ -611,7 +611,7 @@ window.PHRASE_MODULES_7_12 = [
           {
             id: "m10-s3-1",
             tag: "询问免税与免税柜台楼层",
-            jp: "免税（めんぜい）［Tax-Free］の手続（てつづ）きをお願いしたいのですが、パスポートはこちらです。免税（めんぜい）カウンターは何階（なんかい）にありますか？",
+            jp: "免税（めんぜい）［Tax-Free］の手続（てつづ）きをお願（ねが）いしたいのですが、パスポートはこちらです。免税（めんぜい）カウンターは何階（なんかい）にありますか？",
             romaji: "Menzei [Tax-Free] no tetsuzuki wo onegai shitai no desu ga, pasupooto wa kochira desu. Menzei kauntaa wa nankai ni arimasu ka?",
             cn: "我想办理免税手续，这是护照。请问百货商场的免税柜台在几楼？",
             tip: "药妆店/奥特莱斯通常直接在收银台免税（结账直接扣10%）；伊势丹/三越等百货商场则是先含税付全款，再去服务台统一退税（常收1.55%手续费）。"
@@ -761,7 +761,7 @@ window.PHRASE_MODULES_7_12 = [
           {
             id: "m11-s2-1",
             tag: "请路人拍全家福（含东京塔）",
-            jp: "すみません、もしよろしければ、家族（かぞく）4人（よにん）の写真（しゃしん）を撮（と）っていただけますか？ここの白いボタンを押（お）すだけです。後（うし）ろの東京（とうきょう）タワーも入（はい）るようにお願（ねが）いします！",
+            jp: "すみません、もしよろしければ、家族（かぞく）4人（よにん）の写真（しゃしん）を撮（と）っていただけますか？ここの白（しろ）いボタンを押（お）すだけです。後（うし）ろの東京（とうきょう）タワーも入（はい）るようにお願（ねが）いします！",
             romaji: "Sumimasen, moshi yoroshikereba, kazoku yonin no shashin wo totte itadakemasu ka? Koko no shiroi botan wo osu dake desu. Ushiro no Toukyou Tawaa mo hairu you ni onegai shimasu!",
             cn: "不好意思，如果方便的话，能帮我们一家四口拍张照吗？只要按这里的白色快门键就可以了。麻烦把后面的东京塔也拍进去！"
           },
@@ -869,7 +869,7 @@ window.PHRASE_MODULES_7_12 = [
           {
             id: "m12-s2-3",
             tag: "确认用法用量与是否含困倦成分",
-            jp: "1日（いちにち）何回（なんかい）、1回（いっかい）何ミリリットル［／ 何錠（なんじょう）］飲（の）めばいいですか？食後（しょくご）ですか？",
+            jp: "1日（いちにち）何回（なんかい）、1回（いっかい）何（なん）ミリリットル［／ 何錠（なんじょう）］飲（の）めばいいですか？食後（しょくご）ですか？",
             romaji: "Ichinichi nankai, ikkai nan-miririttoru [ / nan-jou] nomeba ii desu ka? Shokugo desu ka?",
             cn: "请问一天吃几次，每次喝多少毫升［／ 几片］？是饭后吃吗？"
           }
@@ -932,7 +932,7 @@ window.PHRASE_MODULES_7_12 = [
           {
             speaker: "them",
             speakerName: "药剂师 (薬剤師)",
-            jp: "それでしたら、こちらのイチゴ味（あじ）の「アンパンマンのかぜシロップ」が3ヶ月（さんかげつ）から7歳（ななさい）未満（みまん）まで両方の（りょうほう）お子（こ）さまに飲（の）ませられますよ。付（つ）き添（そ）いの計量（けいりょう）カップで1日（いちにち）3回（さんかい）、食後（しょくご）に飲（の）ませてくださいね。",
+            jp: "それでしたら、こちらのイチゴ味（あじ）の「アンパンマンのかぜシロップ」が3ヶ月（さんかげつ）から7歳（ななさい）未満（みまん）まで両方（りょうほう）のお子（こ）さまに飲（の）ませられますよ。付（つ）き添（そ）いの計量（けいりょう）カップで1日（いちにち）3回（さんかい）、食後（しょくご）に飲（の）ませてくださいね。",
             romaji: "Sore deshitara, kochira no ichigo-aji no 'Anpanman no kaze shiroppu' ga sankagetsu kara nanasai miman made ryouhou no okosama ni nomaseraremasu yo. Tsukisoi no keiryou kappu de ichinichi sankai, shokugo ni nomasete kudasai ne.",
             cn: "那样的话，这款草莓味的“面包超人感冒糖浆”从3个月到未满7岁都可以喝，两个孩子都能用。请用附带的量杯一天3次在饭后喂服。"
           },
