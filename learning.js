@@ -97,19 +97,29 @@
     quizAnswered: null,
     quizStreak: 0,
     quizCorrect: 0,
-    quizTotal: 0,
-    // Shadowing
-    shadowDeck: "phrases", // 'phrases' | 'verbs' | 'grammar' | 'n5vocab'
-    shadowIndex: 0,
-    shadowRunning: false,
-    shadowPhase: "",
-    shadowTimer: null,
-    shadowTranscript: "",
-    shadowScore: null
+    quizTotal: 0
   };
 
   function app() {
     return window.JP_APP;
+  }
+
+  function bindQuickOralButtons(container) {
+    if (!container) return;
+    container.querySelectorAll(".quick-oral-btn").forEach((b) => {
+      b.onclick = function () {
+        if (window.JP_ORAL_COACH) {
+          window.JP_ORAL_COACH.openQuickModal({
+            id: this.dataset.oid,
+            tag: this.dataset.otag || "🎙️ 跟读",
+            jp: this.dataset.ojp,
+            romaji: this.dataset.oromaji || "",
+            cn: this.dataset.ocn || "",
+            audioKey: this.dataset.oakey || null
+          });
+        }
+      };
+    });
   }
 
   function shuffle(arr) {
@@ -639,9 +649,9 @@
                       <div class="verb-examples-list">
                         ${v.examples
                           .map(
-                            (ex) => `
+                            (ex, exIdx) => `
                           <div class="verb-example-item">
-                            <div style="flex:1;min-width:0;">
+                            <div style="flex:1 1 190px;min-width:0;">
                               <div class="vex-top">
                                 <span class="vex-form-badge">${escapeHtml(ex.form)}</span>
                               </div>
@@ -652,6 +662,7 @@
                             <div class="vex-btns">
                               <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
                               <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
+                              <button type="button" class="icon-btn quick-oral-btn" data-oid="${v.id}-ex${exIdx}" data-ojp="${escapeHtml(ex.jp)}" data-oromaji="${escapeHtml(ex.romaji || "")}" data-ocn="${escapeHtml(ex.cn)}" data-otag="⚡ #${v.rank} ${escapeHtml(v.dict)} (${escapeHtml(ex.form)})" title="开口跟读发音评测">🎙️</button>
                             </div>
                           </div>
                         `
@@ -803,13 +814,14 @@
                       ${
                         w.ex
                           ? `<div class="verb-example-item" style="margin-top:0.15rem;">
-                              <div style="flex:1;min-width:0;">
+                              <div style="flex:1 1 180px;min-width:0;">
                                 <div class="jp-text vex-jp" lang="ja">${formatRuby(w.ex)}</div>
                                 <div class="cn-text" style="font-size:0.82rem;margin-bottom:0;">${escapeHtml(w.exCn)}</div>
                               </div>
                               <div class="vex-btns">
                                 <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(w.ex)}" title="朗读例句">🔊</button>
                                 <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(w.ex)}" title="慢速跟读">🐢</button>
+                                <button type="button" class="icon-btn quick-oral-btn" data-oid="${w.id}-ex" data-ojp="${escapeHtml(w.ex)}" data-oromaji="${escapeHtml(w.romaji || "")}" data-ocn="${escapeHtml(w.exCn)}" data-otag="🟢 N5 · ${escapeHtml(w.cat)}" title="开口跟读发音评测">🎙️</button>
                               </div>
                             </div>`
                           : ""
@@ -1164,6 +1176,7 @@
     container.querySelectorAll("[data-vmaster]").forEach((b) => { b.onclick = () => toggleMastered(b.dataset.vmaster); });
     container.querySelectorAll(".v-speak-btn").forEach((b) => { b.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); }; });
     container.querySelectorAll(".v-speak-slow-btn").forEach((b) => { b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); }; });
+    bindQuickOralButtons(container);
   }
 
   // =========================================================================
@@ -1239,12 +1252,12 @@
         }
 
         <div class="grammar-examples">
-          <div class="gex-heading">🗣️ 日常高频例句（点击朗读跟读）：</div>
+          <div class="gex-heading">🗣️ 日常高频例句（点击朗读或开口跟读）：</div>
           ${g.dailyExamples
             .map(
-              (ex) => `
+              (ex, exIdx) => `
             <div class="verb-example-item">
-              <div style="flex:1;min-width:0;">
+              <div style="flex:1 1 190px;min-width:0;">
                 <span class="vex-form-badge">${escapeHtml(ex.ctx)}</span>
                 <div class="jp-text vex-jp" lang="ja">${formatRuby(ex.jp)}</div>
                 <div class="romaji-text" style="margin-bottom:0.15rem;">${escapeHtml(ex.romaji)}</div>
@@ -1253,6 +1266,7 @@
               <div class="vex-btns">
                 <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
                 <button type="button" class="icon-btn g-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
+                <button type="button" class="icon-btn quick-oral-btn" data-oid="${g.id}-ex${exIdx}" data-ojp="${escapeHtml(ex.jp)}" data-oromaji="${escapeHtml(ex.romaji || "")}" data-ocn="${escapeHtml(ex.cn)}" data-otag="📖 ${g.level} · ${escapeHtml(g.pattern)}" title="开口跟读发音评测">🎙️</button>
               </div>
             </div>
           `
@@ -1506,6 +1520,7 @@
     container.querySelectorAll(".g-speak-slow-btn").forEach((b) => {
       b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
     });
+    bindQuickOralButtons(container);
     container.querySelectorAll(".g-quiz-toggle-btn").forEach((b) => {
       b.onclick = () => {
         const gid = b.dataset.gid;
@@ -1820,133 +1835,9 @@
     }
   }
 
-  // Shadowing Deck Builder
-  function getShadowItems() {
-    if (pState.shadowDeck === "verbs") {
-      return VERBS.map((v) => ({
-        tag: `动词 #${v.rank} · ${v.dict} (${v.examples[0].form})`,
-        jp: v.examples[0].jp,
-        romaji: v.examples[0].romaji,
-        cn: v.examples[0].cn,
-        audioKey: null
-      }));
-    }
-    if (pState.shadowDeck === "grammar") {
-      return GRAMMAR.map((g) => ({
-        tag: `${g.level} 语法 · ${g.pattern}`,
-        jp: g.dailyExamples[0].jp,
-        romaji: g.dailyExamples[0].romaji,
-        cn: g.dailyExamples[0].cn,
-        audioKey: null
-      }));
-    }
-    if (pState.shadowDeck === "n5vocab") {
-      return [
-        ...(EXTRAS.n5Vocab || []).filter((x) => x.ex).map((x) => ({
-          tag: `N5词汇 · ${x.cat}`,
-          jp: x.ex,
-          romaji: x.romaji,
-          cn: x.exCn,
-          audioKey: null
-        })),
-        ...(EXTRAS.contractions || []).map((c) => ({
-          tag: `💬 口语缩略 (${c.formal}→${c.casual})`,
-          jp: c.exCasual,
-          romaji: "",
-          cn: c.exCn,
-          audioKey: null
-        }))
-      ];
-    }
-    return getAllPhraseItems().map((it) => ({
-      tag: it.tag || "场景日语",
-      jp: it.jp,
-      romaji: it.romaji || "",
-      cn: it.cn,
-      audioKey: it.id
-    }));
-  }
-
   function stopShadowingLoop() {
-    pState.shadowRunning = false;
-    pState.shadowPhase = "";
-    clearTimeout(pState.shadowTimer);
-    app().stopAllAudio();
-  }
-
-  function startShadowingLoop(item) {
-    stopShadowingLoop();
-    pState.shadowRunning = true;
-    pState.shadowPhase = "🐢 第 1 步：慢速聆听 (0.78x)...";
-    renderPracticeView();
-    app().speakJapanese(
-      item.jp,
-      0.78,
-      null,
-      () => {
-        if (!pState.shadowRunning) return;
-        pState.shadowPhase = "🎤 第 2 步：轮到你了！请大声跟读...";
-        renderPracticeView();
-        pState.shadowTimer = setTimeout(() => {
-          if (!pState.shadowRunning) return;
-          pState.shadowPhase = "🔊 第 3 步：原速示范对比 (1.0x)...";
-          renderPracticeView();
-          app().speakJapanese(
-            item.jp,
-            1.0,
-            null,
-            () => {
-              pState.shadowRunning = false;
-              pState.shadowPhase = "✅ 完成一轮跟读！可以再来一遍或切下一句";
-              app().recordStudyActivity(1);
-              renderPracticeView();
-            },
-            item.audioKey
-          );
-        }, 2600);
-      },
-      item.audioKey
-    );
-  }
-
-  function startSpeechCheck(item) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      app().showToast("⚠️ 当前浏览器不支持语音识别（推荐 Chrome / Edge / Safari）");
-      return;
-    }
-    stopShadowingLoop();
-    const rec = new SR();
-    rec.lang = "ja-JP";
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    pState.shadowPhase = "🎙️ 正在聆听你的日语发音，请开始朗读...";
-    pState.shadowTranscript = "";
-    pState.shadowScore = null;
-    renderPracticeView();
-
-    rec.onresult = (event) => {
-      const heard = (event.results[0] && event.results[0][0] && event.results[0][0].transcript) || "";
-      const targetClean = app().stripFurigana(item.jp).replace(/[。、！？\s・「」『』（）()]/g, "");
-      const heardClean = heard.replace(/[。、！？\s・「」『』（）()]/g, "");
-      let overlap = 0;
-      const tChars = Array.from(targetClean);
-      const hSet = new Set(Array.from(heardClean));
-      tChars.forEach((ch) => {
-        if (hSet.has(ch)) overlap++;
-      });
-      const score = tChars.length ? Math.min(100, Math.round((overlap / tChars.length) * 100)) : 0;
-      pState.shadowTranscript = heard;
-      pState.shadowScore = score;
-      pState.shadowPhase = score >= 70 ? "🎉 发音很清晰！" : "💪 再跟读听一遍试试！";
-      app().recordStudyActivity(1);
-      renderPracticeView();
-    };
-    rec.onerror = () => {
-      pState.shadowPhase = "⚠️ 未检测到清晰语音，请靠近麦克风重试";
-      renderPracticeView();
-    };
-    rec.start();
+    if (window.JP_ORAL_COACH) window.JP_ORAL_COACH.stopAll();
+    else if (app()) app().stopAllAudio();
   }
 
   function renderPracticeView() {
@@ -1963,6 +1854,9 @@
     const gDone = GRAMMAR.filter((x) => state.mastered[x.id]).length;
     const now = Date.now();
     const dueCount = Object.values(state.srs || {}).filter((s) => s && s.nextDue <= now).length;
+    const oralEntries = Object.values(state.oralStats || {});
+    const oralPassed = oralEntries.filter((x) => x && x.bestScore >= 80).length;
+    const oralWeak = oralEntries.filter((x) => x && x.bestScore < 80).length;
     const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${String(new Date().getDate()).padStart(2, "0")}`;
     const todayCount = state.streak.todayDate === todayStr ? state.streak.todayCount || 0 : 0;
 
@@ -2377,64 +2271,9 @@
       `;
     }
 
-    // --- SUB-MODE 5: SHADOWING & SPEECH CHECK ---
+    // --- SUB-MODE 5: ORAL FOLLOW-READING & PRONUNCIATION COACH ---
     else if (pState.subMode === "shadow") {
-      const items = getShadowItems();
-      if (pState.shadowIndex >= items.length) pState.shadowIndex = 0;
-      const item = items[pState.shadowIndex];
-      const hasSR = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-
-      stageHtml = `
-        <div class="practice-stage-card">
-          <div class="practice-toolbar-row">
-            <div class="toggle-group">
-              ${[
-                ["phrases", "🗣️ 场景短语"],
-                ["verbs", "⚡ 动词例句"],
-                ["grammar", "📖 语法日常句"],
-                ["n5vocab", "🟢 N5 & 口语缩略"]
-              ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.shadowDeck === k ? "active" : ""}" data-shdeck="${k}">${lbl}</button>`)
-                .join("")}
-            </div>
-            <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700;">第 ${pState.shadowIndex + 1} / ${items.length} 句</span>
-          </div>
-
-          <div class="drill-question-box">
-            <div style="text-align:center;margin-bottom:0.4rem;"><span class="phrase-tag">${escapeHtml(item.tag)}</span></div>
-            <div class="jp-text" lang="ja" style="font-size:1.38rem;text-align:center;margin:0.45rem 0;">${formatRuby(item.jp)}</div>
-            <div class="romaji-text" style="text-align:center;">${escapeHtml(item.romaji)}</div>
-            <div class="cn-text" style="text-align:center;margin-bottom:0.85rem;">${escapeHtml(item.cn)}</div>
-
-            ${
-              pState.shadowPhase
-                ? `<div class="shadow-status-banner">${escapeHtml(pState.shadowPhase)}</div>`
-                : `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.8rem;">
-                    💡 点击「🔁 三步跟读循环」：0.78x 慢听 → 停顿 2.5 秒留给你跟读 → 自动 1.0x 原速对照！
-                  </div>`
-            }
-
-            ${
-              pState.shadowTranscript
-                ? `<div class="shadow-rec-result">
-                    <div>🎙️ 识别到你说的是：<strong lang="ja">${escapeHtml(pState.shadowTranscript)}</strong></div>
-                    <div style="margin-top:0.2rem;">匹配度参考：<strong>${pState.shadowScore}%</strong></div>
-                  </div>`
-                : ""
-            }
-
-            <div class="fc-controls-row" style="margin-top:0.85rem;">
-              <button type="button" class="action-btn" id="btn-sh-prev">← 上一句</button>
-              <button type="button" class="action-btn ${pState.shadowRunning ? "speaking" : "primary-audio"}" id="btn-sh-loop">
-                ${pState.shadowRunning ? "⏹ 停止跟读" : "🔁 三步跟读循环"}
-              </button>
-              ${hasSR ? `<button type="button" class="action-btn" id="btn-sh-mic">🎙️ 开口语音识别</button>` : ""}
-              <button type="button" class="action-btn" id="btn-sh-rand">🎲 随机一句</button>
-              <button type="button" class="action-btn" id="btn-sh-next">下一句 →</button>
-            </div>
-          </div>
-        </div>
-      `;
+      stageHtml = `<div id="oral-coach-stage"></div>`;
     }
 
     container.innerHTML = `
@@ -2442,7 +2281,7 @@
         <div class="learning-hero-top">
           <div>
             <h2 class="itin-section-title">🎯 日语实战训练场 & 个人学习仪表盘</h2>
-            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、11种动词变形、N5–N3 语法与店员快语速盲听，每天 10 分钟快速提升！</p>
+            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、动词变形、N5–N3 语法、店员盲听与跟读口语私教，每天 10 分钟快速提升！</p>
           </div>
           <div class="dash-streak-badge">
             <div style="font-size:1.35rem;font-weight:900;">🔥 ${state.streak.count || 0} 天</div>
@@ -2468,6 +2307,10 @@
             <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${allPhrases.length ? Math.round((pDone / allPhrases.length) * 100) : 0}%;"></div></div>
           </div>
           <div class="dash-metric">
+            <div class="dm-top"><span>🎙️ 口语达标</span><strong style="color:${oralWeak > 0 ? "#d97706" : "var(--accent-emerald)"};">${oralPassed} 句 (≥80分)</strong></div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">待复训薄弱句：${oralWeak} 句</div>
+          </div>
+          <div class="dash-metric">
             <div class="dm-top"><span>⏰ 闪卡待复习</span><strong style="color:${dueCount > 0 ? "var(--accent-red)" : "var(--accent-emerald)"};">${dueCount} 张</strong></div>
             <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">SRS追踪：${Object.keys(state.srs || {}).length} 项</div>
           </div>
@@ -2478,7 +2321,7 @@
           <button type="button" class="map-pill ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">🔗 自他动词 & 助词战</button>
           <button type="button" class="map-pill ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">⚡ 动词变形闪电战</button>
           <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">🧩 语法 & 听力测验</button>
-          <button type="button" class="map-pill ${pState.subMode === "shadow" ? "active" : ""}" data-psub="shadow">🎙️ 影子跟读实验室</button>
+          <button type="button" class="map-pill ${pState.subMode === "shadow" ? "active" : ""}" data-psub="shadow">🎙️ 口语跟读教练</button>
         </div>
       </div>
 
@@ -2667,37 +2510,13 @@
       };
     }
 
-    // Bind Shadowing Lab Events
-    container.querySelectorAll("[data-shdeck]").forEach((b) => {
-      b.onclick = () => {
-        stopShadowingLoop();
-        pState.shadowDeck = b.dataset.shdeck;
-        pState.shadowIndex = 0;
-        pState.shadowTranscript = "";
-        pState.shadowScore = null;
-        renderPracticeView();
-      };
-    });
-    const shItems = getShadowItems();
-    const curSh = shItems[pState.shadowIndex];
-    const btnShLoop = document.getElementById("btn-sh-loop");
-    if (btnShLoop && curSh) {
-      btnShLoop.onclick = () => {
-        if (pState.shadowRunning) { stopShadowingLoop(); renderPracticeView(); }
-        else { startShadowingLoop(curSh); }
-      };
+    // Mount Oral Follow-Reading & Pronunciation Coach Studio
+    if (pState.subMode === "shadow" && window.JP_ORAL_COACH) {
+      window.JP_ORAL_COACH.renderStudio(document.getElementById("oral-coach-stage"));
     }
-    const btnShMic = document.getElementById("btn-sh-mic");
-    if (btnShMic && curSh) btnShMic.onclick = () => startSpeechCheck(curSh);
-    const btnShPrev = document.getElementById("btn-sh-prev");
-    if (btnShPrev) btnShPrev.onclick = () => { stopShadowingLoop(); pState.shadowIndex = (pState.shadowIndex - 1 + shItems.length) % shItems.length; pState.shadowTranscript = ""; renderPracticeView(); };
-    const btnShNext = document.getElementById("btn-sh-next");
-    if (btnShNext) btnShNext.onclick = () => { stopShadowingLoop(); pState.shadowIndex = (pState.shadowIndex + 1) % shItems.length; pState.shadowTranscript = ""; renderPracticeView(); };
-    const btnShRand = document.getElementById("btn-sh-rand");
-    if (btnShRand) btnShRand.onclick = () => { stopShadowingLoop(); pState.shadowIndex = Math.floor(Math.random() * shItems.length); pState.shadowTranscript = ""; renderPracticeView(); };
   }
 
-  // Desktop Practice Keyboard Shortcuts (Space flip, R replay, S slow, 1-4 rate/pick, Enter/ArrowRight next)
+  // Desktop Practice Keyboard Shortcuts
   document.addEventListener("keydown", (e) => {
     const a = app();
     if (!a || !a.state || a.state.appMode !== "practice") return;
@@ -2706,6 +2525,11 @@
     const tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable)) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (pState.subMode === "shadow" && window.JP_ORAL_COACH) {
+      window.JP_ORAL_COACH.handleKeydown(e);
+      return;
+    }
 
     if (pState.subMode === "srs" && pState.srsCurrentCard) {
       if (e.code === "Space") {
@@ -2753,6 +2577,14 @@
       if (mode === "verbs") renderVerbsView();
       else if (mode === "grammar") renderGrammarView();
       else if (mode === "practice") renderPracticeView();
+    },
+    openOralRoleplay(dlgId) {
+      pState.subMode = "shadow";
+      app().switchAppMode("practice");
+      if (window.JP_ORAL_COACH) {
+        window.JP_ORAL_COACH.openRoleplayDialogue(dlgId);
+        renderPracticeView();
+      }
     }
   };
 })();

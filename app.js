@@ -40,6 +40,7 @@
     edits: JSON.parse(localStorage.getItem("jp_phrasebook_edits_v1") || "{}"),
     customItems: JSON.parse(localStorage.getItem("jp_phrasebook_custom_v1") || "[]"),
     srs: JSON.parse(localStorage.getItem("jp_phrasebook_srs_v1") || "{}"),
+    oralStats: JSON.parse(localStorage.getItem("jp_phrasebook_oral_v1") || "{}"),
     streak: JSON.parse(localStorage.getItem("jp_phrasebook_streak_v1") || '{"count":0,"lastDate":"","todayDate":"","todayCount":0}'),
     playingDialogueId: null,
     stopDialogueRequested: false
@@ -106,6 +107,7 @@
     localStorage.setItem("jp_phrasebook_edits_v1", JSON.stringify(state.edits));
     localStorage.setItem("jp_phrasebook_custom_v1", JSON.stringify(state.customItems));
     localStorage.setItem("jp_phrasebook_srs_v1", JSON.stringify(state.srs));
+    localStorage.setItem("jp_phrasebook_oral_v1", JSON.stringify(state.oralStats || {}));
     localStorage.setItem("jp_phrasebook_streak_v1", JSON.stringify(state.streak));
     savePrefs();
   }
@@ -451,6 +453,7 @@
   }
 
   function closeModal() {
+    if (window.JP_ORAL_COACH) window.JP_ORAL_COACH.stopAll();
     const modal = document.getElementById("app-modal");
     if (modal) modal.classList.remove("open");
     document.body.style.overflow = "";
@@ -1230,6 +1233,8 @@
                   `
                       : "";
 
+                  const oralEntry = (state.oralStats || {})[item.id];
+                  const oralBadge = oralEntry ? ` (${oralEntry.bestScore}分)` : "";
                   return `
                   <div class="phrase-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}" id="card-${item.id}">
                     <div class="phrase-top-bar">
@@ -1251,6 +1256,7 @@
                     <div class="phrase-actions">
                       <button class="action-btn primary-audio speak-normal-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}" title="${escapeHtml(voiceHint)}">🔊 朗读 (1.0x)</button>
                       <button class="action-btn speak-slow-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🐢 慢速 (0.8x)</button>
+                      <button class="action-btn quick-oral-btn" data-oid="${item.id}" data-ojp="${escapeHtml(item.jp)}" data-oromaji="${escapeHtml(item.romaji || "")}" data-ocn="${escapeHtml(item.cn)}" data-otag="${escapeHtml(item.tag)}" data-oakey="${item.id}" title="开口跟读发音评测">🎙️ 跟读${oralBadge}</button>
                       <button class="action-btn copy-jp-btn" data-jp="${escapeHtml(item.jp)}" title="复制纯日文">📋 复制</button>
                     </div>
                     ${item.tip ? `<div class="phrase-tip">💡 <strong>实用提示：</strong>${escapeHtml(item.tip)}</div>` : ""}
@@ -1271,7 +1277,7 @@
           <div class="dialogues-section">
             <div class="dialogues-header">
               <div class="dialogues-heading">💬 实战双人情景对话演练 (男女声分角色真人发音)</div>
-              <div style="font-size:0.8rem;color:var(--text-secondary);">点击「▶ 连续播放整段对话」聆听男女分角色对答；开启顶部「🎭 遮盖我方台词」可实战自测</div>
+              <div style="font-size:0.8rem;color:var(--text-secondary);">点击「▶ 连续播放整段对话」聆听对答，或「🎭 角色扮演跟读」进行交互式对话开口评测</div>
             </div>
             ${mod.filteredDialogues
               .map((dlg) => {
@@ -1283,9 +1289,12 @@
                       <div class="dialogue-title">${escapeHtml(dlg.title)}</div>
                       <div class="dialogue-context">📍 ${escapeHtml(dlg.context)}</div>
                     </div>
-                    <button class="action-btn ${isPlaying ? "speaking" : "primary-audio"} play-dialogue-btn" data-dlg="${dlg.id}">
-                      ${isPlaying ? "⏹ 停止连续播放" : "▶ 连续播放整段对话"}
-                    </button>
+                    <div style="display:flex;gap:0.38rem;flex-wrap:wrap;align-items:center;">
+                      <button class="action-btn ${isPlaying ? "speaking" : "primary-audio"} play-dialogue-btn" data-dlg="${dlg.id}">
+                        ${isPlaying ? "⏹ 停止连续播放" : "▶ 连续播放整段对话"}
+                      </button>
+                      <button class="action-btn open-roleplay-btn" data-dlg="${dlg.id}">🎭 角色扮演跟读</button>
+                    </div>
                   </div>
                   <div class="dialogue-turns">
                     ${dlg.turns
@@ -1297,9 +1306,10 @@
                       <div class="dialogue-turn ${turn.speaker === "us" ? "turn-us" : "turn-them"}" id="turn-${dlg.id}-${tIdx}">
                         <div class="turn-speaker">
                           <span>${turn.speaker === "us" ? "👨‍👩‍👧‍👧 " : "🇯🇵 "}${escapeHtml(turn.speakerName)}<span style="font-weight:500;opacity:0.78;">${escapeHtml(vLabel)}</span></span>
-                          <span style="display:flex;gap:0.35rem;">
+                          <span style="display:flex;gap:0.35rem;flex-wrap:wrap;">
                             <button class="icon-btn speak-normal-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🔊 1.0x</button>
                             <button class="icon-btn speak-slow-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🐢 0.8x</button>
+                            ${turn.speaker === "us" ? `<button class="icon-btn quick-oral-btn" data-oid="${turnKey}" data-ojp="${escapeHtml(turn.jp)}" data-oromaji="${escapeHtml(turn.romaji || "")}" data-ocn="${escapeHtml(turn.cn)}" data-otag="🎭 ${escapeHtml(turn.speakerName)}" data-oakey="${turnKey}" title="跟读发音评测">🎙️</button>` : ""}
                           </span>
                         </div>
                         <div class="jp-text" lang="ja" style="font-size:1.08rem;margin:0.15rem 0;">${formatRuby(turn.jp)}</div>
@@ -1376,6 +1386,27 @@
     mainEl.querySelectorAll(".play-dialogue-btn").forEach((btn) => {
       btn.onclick = function () {
         playDialogue(this.dataset.dlg);
+      };
+    });
+    mainEl.querySelectorAll(".open-roleplay-btn").forEach((btn) => {
+      btn.onclick = function () {
+        if (window.JP_LEARNING && window.JP_LEARNING.openOralRoleplay) {
+          window.JP_LEARNING.openOralRoleplay(this.dataset.dlg);
+        }
+      };
+    });
+    mainEl.querySelectorAll(".quick-oral-btn").forEach((btn) => {
+      btn.onclick = function () {
+        if (window.JP_ORAL_COACH) {
+          window.JP_ORAL_COACH.openQuickModal({
+            id: this.dataset.oid,
+            tag: this.dataset.otag || "🗣️ 场景跟读",
+            jp: this.dataset.ojp,
+            romaji: this.dataset.oromaji || "",
+            cn: this.dataset.ocn || "",
+            audioKey: this.dataset.oakey || null
+          });
+        }
       };
     });
     mainEl.querySelectorAll(".dialogue-turn.turn-us").forEach((turnEl) => {
@@ -2171,6 +2202,7 @@
 
   function switchAppMode(newMode) {
     if (!VALID_MODES.has(newMode)) return;
+    if (window.JP_ORAL_COACH) window.JP_ORAL_COACH.stopAll();
     state.appMode = newMode;
     savePrefs();
     closeAllPopovers();
@@ -2195,7 +2227,7 @@
     }
   }
 
-  // Expose shared bridge for learning.js (Verbs, Grammar, Practice & SRS Lab)
+  // Expose shared bridge for learning.js & oral_coach.js
   window.JP_APP = {
     state,
     saveUserState,
@@ -2204,6 +2236,11 @@
     updateHeaderStreak,
     speakJapanese,
     stopAllAudio,
+    resolveNeuralAudioFile,
+    getLastNeuralDuration: () =>
+      Number.isFinite(neuralAudioPlayer.duration) && neuralAudioPlayer.duration > 0
+        ? Math.round(neuralAudioPlayer.duration * 1000)
+        : 0,
     formatRuby,
     stripFurigana,
     escapeHtml,
