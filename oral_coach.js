@@ -1536,14 +1536,21 @@
     monitorTimer: null,
     maxCapTimer: null,
     nextActionTimer: null,
+    preListenTimer: null,
+    captureSessionId: 0,
+    _manualFinish: null,
+    _ftManualFinish: null,
     userPlayer: new Audio(),
 
     // Speech VAD measurements
     recStartMs: 0,
+    vadStartMs: 0,
     speechOnsetMs: 0,
     speechOffsetMs: 0,
     lastVoiceOrAsrMs: 0,
-    noiseFloor: 8,
+    lastVoiceRmsMs: 0,
+    lastAsrChangeMs: 0,
+    noiseFloor: 2.0,
     elapsedSec: 0,
     heardAnyVoice: false,
     asrHypotheses: []
@@ -1623,12 +1630,17 @@
     clearInterval(coachState.monitorTimer);
     clearTimeout(coachState.maxCapTimer);
     clearTimeout(coachState.nextActionTimer);
+    clearTimeout(coachState.preListenTimer);
     coachState.monitorTimer = null;
     coachState.maxCapTimer = null;
     coachState.nextActionTimer = null;
+    coachState.preListenTimer = null;
   }
 
   function stopAll() {
+    coachState.captureSessionId++;
+    coachState._manualFinish = null;
+    coachState._ftManualFinish = null;
     clearAllTimers();
     releaseMicResources();
     stopUserPlayback();
@@ -1857,21 +1869,131 @@
     }
   }
 
+  function normalizeTranscriptKey(str) {
+    return String(str || "")
+      .replace(/[、。！？!?・\s　,.]+/g, "")
+      .trim();
+  }
+
+  function charBigramSimilarity(a, b) {
+    const s1 = String(a || "");
+    const s2 = String(b || "");
+    if (!s1 || !s2) return 0;
+    if (s1 === s2) return 1;
+    if (s1.length < 2 || s2.length < 2) return s1 === s2 ? 1 : 0;
+    const counts = new Map();
+    for (let i = 0; i < s1.length - 1; i++) {
+      const bg = s1.slice(i, i + 2);
+      counts.set(bg, (counts.get(bg) || 0) + 1);
+    }
+    let overlap = 0;
+    for (let j = 0; j < s2.length - 1; j++) {
+      const bg = s2.slice(j, j + 2);
+      const n = counts.get(bg) || 0;
+      if (n > 0) {
+        overlap++;
+        counts.set(bg, n - 1);
+      }
+    }
+    return (2 * overlap) / (s1.length - 1 + (s2.length - 1));
+  }
+
+  function isTranscriptDuplicateOrCumulative(prevStr, nextStr) {
+    const na = normalizeTranscriptKey(prevStr);
+    const nb = normalizeTranscriptKey(nextStr);
+    if (!na || !nb) return null;
+    if (na === nb) return "equal";
+    if (nb.startsWith(na)) return "cumulative";
+    if (na.endsWith(nb) || na.includes(nb)) return "contained";
+    if (
+      na.length >= 6 &&
+      nb.length >= 6 &&
+      nb.length >= na.length * 0.68 &&
+      nb.length <= na.length * 1.45 &&
+      charBigramSimilarity(na, nb) >= 0.72
+    ) {
+      return "near_dup";
+    }
+    return null;
+  }
+
+  function mergeTranscriptPair(prevStr, nextStr) {
+    const a = String(prevStr || "").trim();
+    const b = String(nextStr || "").trim();
+    if (!a) return b;
+    if (!b) return a;
+
+    const dupKind = isTranscriptDuplicateOrCumulative(a, b);
+    if (dupKind === "equal" || dupKind === "cumulative" || dupKind === "near_dup") {
+      return b;
+    }
+    if (dupKind === "contained") {
+      return a;
+    }
+
+    const maxOverlap = Math.min(a.length, b.length, 24);
+    for (let k = maxOverlap; k >= 3; k--) {
+      if (a.endsWith(b.slice(0, k))) {
+        return a + b.slice(k);
+      }
+    }
+
+    return a + b;
+  }
+
+  function dedupeSegmentList(segList) {
+    const raw = (segList || []).filter((seg) => Array.isArray(seg) && seg.length > 0 && String(seg[0] || "").trim());
+    const out = [];
+    for (let i = 0; i < raw.length; i++) {
+      const seg = raw[i];
+      const cur0 = String(seg[0] || "").trim();
+      if (out.length === 0) {
+        out.push(seg);
+        continue;
+      }
+      const prevSeg = out[out.length - 1];
+      const prev0 = String(prevSeg[0] || "").trim();
+      const pairKind = isTranscriptDuplicateOrCumulative(prev0, cur0);
+      if (pairKind === "equal" || pairKind === "cumulative" || pairKind === "near_dup") {
+        out[out.length - 1] = seg;
+        continue;
+      }
+      if (pairKind === "contained") {
+        continue;
+      }
+      if (out.length >= 2) {
+        let mergedSoFar = out[0][0];
+        for (let mIdx = 1; mIdx < out.length; mIdx++) {
+          mergedSoFar = mergeTranscriptPair(mergedSoFar, out[mIdx][0]);
+        }
+        const wholeKind = isTranscriptDuplicateOrCumulative(mergedSoFar, cur0);
+        if (wholeKind === "equal" || wholeKind === "cumulative" || wholeKind === "near_dup") {
+          out.length = 0;
+          out.push(seg);
+          continue;
+        }
+        if (wholeKind === "contained") {
+          continue;
+        }
+      }
+      out.push(seg);
+    }
+    return out;
+  }
+
   function buildCombinedHypotheses(committedSegments, currentFinalSegments, interim = "") {
-    const allSegs = [...(committedSegments || []), ...(currentFinalSegments || [])].filter(
-      (seg) => Array.isArray(seg) && seg.length > 0 && seg[0]
-    );
+    const dedupedSegs = dedupeSegmentList([...(committedSegments || []), ...(currentFinalSegments || [])]);
     const trailing = String(interim || "").trim();
 
-    if (allSegs.length === 0) {
+    if (dedupedSegs.length === 0) {
       return trailing ? [trailing] : [];
     }
 
-    const prefix = allSegs
-      .slice(0, -1)
-      .map((seg) => seg[0])
-      .join("");
-    const lastSeg = allSegs[allSegs.length - 1];
+    let prefix = "";
+    for (let i = 0; i < dedupedSegs.length - 1; i++) {
+      prefix = mergeTranscriptPair(prefix, dedupedSegs[i][0]);
+    }
+    const lastSeg = dedupedSegs[dedupedSegs.length - 1];
     const results = [];
     const seen = new Set();
 
@@ -1884,21 +2006,44 @@
     }
 
     lastSeg.slice(0, 5).forEach((alt) => {
-      pushCandidate(prefix + alt + trailing);
+      const withAlt = mergeTranscriptPair(prefix, alt);
+      pushCandidate(mergeTranscriptPair(withAlt, trailing));
     });
 
-    // Also include up to 1 alternative from earlier segments if present
-    if (allSegs.length >= 2 && results.length < 5) {
-      const tailMain = allSegs
-        .slice(1)
-        .map((seg) => seg[0])
-        .join("");
-      if (allSegs[0][1]) {
-        pushCandidate(allSegs[0][1] + tailMain + trailing);
+    // Also include up to 1 alternative from earlier segment if present
+    if (dedupedSegs.length >= 2 && results.length < 5 && dedupedSegs[0][1]) {
+      let altPrefix = dedupedSegs[0][1];
+      for (let i = 1; i < dedupedSegs.length; i++) {
+        altPrefix = mergeTranscriptPair(altPrefix, dedupedSegs[i][0]);
       }
+      pushCandidate(mergeTranscriptPair(altPrefix, trailing));
     }
 
     return results.slice(0, 5);
+  }
+
+  function shouldAutoStopCapture({
+    elapsedMs = 0,
+    hasMeaningfulSpeech = false,
+    spokenRatio = 0,
+    asrQuietMs = 0,
+    voiceQuietMs = 0,
+    hasFinalComplete = false,
+    hasSR = true
+  }) {
+    if (!hasMeaningfulSpeech) {
+      return elapsedMs > 8000;
+    }
+    if (!hasSR) {
+      return voiceQuietMs >= 1800;
+    }
+    if (spokenRatio >= 0.88) {
+      return (hasFinalComplete && asrQuietMs >= 900) || voiceQuietMs >= 1000 || asrQuietMs >= 1650;
+    }
+    if (spokenRatio >= 0.60) {
+      return voiceQuietMs >= 1450 || asrQuietMs >= 2100;
+    }
+    return voiceQuietMs >= 2500 || asrQuietMs >= 3200;
   }
 
   // =========================================================================
@@ -1930,25 +2075,28 @@
     releaseMicResources();
     stopUserPlayback();
 
+    const mySession = ++coachState.captureSessionId;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const targetInfo = parseTargetChunks(item.jp);
     const targetMoraLen = Math.max(1, targetInfo.targetMorae.length);
+    const startNow = performance.now();
 
     coachState.phase = "listening";
     coachState.interimText = "";
     coachState.asrHypotheses = [];
     coachState.heardAnyVoice = false;
-    coachState.recStartMs = performance.now();
+    coachState.recStartMs = startNow;
+    coachState.vadStartMs = 0;
     coachState.speechOnsetMs = 0;
     coachState.speechOffsetMs = 0;
-    coachState.lastVoiceOrAsrMs = coachState.recStartMs;
-    coachState.noiseFloor = 8;
+    coachState.lastVoiceOrAsrMs = startNow;
+    coachState.lastVoiceRmsMs = startNow;
+    coachState.lastAsrChangeMs = startNow;
+    coachState.noiseFloor = 2.0;
     coachState.elapsedSec = 0;
     coachState.statusText = SR
-      ? "🎙️ 请跟着朗读！长句中间换气或停顿不会打断录音"
+      ? "🎙️ 请跟着朗读！说完停顿约 1 秒即自动评分"
       : "🎙️ 正在录音（当前浏览器不支持自动转写，将进行节奏对比与录音回放）...";
-
-    renderCurrentSurface();
 
     let finalized = false;
     let stopping = false;
@@ -1961,6 +2109,9 @@
     let currentInterim = "";
     let srRestarts = 0;
     const MAX_SR_RESTARTS = 6;
+    let burstCommitted = false;
+    let lastDispSig = "";
+    let hasFinalComplete = false;
 
     function updateInterimDisplay() {
       const combined = buildCombinedHypotheses(committedSegments, currentFinalSegments, currentInterim);
@@ -1975,18 +2126,20 @@
     }
 
     function commitActiveAsrBurst() {
+      if (burstCommitted) return;
+      burstCommitted = true;
       if (currentFinalSegments.length > 0) {
-        committedSegments.push(...currentFinalSegments);
+        committedSegments = dedupeSegmentList([...committedSegments, ...currentFinalSegments]);
         currentFinalSegments = [];
       } else if (currentInterim.trim()) {
-        committedSegments.push([currentInterim.trim()]);
+        committedSegments = dedupeSegmentList([...committedSegments, [currentInterim.trim()]]);
       }
       currentInterim = "";
       updateInterimDisplay();
     }
 
     function maybeFinishCapture() {
-      if (finalized) return;
+      if (finalized || mySession !== coachState.captureSessionId) return;
       if (srDone && recDone) {
         finalized = true;
         commitActiveAsrBurst();
@@ -1995,14 +2148,13 @@
     }
 
     function stopCaptureGracefully() {
-      if (finalized) return;
+      if (finalized || mySession !== coachState.captureSessionId) return;
       if (stopping) {
-        maybeFinishCapture();
+        if (srDone && recDone) maybeFinishCapture();
         return;
       }
       stopping = true;
       clearAllTimers();
-      commitActiveAsrBurst();
       coachState.phase = "evaluating";
       coachState.statusText = "🔍 正在逐词分析发音并生成纠音建议...";
       renderCurrentSurface();
@@ -2021,20 +2173,22 @@
       }
       // Safety deadline in case onend/onstop stalls
       setTimeout(() => {
+        if (mySession !== coachState.captureSessionId || finalized) return;
         srDone = true;
         recDone = true;
         maybeFinishCapture();
       }, 650);
     }
 
-    // Store finish hook so user can tap "说完了，立即评分"
+    // Bind finish hook BEFORE first render so button onclick is live immediately
     coachState._manualFinish = stopCaptureGracefully;
+    renderCurrentSurface();
 
     // 1. Setup microphone MediaStream + AnalyserNode live waveform + MediaRecorder
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (coachState.phase !== "listening" || stopping) {
+        if (mySession !== coachState.captureSessionId || coachState.phase !== "listening" || stopping) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -2060,9 +2214,11 @@
             const recorder = chosenType ? new MediaRecorder(stream, { mimeType: chosenType }) : new MediaRecorder(stream);
             recDone = false;
             recorder.ondataavailable = (ev) => {
+              if (mySession !== coachState.captureSessionId) return;
               if (ev.data && ev.data.size > 0) chunks.push(ev.data);
             };
             recorder.onstop = () => {
+              if (mySession !== coachState.captureSessionId) return;
               if (chunks.length > 0) {
                 revokeUserAudioUrl();
                 const blob = new Blob(chunks, { type: chosenType || chunks[0].type || "audio/webm" });
@@ -2079,6 +2235,7 @@
           }
         }
       } catch (micErr) {
+        if (mySession !== coachState.captureSessionId) return;
         if (!SR) {
           coachState.phase = "idle";
           coachState.statusText = "⚠️ 无法访问麦克风，请检查浏览器麦克风权限设置。";
@@ -2088,12 +2245,15 @@
       }
     }
 
-    // 2. Setup continuous Web SpeechRecognition (ja-JP, 5 alternatives, auto-restart across pauses)
+    // 2. Setup continuous Web SpeechRecognition (ja-JP, 5 alternatives, smart dedupe & auto-finish)
     function startRecognitionInstance() {
-      if (!SR || stopping || coachState.phase !== "listening") {
+      if (!SR || mySession !== coachState.captureSessionId || stopping || coachState.phase !== "listening") {
         srDone = true;
         return;
       }
+      burstCommitted = false;
+      currentFinalSegments = [];
+      currentInterim = "";
       try {
         const rec = new SR();
         rec.lang = "ja-JP";
@@ -2102,6 +2262,7 @@
         rec.continuous = true;
 
         rec.onresult = (ev) => {
+          if (mySession !== coachState.captureSessionId || finalized) return;
           const newFinals = [];
           let newInterim = "";
           for (let i = 0; i < ev.results.length; i++) {
@@ -2116,22 +2277,26 @@
               newInterim += res[0].transcript;
             }
           }
-          currentFinalSegments = newFinals;
+          currentFinalSegments = dedupeSegmentList(newFinals);
           currentInterim = newInterim;
 
           const now = performance.now();
           const disp = updateInterimDisplay();
-          if (disp) {
+          hasFinalComplete = currentFinalSegments.length > 0 && !currentInterim.trim();
+          if (disp && disp !== lastDispSig) {
+            lastDispSig = disp;
             if (!coachState.heardAnyVoice) {
               coachState.heardAnyVoice = true;
               coachState.speechOnsetMs = Math.max(coachState.recStartMs + 180, now - 350);
             }
             coachState.speechOffsetMs = now;
+            coachState.lastAsrChangeMs = now;
             coachState.lastVoiceOrAsrMs = now;
           }
         };
 
         rec.onerror = (ev) => {
+          if (mySession !== coachState.captureSessionId) return;
           const errCode = ev && ev.error;
           if (errCode === "not-allowed" || errCode === "service-not-allowed") {
             coachState.statusText = "⚠️ 麦克风权限被拒绝，请在浏览器地址栏允许使用麦克风。";
@@ -2146,17 +2311,30 @@
         };
 
         rec.onend = () => {
+          if (mySession !== coachState.captureSessionId || finalized) return;
           commitActiveAsrBurst();
-          if (!stopping && coachState.phase === "listening" && srRestarts < MAX_SR_RESTARTS) {
-            srRestarts++;
-            // Give a small grace boost when ASR restarts mid-breath so user isn't cut off
-            coachState.lastVoiceOrAsrMs = Math.max(coachState.lastVoiceOrAsrMs, performance.now() - 400);
-            setTimeout(() => {
-              if (!stopping && coachState.phase === "listening") {
-                startRecognitionInstance();
-              }
-            }, 60);
-            return;
+          if (!stopping && coachState.phase === "listening") {
+            const disp = coachState.asrHypotheses[0] || "";
+            const spokenMoraCount = disp ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)).length : 0;
+            const spokenRatio = spokenMoraCount / targetMoraLen;
+            if (!coachState.manualStop && spokenRatio >= 0.82) {
+              srDone = true;
+              stopCaptureGracefully();
+              return;
+            }
+            if (srRestarts < MAX_SR_RESTARTS) {
+              srRestarts++;
+              setTimeout(() => {
+                if (mySession !== coachState.captureSessionId) return;
+                if (!stopping && coachState.phase === "listening") {
+                  startRecognitionInstance();
+                } else {
+                  srDone = true;
+                  maybeFinishCapture();
+                }
+              }, 60);
+              return;
+            }
           }
           srDone = true;
           maybeFinishCapture();
@@ -2173,9 +2351,9 @@
       startRecognitionInstance();
     }
 
-    // 3. Unified progress-aware silence endpointing + live elapsed timer
+    // 3. Unified RMS + ASR auto-endpointing & live elapsed timer (120ms cadence)
     coachState.monitorTimer = setInterval(() => {
-      if (coachState.phase !== "listening" || stopping) return;
+      if (mySession !== coachState.captureSessionId || coachState.phase !== "listening" || stopping) return;
       const now = performance.now();
       const elapsedSec = Math.floor((now - coachState.recStartMs) / 1000);
       if (elapsedSec !== coachState.elapsedSec) {
@@ -2195,30 +2373,34 @@
         (coachState.heardAnyVoice && coachState.speechOffsetMs - coachState.speechOnsetMs >= 320) ||
         disp.length >= 2;
 
-      if (!hasMeaningfulSpeech) {
-        if (now - coachState.recStartMs > 8500) {
-          stopCaptureGracefully();
-        }
-        return;
-      }
-
       const spokenMoraCount = disp
         ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)).length
-        : Math.round((coachState.speechOffsetMs - coachState.speechOnsetMs) / 170);
+        : Math.round(Math.max(0, coachState.speechOffsetMs - coachState.speechOnsetMs) / 170);
       const spokenRatio = spokenMoraCount / targetMoraLen;
-      const silenceLimitMs = spokenRatio < 0.55 ? 3800 : 2400;
+      const asrQuietMs = now - coachState.lastAsrChangeMs;
+      const voiceQuietMs = now - Math.max(coachState.lastVoiceRmsMs, coachState.lastAsrChangeMs);
 
-      if (now - coachState.lastVoiceOrAsrMs > silenceLimitMs) {
+      if (
+        shouldAutoStopCapture({
+          elapsedMs: now - coachState.recStartMs,
+          hasMeaningfulSpeech,
+          spokenRatio,
+          asrQuietMs,
+          voiceQuietMs,
+          hasFinalComplete,
+          hasSR: Boolean(SR)
+        })
+      ) {
         stopCaptureGracefully();
       }
-    }, 150);
+    }, 120);
 
     // 4. Dynamic hard capture cap based on sentence length (manual mode allows up to 60s)
     const hardCapMs = coachState.manualStop
       ? 60000
       : Math.max(24000, Math.min(45000, targetMoraLen * 750));
     coachState.maxCapTimer = setTimeout(() => {
-      if (coachState.phase === "listening" && !stopping) {
+      if (mySession === coachState.captureSessionId && coachState.phase === "listening" && !stopping) {
         stopCaptureGracefully();
       }
     }, hardCapMs);
@@ -2226,31 +2408,41 @@
 
   function drawWaveformLoop() {
     const analyser = coachState.analyserNode;
-    if (!analyser || coachState.phase !== "listening") return;
+    if (!analyser || (coachState.phase !== "listening" && coachState.ftPhase !== "listening")) return;
 
-    const data = new Uint8Array(analyser.frequencyBinCount);
+    coachState.vadStartMs = performance.now();
+    coachState.noiseFloor = 2.0;
+    const freqData = new Uint8Array(analyser.frequencyBinCount);
+    const timeData = new Uint8Array(analyser.fftSize);
 
     function tick() {
-      if (coachState.phase !== "listening" || !coachState.analyserNode) return;
-      analyser.getByteFrequencyData(data);
+      if ((coachState.phase !== "listening" && coachState.ftPhase !== "listening") || !coachState.analyserNode) return;
+      analyser.getByteFrequencyData(freqData);
+      analyser.getByteTimeDomainData(timeData);
 
-      let sum = 0;
-      for (let i = 0; i < data.length; i++) sum += data[i];
-      const avg = sum / Math.max(1, data.length);
+      let sumSq = 0;
+      for (let i = 0; i < timeData.length; i++) {
+        const d = timeData[i] - 128;
+        sumSq += d * d;
+      }
+      const rms = Math.sqrt(sumSq / Math.max(1, timeData.length));
       const now = performance.now();
 
-      // Calibrate ambient noise floor over the first 180ms (ignores start chime echo)
-      if (now - coachState.recStartMs < 180) {
-        coachState.noiseFloor = coachState.noiseFloor * 0.6 + avg * 0.4;
+      // Calibrate ambient noise floor over the first 220ms AFTER stream starts
+      if (now - coachState.vadStartMs < 220) {
+        coachState.noiseFloor = coachState.noiseFloor * 0.6 + rms * 0.4;
       } else {
-        const voiceThreshold = Math.max(14, coachState.noiseFloor * 1.75);
-        if (avg > voiceThreshold) {
+        const voiceThreshold = Math.max(4.5, coachState.noiseFloor * 2.6);
+        if (rms > voiceThreshold) {
           if (!coachState.heardAnyVoice) {
             coachState.heardAnyVoice = true;
             coachState.speechOnsetMs = now;
           }
           coachState.speechOffsetMs = now;
+          coachState.lastVoiceRmsMs = now;
           coachState.lastVoiceOrAsrMs = now;
+        } else {
+          coachState.noiseFloor = coachState.noiseFloor * 0.96 + rms * 0.04;
         }
       }
 
@@ -2261,16 +2453,16 @@
         const h = canvas.height;
         g.clearRect(0, 0, w, h);
         const bars = 24;
-        const step = Math.max(1, Math.floor(data.length / bars));
+        const step = Math.max(1, Math.floor(freqData.length / bars));
         const barW = Math.floor((w - (bars - 1) * 3) / bars);
         const isDark = document.body.classList.contains("dark-mode");
-        const activeThresh = Math.max(14, coachState.noiseFloor * 1.75);
+        const activeThresh = Math.max(4.5, coachState.noiseFloor * 2.6);
         for (let b = 0; b < bars; b++) {
-          const val = data[Math.min(data.length - 1, b * step)] / 255;
+          const val = freqData[Math.min(freqData.length - 1, b * step)] / 255;
           const barH = Math.max(4, Math.round(val * (h - 6)));
           const x = b * (barW + 3);
           const y = Math.round((h - barH) / 2);
-          g.fillStyle = avg > activeThresh ? (isDark ? "#60a5fa" : "#2563eb") : (isDark ? "#475569" : "#94a3b8");
+          g.fillStyle = rms > activeThresh ? (isDark ? "#60a5fa" : "#2563eb") : (isDark ? "#475569" : "#94a3b8");
           g.fillRect(x, y, barW, barH);
         }
       }
@@ -2531,6 +2723,7 @@
   function startGuidedPractice(item, overrideRate = null) {
     if (!item) return;
     stopAll();
+    const mySession = coachState.captureSessionId;
     const useRate = overrideRate || (coachState.shadowLoop && coachState.shadowLoopStage === 0 ? 0.84 : coachState.rate);
     coachState.phase = "model_playing";
     coachState.result = null;
@@ -2552,16 +2745,18 @@
         1.0,
         null,
         () => {
-          if (coachState.phase !== "model_playing") return;
+          if (mySession !== coachState.captureSessionId || coachState.phase !== "model_playing") return;
           coachState.statusText = "🔊 第 1 步（续）：听一遍你的标准礼貌回答示范...";
           renderCurrentSurface();
-          setTimeout(() => {
-            if (coachState.phase !== "model_playing") return;
+          coachState.preListenTimer = setTimeout(() => {
+            if (mySession !== coachState.captureSessionId || coachState.phase !== "model_playing") return;
             speakTargetSentence(item, useRate, () => {
-              if (coachState.phase !== "model_playing") return;
+              if (mySession !== coachState.captureSessionId || coachState.phase !== "model_playing") return;
               playCueChime("start");
-              setTimeout(() => {
-                if (coachState.phase === "model_playing") beginListeningAndRecording(item);
+              coachState.preListenTimer = setTimeout(() => {
+                if (mySession === coachState.captureSessionId && coachState.phase === "model_playing") {
+                  beginListeningAndRecording(item);
+                }
               }, 340);
             });
           }, 380);
@@ -2572,10 +2767,10 @@
     }
 
     speakTargetSentence(item, useRate, () => {
-      if (coachState.phase !== "model_playing") return;
+      if (mySession !== coachState.captureSessionId || coachState.phase !== "model_playing") return;
       playCueChime("start");
-      setTimeout(() => {
-        if (coachState.phase === "model_playing") {
+      coachState.preListenTimer = setTimeout(() => {
+        if (mySession === coachState.captureSessionId && coachState.phase === "model_playing") {
           beginListeningAndRecording(item);
         }
       }, 340);
@@ -2775,7 +2970,9 @@
   async function startFreeTalkRecording(question, dlgContext = "") {
     if (!question) return;
     stopAll();
+    const mySession = ++coachState.captureSessionId;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const startNow = performance.now();
 
     coachState.ftActive = true;
     coachState.ftPhase = "listening";
@@ -2784,14 +2981,16 @@
     coachState.ftAiResult = null;
     coachState.ftAiError = "";
     coachState.heardAnyVoice = false;
-    coachState.recStartMs = performance.now();
+    coachState.recStartMs = startNow;
+    coachState.vadStartMs = 0;
     coachState.speechOnsetMs = 0;
     coachState.speechOffsetMs = 0;
-    coachState.lastVoiceOrAsrMs = coachState.recStartMs;
-    coachState.noiseFloor = 8;
+    coachState.lastVoiceOrAsrMs = startNow;
+    coachState.lastVoiceRmsMs = startNow;
+    coachState.lastAsrChangeMs = startNow;
+    coachState.noiseFloor = 2.0;
     coachState.elapsedSec = 0;
     coachState.asrHypotheses = [];
-    renderCurrentSurface();
 
     let finalized = false;
     let stopping = false;
@@ -2803,6 +3002,8 @@
     let currentFinalSegments = [];
     let currentInterim = "";
     let srRestarts = 0;
+    let burstCommitted = false;
+    let lastDispSig = "";
 
     function updateFtInterim() {
       const combined = buildCombinedHypotheses(committedSegments, currentFinalSegments, currentInterim);
@@ -2813,23 +3014,26 @@
     }
 
     function commitFtBurst() {
+      if (burstCommitted) return;
+      burstCommitted = true;
       if (currentFinalSegments.length > 0) {
-        committedSegments.push(...currentFinalSegments);
+        committedSegments = dedupeSegmentList([...committedSegments, ...currentFinalSegments]);
         currentFinalSegments = [];
       } else if (currentInterim.trim()) {
-        committedSegments.push([currentInterim.trim()]);
+        committedSegments = dedupeSegmentList([...committedSegments, [currentInterim.trim()]]);
       }
       currentInterim = "";
       updateFtInterim();
     }
 
     function finishFt() {
-      if (finalized) return;
+      if (finalized || mySession !== coachState.captureSessionId) return;
       if (!srDone || !recDone) return;
       finalized = true;
       clearAllTimers();
       releaseMicResources();
       commitFtBurst();
+      coachState.phase = "idle";
       coachState.ftPhase = "result";
       coachState.ftResult = evaluateFreeTalkOffline(question, coachState.ftHeard);
       if (ftBlob) {
@@ -2844,14 +3048,13 @@
     }
 
     function stopFtGracefully() {
-      if (finalized) return;
+      if (finalized || mySession !== coachState.captureSessionId) return;
       if (stopping) {
-        finishFt();
+        if (srDone && recDone) finishFt();
         return;
       }
       stopping = true;
       clearAllTimers();
-      commitFtBurst();
       coachState.ftPhase = "evaluating";
       renderCurrentSurface();
       if (coachState.recognition && !srDone) {
@@ -2867,18 +3070,21 @@
         return;
       }
       setTimeout(() => {
+        if (mySession !== coachState.captureSessionId || finalized) return;
         srDone = true;
         recDone = true;
         finishFt();
       }, 650);
     }
 
+    // Bind finish hook BEFORE first render so button onclick is live immediately
     coachState._ftManualFinish = stopFtGracefully;
+    renderCurrentSurface();
 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (coachState.ftPhase !== "listening" || stopping) {
+        if (mySession !== coachState.captureSessionId || coachState.ftPhase !== "listening" || stopping) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
@@ -2892,7 +3098,6 @@
             src.connect(analyser);
             coachState.sourceNode = src;
             coachState.analyserNode = analyser;
-            coachState.phase = "listening";
             drawWaveformLoop();
           } catch (e) {}
         }
@@ -2903,9 +3108,11 @@
             const recorder = chosenType ? new MediaRecorder(stream, { mimeType: chosenType }) : new MediaRecorder(stream);
             recDone = false;
             recorder.ondataavailable = (ev) => {
+              if (mySession !== coachState.captureSessionId) return;
               if (ev.data && ev.data.size > 0) chunks.push(ev.data);
             };
             recorder.onstop = () => {
+              if (mySession !== coachState.captureSessionId) return;
               if (chunks.length > 0) {
                 ftBlob = new Blob(chunks, { type: chosenType || chunks[0].type || "audio/webm" });
               }
@@ -2922,10 +3129,13 @@
     }
 
     function startFtRec() {
-      if (!SR || stopping || coachState.ftPhase !== "listening") {
+      if (!SR || mySession !== coachState.captureSessionId || stopping || coachState.ftPhase !== "listening") {
         srDone = true;
         return;
       }
+      burstCommitted = false;
+      currentFinalSegments = [];
+      currentInterim = "";
       try {
         const rec = new SR();
         rec.lang = "ja-JP";
@@ -2933,6 +3143,7 @@
         rec.maxAlternatives = 3;
         rec.continuous = true;
         rec.onresult = (ev) => {
+          if (mySession !== coachState.captureSessionId || finalized) return;
           const newFinals = [];
           let newInterim = "";
           for (let i = 0; i < ev.results.length; i++) {
@@ -2947,15 +3158,19 @@
               newInterim += res[0].transcript;
             }
           }
-          currentFinalSegments = newFinals;
+          currentFinalSegments = dedupeSegmentList(newFinals);
           currentInterim = newInterim;
           const now = performance.now();
-          if (updateFtInterim()) {
+          const disp = updateFtInterim();
+          if (disp && disp !== lastDispSig) {
+            lastDispSig = disp;
             coachState.heardAnyVoice = true;
+            coachState.lastAsrChangeMs = now;
             coachState.lastVoiceOrAsrMs = now;
           }
         };
         rec.onerror = (ev) => {
+          if (mySession !== coachState.captureSessionId) return;
           const errCode = ev && ev.error;
           if (errCode === "not-allowed" || errCode === "service-not-allowed") {
             srDone = true;
@@ -2966,11 +3181,26 @@
           }
         };
         rec.onend = () => {
+          if (mySession !== coachState.captureSessionId || finalized) return;
           commitFtBurst();
-          if (!stopping && coachState.ftPhase === "listening" && srRestarts < 4) {
-            srRestarts++;
-            setTimeout(startFtRec, 60);
-            return;
+          if (!stopping && coachState.ftPhase === "listening") {
+            if (!coachState.manualStop && coachState.ftHeard.length >= 4) {
+              srDone = true;
+              stopFtGracefully();
+              return;
+            }
+            if (srRestarts < 4) {
+              srRestarts++;
+              setTimeout(() => {
+                if (mySession !== coachState.captureSessionId) return;
+                if (!stopping && coachState.ftPhase === "listening") startFtRec();
+                else {
+                  srDone = true;
+                  finishFt();
+                }
+              }, 60);
+              return;
+            }
           }
           srDone = true;
           finishFt();
@@ -2985,7 +3215,7 @@
     if (SR) startFtRec();
 
     coachState.monitorTimer = setInterval(() => {
-      if (coachState.ftPhase !== "listening" || stopping) return;
+      if (mySession !== coachState.captureSessionId || coachState.ftPhase !== "listening" || stopping) return;
       const now = performance.now();
       const elapsedSec = Math.floor((now - coachState.recStartMs) / 1000);
       if (elapsedSec !== coachState.elapsedSec) {
@@ -2996,15 +3226,20 @@
         }
       }
       if (coachState.manualStop) return;
-      if (!coachState.heardAnyVoice && !coachState.ftHeard) {
-        if (now - coachState.recStartMs > 9000) stopFtGracefully();
-      } else if (now - coachState.lastVoiceOrAsrMs > 3000) {
+      const hasSpoken = coachState.heardAnyVoice || coachState.ftHeard.length >= 2;
+      if (!hasSpoken) {
+        if (now - coachState.recStartMs > 8500) stopFtGracefully();
+        return;
+      }
+      const asrQuietMs = now - coachState.lastAsrChangeMs;
+      const voiceQuietMs = now - Math.max(coachState.lastVoiceRmsMs, coachState.lastAsrChangeMs);
+      if (voiceQuietMs >= 1600 || asrQuietMs >= 2400) {
         stopFtGracefully();
       }
-    }, 150);
+    }, 120);
 
     coachState.maxCapTimer = setTimeout(() => {
-      if (coachState.ftPhase === "listening" && !stopping) stopFtGracefully();
+      if (mySession === coachState.captureSessionId && coachState.ftPhase === "listening" && !stopping) stopFtGracefully();
     }, 30000);
   }
 
@@ -3334,7 +3569,7 @@
               <div class="oc-rec-hint">${
                 coachState.manualStop
                   ? "🖐️ 手动结束模式：从容读完后再点击上方「说完了，立即评分」（或按 Space）"
-                  : "⏱️ 耐心断句模式：中途换气停顿不会打断，说完停顿约 2.4–3.8 秒自动评分（或随时点击上方按钮）"
+                  : "⏱️ 自动评分模式：说完停顿约 1 秒即自动结束并评分（长句中途换气不会打断，也可随时点上方按钮）"
               }</div>
             </div>`
           : ""
@@ -3860,13 +4095,16 @@
     if (btnDirect && item) {
       btnDirect.onclick = () => {
         stopAll();
+        const mySession = coachState.captureSessionId;
         playCueChime("start");
-        beginListeningAndRecording(item);
+        coachState.preListenTimer = setTimeout(() => {
+          if (mySession === coachState.captureSessionId) beginListeningAndRecording(item);
+        }, 280);
       };
     }
 
     const btnFinishNow = root.querySelector("#oc-btn-finish-now");
-    if (btnFinishNow && coachState._manualFinish) btnFinishNow.onclick = () => coachState._manualFinish();
+    if (btnFinishNow) btnFinishNow.onclick = () => { if (coachState._manualFinish) coachState._manualFinish(); };
 
     const btnStopAll = root.querySelector("#oc-btn-stop-all");
     if (btnStopAll) {
@@ -4102,7 +4340,7 @@
       tManual.onclick = () => {
         coachState.manualStop = !coachState.manualStop;
         localStorage.setItem(MANUAL_STOP_STORAGE, coachState.manualStop ? "1" : "0");
-        a.showToast(coachState.manualStop ? "🖐️ 已切换为手动结束：说完主动点「说完了」评分" : "⏱️ 已切换为耐心自动结束：停顿 2.4–3.8s 自动评分");
+        a.showToast(coachState.manualStop ? "🖐️ 已切换为手动结束：说完主动点「说完了」评分" : "⏱️ 已切换为自动结束：说完停顿约 1 秒自动评分");
         renderCurrentSurface();
       };
     }
@@ -4285,15 +4523,19 @@
     const btnFtMic = container.querySelector("#oc-btn-ft-mic");
     if (btnFtMic && item && item.dialogue) {
       btnFtMic.onclick = () => {
+        stopAll();
+        const mySession = coachState.captureSessionId;
         const fq = coachState.ftQuestion || getFollowupForDialogue(item.dialogue);
         playCueChime("start");
-        startFreeTalkRecording(fq, item.dialogue.context);
+        coachState.preListenTimer = setTimeout(() => {
+          if (mySession === coachState.captureSessionId) startFreeTalkRecording(fq, item.dialogue.context);
+        }, 280);
       };
     }
 
     const btnFtFinish = container.querySelector("#oc-btn-ft-finish");
-    if (btnFtFinish && coachState._ftManualFinish) {
-      btnFtFinish.onclick = () => coachState._ftManualFinish();
+    if (btnFtFinish) {
+      btnFtFinish.onclick = () => { if (coachState._ftManualFinish) coachState._ftManualFinish(); };
     }
 
     container.querySelectorAll(".oc-ft-sample-play").forEach((b) => {
@@ -4616,6 +4858,7 @@
     },
     _testEvaluate,
     _testCombineHypotheses,
+    _testShouldAutoStop: shouldAutoStopCapture,
     _testPitchContour,
     _testWeaknessProfile,
     _testDeckInfo,

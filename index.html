@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=12" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=12" />
-  <link rel="stylesheet" href="styles.css?v=12" />
+  <link rel="manifest" href="manifest.json?v=13" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=13" />
+  <link rel="stylesheet" href="styles.css?v=13" />
 </head>
 <body>
   <!-- Compact Learning-First Top Header -->
@@ -311,19 +311,19 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="vendor/leaflet/leaflet.js?v=12"></script>
-  <script src="data/itinerary.js?v=12"></script>
-  <script src="data/modules_1_to_6.js?v=12"></script>
-  <script src="data/modules_7_to_12.js?v=12"></script>
-  <script src="data/modules_13_to_18.js?v=12"></script>
-  <script src="data/audio_manifest.js?v=12"></script>
-  <script src="data/audio_learning_manifest.js?v=12"></script>
-  <script src="data/verbs_top200.js?v=12"></script>
-  <script src="data/grammar_n5_n3.js?v=12"></script>
-  <script src="data/learning_extras.js?v=12"></script>
-  <script src="app.js?v=12"></script>
-  <script src="oral_coach.js?v=12"></script>
-  <script src="learning.js?v=12"></script>
+  <script src="vendor/leaflet/leaflet.js?v=13"></script>
+  <script src="data/itinerary.js?v=13"></script>
+  <script src="data/modules_1_to_6.js?v=13"></script>
+  <script src="data/modules_7_to_12.js?v=13"></script>
+  <script src="data/modules_13_to_18.js?v=13"></script>
+  <script src="data/audio_manifest.js?v=13"></script>
+  <script src="data/audio_learning_manifest.js?v=13"></script>
+  <script src="data/verbs_top200.js?v=13"></script>
+  <script src="data/grammar_n5_n3.js?v=13"></script>
+  <script src="data/learning_extras.js?v=13"></script>
+  <script src="app.js?v=13"></script>
+  <script src="oral_coach.js?v=13"></script>
+  <script src="learning.js?v=13"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -332,7 +332,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=12").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=13").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }
