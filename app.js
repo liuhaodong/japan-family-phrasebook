@@ -19,7 +19,7 @@
   });
 
   // Load persisted UI preferences
-  const VALID_MODES = new Set(["verbs", "grammar", "practice", "phrasebook", "itinerary"]);
+  const VALID_MODES = new Set(["verbs", "grammar", "oral", "practice", "phrasebook", "itinerary"]);
   const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
 
   // App State
@@ -291,8 +291,8 @@
     if (neuralFile) {
       if (btnEl) btnEl.classList.add("speaking");
       neuralAudioPlayer.src = neuralFile;
-      // 0.84x preserves clean natural human voice quality without pitch-shift warble
-      const targetRate = rate < 1.0 ? 0.84 : 1.0;
+      // 0.70x-0.95x preserves clean natural human voice quality without pitch-shift warble
+      const targetRate = rate < 1.0 ? Math.max(0.7, Math.min(0.95, rate)) : 1.0;
       neuralAudioPlayer.playbackRate = targetRate;
       neuralAudioPlayer.defaultPlaybackRate = targetRate;
       if ("preservesPitch" in neuralAudioPlayer) neuralAudioPlayer.preservesPitch = true;
@@ -328,7 +328,7 @@
     const utter = new SpeechSynthesisUtterance(cleanText);
     utter.lang = "ja-JP";
     if (jpVoice) utter.voice = jpVoice;
-    utter.rate = rate < 1.0 ? 0.8 : 1.0;
+    utter.rate = rate < 1.0 ? Math.max(0.68, Math.min(0.95, rate)) : 1.0;
     utter.pitch = 1.0;
 
     if (btnEl) btnEl.classList.add("speaking");
@@ -2147,12 +2147,13 @@
     document.body.classList.toggle("practice-mode", state.practiceMode);
     document.body.classList.toggle("dark-mode", state.darkMode);
 
-    // Sync all 5 Primary App Modes
+    // Sync all 6 Primary App Modes
     const stickyEl = document.getElementById("sticky-controls");
     const itinView = document.getElementById("itinerary-view-container");
     const phraseView = document.getElementById("phrasebook-view-container");
     const verbsView = document.getElementById("verbs-view-container");
     const grammarView = document.getElementById("grammar-view-container");
+    const oralView = document.getElementById("oral-view-container");
     const practiceView = document.getElementById("practice-view-container");
     const phraseToolbar = document.getElementById("phrasebook-toolbar-row");
     const toolbarCollapsible = document.getElementById("toolbar-collapsible");
@@ -2164,6 +2165,7 @@
     if (phraseView) phraseView.style.display = mode === "phrasebook" ? "grid" : "none";
     if (verbsView) verbsView.style.display = mode === "verbs" ? "flex" : "none";
     if (grammarView) grammarView.style.display = mode === "grammar" ? "flex" : "none";
+    if (oralView) oralView.style.display = mode === "oral" ? "flex" : "none";
     if (practiceView) practiceView.style.display = mode === "practice" ? "flex" : "none";
 
     if (phraseToolbar) phraseToolbar.style.display = mode === "phrasebook" ? "flex" : "none";
@@ -2171,7 +2173,7 @@
     if (legTabs) legTabs.style.display = mode === "itinerary" || mode === "phrasebook" ? "flex" : "none";
     if (globalDisplayBar) globalDisplayBar.style.display = "flex";
     if (stickyEl) {
-      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "practice");
+      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "oral" || mode === "practice");
     }
 
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
@@ -2222,6 +2224,10 @@
       const filtered = getFilteredModules();
       renderSidebar(filtered);
       renderModules(filtered);
+    } else if (state.appMode === "oral") {
+      if (window.JP_ORAL_COACH) {
+        window.JP_ORAL_COACH.renderDedicatedView(document.getElementById("oral-view-container"));
+      }
     } else if (window.JP_LEARNING) {
       window.JP_LEARNING.renderMode(state.appMode);
     }

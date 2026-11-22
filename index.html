@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=10" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=10" />
-  <link rel="stylesheet" href="styles.css?v=10" />
+  <link rel="manifest" href="manifest.json?v=12" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=12" />
+  <link rel="stylesheet" href="styles.css?v=12" />
 </head>
 <body>
   <!-- Compact Learning-First Top Header -->
@@ -78,6 +78,9 @@
           </button>
           <button type="button" class="mode-tab" id="mode-btn-grammar" data-appmode="grammar" role="tab" aria-selected="false">
             📖 语法 N5–N3
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-oral" data-appmode="oral" role="tab" aria-selected="false">
+            🎙️ 口语跟读
           </button>
           <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab" aria-selected="false">
             🎯 实战练习
@@ -150,7 +153,12 @@
   <section id="grammar-view-container" class="learning-view-wrapper" style="display:none;"></section>
 
   <!-- =================================================================== -->
-  <!-- VIEW 3: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
+  <!-- VIEW 3: ORAL FOLLOW-READING & PRONUNCIATION COACH                   -->
+  <!-- =================================================================== -->
+  <section id="oral-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 4: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
   <!-- =================================================================== -->
   <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
 
@@ -267,11 +275,15 @@
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" role="tablist" aria-label="移动端主导航">
     <button type="button" class="mnav-btn active" data-appmode="verbs" role="tab" aria-selected="true">
       <span class="mnav-ico">📚</span>
-      <span class="mnav-lbl">词汇·动词</span>
+      <span class="mnav-lbl">词汇</span>
     </button>
     <button type="button" class="mnav-btn" data-appmode="grammar" role="tab" aria-selected="false">
       <span class="mnav-ico">📖</span>
       <span class="mnav-lbl">语法</span>
+    </button>
+    <button type="button" class="mnav-btn" data-appmode="oral" role="tab" aria-selected="false">
+      <span class="mnav-ico">🎙️</span>
+      <span class="mnav-lbl">口语</span>
     </button>
     <button type="button" class="mnav-btn" data-appmode="practice" role="tab" aria-selected="false">
       <span class="mnav-ico">🎯</span>
@@ -299,19 +311,19 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="vendor/leaflet/leaflet.js?v=10"></script>
-  <script src="data/itinerary.js?v=10"></script>
-  <script src="data/modules_1_to_6.js?v=10"></script>
-  <script src="data/modules_7_to_12.js?v=10"></script>
-  <script src="data/modules_13_to_18.js?v=10"></script>
-  <script src="data/audio_manifest.js?v=10"></script>
-  <script src="data/audio_learning_manifest.js?v=10"></script>
-  <script src="data/verbs_top200.js?v=10"></script>
-  <script src="data/grammar_n5_n3.js?v=10"></script>
-  <script src="data/learning_extras.js?v=10"></script>
-  <script src="app.js?v=10"></script>
-  <script src="oral_coach.js?v=10"></script>
-  <script src="learning.js?v=10"></script>
+  <script src="vendor/leaflet/leaflet.js?v=12"></script>
+  <script src="data/itinerary.js?v=12"></script>
+  <script src="data/modules_1_to_6.js?v=12"></script>
+  <script src="data/modules_7_to_12.js?v=12"></script>
+  <script src="data/modules_13_to_18.js?v=12"></script>
+  <script src="data/audio_manifest.js?v=12"></script>
+  <script src="data/audio_learning_manifest.js?v=12"></script>
+  <script src="data/verbs_top200.js?v=12"></script>
+  <script src="data/grammar_n5_n3.js?v=12"></script>
+  <script src="data/learning_extras.js?v=12"></script>
+  <script src="app.js?v=12"></script>
+  <script src="oral_coach.js?v=12"></script>
+  <script src="learning.js?v=12"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -320,7 +332,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=10").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=12").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

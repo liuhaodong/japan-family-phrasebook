@@ -1843,6 +1843,7 @@
   function renderPracticeView() {
     const container = document.getElementById("practice-view-container");
     if (!container) return;
+    if (pState.subMode === "shadow") pState.subMode = "srs";
     const { state, formatRuby, escapeHtml, speakJapanese, recordStudyActivity } = app();
 
     // Dashboard metrics
@@ -2271,17 +2272,12 @@
       `;
     }
 
-    // --- SUB-MODE 5: ORAL FOLLOW-READING & PRONUNCIATION COACH ---
-    else if (pState.subMode === "shadow") {
-      stageHtml = `<div id="oral-coach-stage"></div>`;
-    }
-
     container.innerHTML = `
       <div class="learning-hero-card">
         <div class="learning-hero-top">
           <div>
             <h2 class="itin-section-title">🎯 日语实战训练场 & 个人学习仪表盘</h2>
-            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、动词变形、N5–N3 语法、店员盲听与跟读口语私教，每天 10 分钟快速提升！</p>
+            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、动词变形、N5–N3 语法与店员快语速盲听；开口跟读请前往顶部「🎙️ 口语跟读」专栏！</p>
           </div>
           <div class="dash-streak-badge">
             <div style="font-size:1.35rem;font-weight:900;">🔥 ${state.streak.count || 0} 天</div>
@@ -2321,7 +2317,6 @@
           <button type="button" class="map-pill ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">🔗 自他动词 & 助词战</button>
           <button type="button" class="map-pill ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">⚡ 动词变形闪电战</button>
           <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">🧩 语法 & 听力测验</button>
-          <button type="button" class="map-pill ${pState.subMode === "shadow" ? "active" : ""}" data-psub="shadow">🎙️ 口语跟读教练</button>
         </div>
       </div>
 
@@ -2509,11 +2504,6 @@
         }
       };
     }
-
-    // Mount Oral Follow-Reading & Pronunciation Coach Studio
-    if (pState.subMode === "shadow" && window.JP_ORAL_COACH) {
-      window.JP_ORAL_COACH.renderStudio(document.getElementById("oral-coach-stage"));
-    }
   }
 
   // Desktop Practice Keyboard Shortcuts
@@ -2525,11 +2515,6 @@
     const tag = (e.target && e.target.tagName) || "";
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable)) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-
-    if (pState.subMode === "shadow" && window.JP_ORAL_COACH) {
-      window.JP_ORAL_COACH.handleKeydown(e);
-      return;
-    }
 
     if (pState.subMode === "srs" && pState.srsCurrentCard) {
       if (e.code === "Space") {
@@ -2579,12 +2564,10 @@
       else if (mode === "practice") renderPracticeView();
     },
     openOralRoleplay(dlgId) {
-      pState.subMode = "shadow";
-      app().switchAppMode("practice");
       if (window.JP_ORAL_COACH) {
         window.JP_ORAL_COACH.openRoleplayDialogue(dlgId);
-        renderPracticeView();
       }
+      app().switchAppMode("oral");
     }
   };
 })();

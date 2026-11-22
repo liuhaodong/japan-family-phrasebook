@@ -56,6 +56,8 @@ body.dark-mode {
 html {
   scroll-behavior: smooth;
   font-size: 16px;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 body {
@@ -65,6 +67,8 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 60px;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 /* Compact Header Banner */
@@ -390,6 +394,8 @@ body {
 }
 
 .scroll-fade-x {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -1375,9 +1381,9 @@ body.dark-mode .custom-badge {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
-  padding: 0.36rem 0.82rem;
+  padding: 0.36rem 0.68rem;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
@@ -1485,10 +1491,10 @@ body.dark-mode .mode-tab.active {
     bottom: 0;
     z-index: 65;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     background: var(--bg-card);
     border-top: 1px solid var(--border-color);
-    padding: 0.32rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom));
+    padding: 0.32rem 0.12rem calc(0.35rem + env(safe-area-inset-bottom));
     box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
   }
   .mnav-btn {
@@ -1496,14 +1502,15 @@ body.dark-mode .mode-tab.active {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.12rem;
+    gap: 0.1rem;
     min-height: 46px;
+    min-width: 0;
     border: none;
     background: transparent;
     color: var(--text-muted);
     font-weight: 700;
     cursor: pointer;
-    padding: 0.15rem 0.1rem;
+    padding: 0.15rem 0.05rem;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -1511,11 +1518,11 @@ body.dark-mode .mode-tab.active {
     color: var(--accent-indigo);
   }
   .mnav-ico {
-    font-size: 1.08rem;
+    font-size: 1.05rem;
     line-height: 1;
   }
   .mnav-lbl {
-    font-size: 0.66rem;
+    font-size: 0.61rem;
     white-space: nowrap;
   }
   .toast {
@@ -1539,7 +1546,7 @@ body.dark-mode .mode-tab.active {
 /* 1. KPI Strip */
 .itin-kpi-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(175px, 100%), 1fr));
   gap: 0.7rem;
 }
 
@@ -1607,6 +1614,8 @@ body.dark-mode .mode-tab.active {
   border-radius: var(--radius-lg);
   padding: 1.1rem;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .itin-map-header,
@@ -1792,7 +1801,7 @@ body.dark-mode .map-layer-overlay {
 /* 3. 36-Day Visual Calendar Grid */
 .calendar-strip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(112px, 100%), 1fr));
   gap: 0.45rem;
 }
 
@@ -2011,7 +2020,7 @@ body.dark-mode .map-layer-overlay {
 /* 5. Ginza 7th Anniversary Deck */
 .ginza-deck-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr));
   gap: 0.85rem;
 }
 
@@ -2181,6 +2190,13 @@ body.dark-mode .ginza-status-badge.booked {
   gap: 1rem;
 }
 
+.learning-view-wrapper > *,
+.itinerary-view-wrapper > *,
+#oral-coach-stage {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .learning-hero-card,
 .learning-filter-card,
 .practice-stage-card {
@@ -2189,6 +2205,8 @@ body.dark-mode .ginza-status-badge.booked {
   border-radius: var(--radius-lg);
   padding: 1.05rem 1.15rem;
   box-shadow: var(--shadow-sm);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .learning-hero-top {
@@ -2233,7 +2251,7 @@ body.dark-mode .ginza-status-badge.booked {
 .conj-cheatsheet-box {
   margin-top: 0.85rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 0.75rem;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
@@ -2414,7 +2432,7 @@ body.dark-mode .imp-3 {
 /* Verbs Grid & Cards */
 .verbs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(460px, 100%), 1fr));
   gap: 0.9rem;
 }
 
@@ -2583,7 +2601,7 @@ body.dark-mode .imp-3 {
 /* Conjugation Detail Modal */
 .conj-modal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(128px, 100%), 1fr));
   gap: 0.45rem;
 }
 
@@ -2645,7 +2663,7 @@ body.dark-mode .imp-3 {
 .grammar-kpi-row {
   margin-top: 0.75rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(155px, 100%), 1fr));
   gap: 0.6rem;
 }
 
@@ -2803,7 +2821,7 @@ body.dark-mode .grp-banner-n3 {
 
 .inline-gquiz-opts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
   gap: 0.4rem;
 }
 
@@ -2820,13 +2838,13 @@ body.dark-mode .grp-banner-n3 {
 .dash-metrics-grid {
   margin-top: 0.8rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(162px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(162px, 100%), 1fr));
   gap: 0.6rem;
 }
 
 @media (max-width: 640px) {
   .dash-metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.45rem;
   }
 }
@@ -2836,14 +2854,21 @@ body.dark-mode .grp-banner-n3 {
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 0.6rem 0.75rem;
+  min-width: 0;
 }
 
 .dm-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.28rem;
   font-size: 0.8rem;
   margin-bottom: 0.35rem;
+}
+
+.dm-top strong {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .practice-subtabs {
@@ -3004,6 +3029,8 @@ body.dark-mode .srs-btn-good {
 /* Conjugation Drill & Quiz Options */
 .drill-question-box {
   max-width: 680px;
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   background: var(--bg-main);
   border: 1px solid var(--border-color);
@@ -3160,7 +3187,7 @@ body.dark-mode .quiz-opt-btn.opt-wrong {
 
 .tb-adj-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 0.55rem;
 }
 
@@ -3276,7 +3303,7 @@ body.dark-mode .badge-na {
 
 .tb-counter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(128px, 100%), 1fr));
   gap: 0.4rem;
 }
 
@@ -3414,7 +3441,7 @@ body.dark-mode .badge-na {
 
 .vocab-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(265px, 100%), 1fr));
   gap: 0.72rem;
 }
 
@@ -3627,7 +3654,7 @@ body.dark-mode .trans-both {
 /* Grammar Comparison Cards */
 .gcomp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 0.75rem;
   margin-top: 0.85rem;
 }
@@ -3747,6 +3774,8 @@ body.dark-mode .trans-both {
   flex-direction: column;
   gap: 0.75rem;
   min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .oc-top-bar {
@@ -3754,12 +3783,18 @@ body.dark-mode .trans-both {
   flex-direction: column;
   align-items: stretch;
   gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .oc-deck-pills {
   display: flex;
   flex-wrap: nowrap;
   gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .oc-deck-pills .toggle-chip {
@@ -3771,6 +3806,9 @@ body.dark-mode .trans-both {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
 }
 
 .oc-ai-settings {
@@ -4344,6 +4382,66 @@ body.dark-mode .leg-miss {
 }
 
 @media (max-width: 640px) {
+  .learning-view-wrapper,
+  .itinerary-view-wrapper {
+    padding: 0 0.6rem;
+    margin: 0.65rem auto 1.4rem;
+    gap: 0.72rem;
+  }
+  .learning-hero-card,
+  .learning-filter-card,
+  .practice-stage-card,
+  .itin-map-card,
+  .itin-card-block {
+    padding: 0.78rem 0.72rem;
+    border-radius: var(--radius-md);
+  }
+  .drill-question-box {
+    padding: 0.82rem 0.7rem;
+  }
+  .dash-metric {
+    padding: 0.52rem 0.56rem;
+  }
+  .dm-top {
+    font-size: 0.73rem;
+  }
+  .dm-top strong {
+    font-size: 0.82rem;
+  }
+  .dash-streak-badge {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.46rem 0.82rem;
+    text-align: left;
+  }
+  .lf-row-top .lf-select {
+    flex: 1 1 calc(50% - 0.3rem);
+    min-width: 0;
+    max-width: 100%;
+  }
+  .modal-overlay {
+    padding: 0.45rem;
+  }
+  .modal-card {
+    padding: 0.95rem 0.8rem;
+    max-height: 92dvh;
+  }
+  .oc-heard-line,
+  .oc-tip-detail,
+  .oc-ai-line {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .oc-score-header {
+    justify-content: center;
+  }
+  .oc-rp-select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
   .oc-step-bar {
     gap: 0.28rem;
   }
@@ -4368,4 +4466,466 @@ body.dark-mode .leg-miss {
   .oc-score-num {
     font-size: 1.32rem;
   }
+}
+
+@media (max-width: 480px) {
+  .tb-kana-row {
+    grid-template-columns: 38px repeat(5, minmax(0, 1fr));
+    gap: 0.2rem;
+  }
+}
+
+.oc-hero-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 768px) {
+  .oc-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.oc-metric-clickable {
+  cursor: pointer;
+  border-color: #f59e0b;
+  transition: transform 0.12s ease;
+}
+
+.oc-metric-clickable:hover {
+  transform: translateY(-1px);
+}
+
+.oc-rec-timer {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.1rem 0.42rem;
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--accent-red);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.oc-rec-hint {
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.45;
+}
+
+/* =========================================================================
+   UPGRADE V12: RADAR, PITCH MORA STRIP, CHUNK MICRO-DRILL, PICKER, FREE-TALK
+   ========================================================================= */
+
+.oc-weakness-radar {
+  margin-top: 0.65rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.oc-radar-title {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.oc-radar-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.oc-radar-chip {
+  padding: 0.24rem 0.56rem;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.oc-radar-chip:hover {
+  border-color: var(--accent-indigo);
+  background: var(--bg-indigo-soft);
+}
+
+.oc-radar-chip.active {
+  background: #1b2c52;
+  color: #ffffff;
+  border-color: #1b2c52;
+}
+
+body.dark-mode .oc-radar-chip.active {
+  background: #3b82f6;
+  color: #ffffff;
+  border-color: #60a5fa;
+}
+
+.oc-deck-subbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.42rem 0.52rem;
+  margin-bottom: 0.6rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+}
+
+.oc-subbar-group,
+.oc-subbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.oc-picker-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.6rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.oc-picker-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.oc-picker-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-main);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.oc-picker-row:hover,
+.oc-picker-row.active {
+  border-color: var(--accent-indigo);
+  background: var(--bg-indigo-soft);
+}
+
+.oc-picker-num {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.oc-picker-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.oc-picker-jp {
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oc-picker-cn {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Visual Pitch Accent Contour & Mora Beat Strip */
+.oc-pitch-strip {
+  margin: 0.2rem auto 0.55rem;
+  padding: 0.48rem 0.6rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  text-align: center;
+  max-width: 100%;
+}
+
+.oc-pitch-morae {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0.25rem 0.3rem;
+}
+
+.oc-pitch-clause {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.oc-pitch-sep {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin: 0 0.2rem;
+  align-self: center;
+}
+
+.oc-pm-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 1.28rem;
+  padding: 0 0.1rem;
+  position: relative;
+}
+
+.oc-pm-bar {
+  width: 100%;
+  height: 7px;
+  border-radius: 2px;
+  margin-bottom: 2px;
+}
+
+.oc-pm-h .oc-pm-bar {
+  border-top: 2.5px solid var(--accent-indigo);
+}
+
+.oc-pm-l .oc-pm-bar {
+  border-bottom: 2.5px solid var(--text-muted);
+}
+
+.oc-pm-drop .oc-pm-bar {
+  border-right: 2.5px solid var(--accent-red);
+}
+
+.oc-pm-kana {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  line-height: 1.15;
+}
+
+.oc-pm-h .oc-pm-kana {
+  color: var(--accent-indigo);
+}
+
+.oc-pm-drop .oc-pm-kana::after {
+  content: "↘";
+  color: var(--accent-red);
+  font-size: 0.62rem;
+  margin-left: 1px;
+}
+
+.oc-pm-rise .oc-pm-kana::after {
+  content: "↗";
+  color: var(--accent-emerald);
+  font-size: 0.68rem;
+  font-weight: 900;
+  margin-left: 1px;
+}
+
+.oc-pm-sokuon .oc-pm-kana {
+  border: 1px dashed #d97706;
+  border-radius: 4px;
+  padding: 0 0.14rem;
+  color: #b45309;
+}
+
+.oc-pm-long .oc-pm-kana {
+  text-decoration: overline #2563eb;
+}
+
+.oc-pm-nasal .oc-pm-kana {
+  font-style: italic;
+}
+
+body.dark-mode .oc-pm-sokuon .oc-pm-kana {
+  color: #fde68a;
+  border-color: #f59e0b;
+}
+
+.oc-pitch-legend {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.3rem;
+}
+
+/* Clickable Diff Chunks & Micro-Drill Card */
+.oc-tok-btn {
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.oc-tok-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14);
+}
+
+.oc-tok-selected {
+  outline: 2.5px solid var(--accent-indigo);
+  outline-offset: 1px;
+}
+
+.oc-chunk-drill-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--accent-indigo);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.oc-cd-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.oc-cd-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.oc-cd-kana {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-indigo);
+  background: var(--bg-indigo-soft);
+  padding: 0.1rem 0.42rem;
+  border-radius: 6px;
+}
+
+.oc-cd-meta {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.oc-controls-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.oc-controls-primary {
+  margin-top: 0;
+}
+
+.oc-controls-secondary {
+  margin-top: 0;
+}
+
+/* Roleplay Recall Mode & Full Dialogue Stitch Playback */
+.oc-rp-select {
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.oc-rp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.oc-rp-masked {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0.2rem 0;
+}
+
+.oc-recall-prompt-box {
+  background: var(--bg-indigo-soft);
+  border: 1.5px dashed var(--accent-indigo);
+  border-radius: 12px;
+  padding: 0.85rem;
+  text-align: center;
+  margin: 0.45rem 0 0.75rem;
+}
+
+.oc-rp-bubble.rp-mix-playing {
+  border-color: var(--accent-emerald);
+  background: var(--bg-emerald-soft);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.28);
+}
+
+/* Roleplay Free-Talk Follow-up Branch */
+.oc-freetalk-card {
+  margin-top: 0.9rem;
+  padding: 0.78rem;
+  border-radius: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--accent-indigo);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.oc-ft-qbox {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+
+.oc-ft-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.oc-ft-sample-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+}
+
+.oc-ft-sample-play {
+  min-width: 36px;
+  min-height: 36px;
+  flex-shrink: 0;
 }

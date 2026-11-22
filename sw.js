@@ -1,23 +1,23 @@
-const CACHE_NAME = "japan-family-phrasebook-v10";
+const CACHE_NAME = "japan-family-phrasebook-v12";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=10",
-  "./app.js?v=10",
-  "./oral_coach.js?v=10",
-  "./learning.js?v=10",
-  "./manifest.json?v=10",
-  "./vendor/leaflet/leaflet.css?v=10",
-  "./vendor/leaflet/leaflet.js?v=10",
-  "./data/itinerary.js?v=10",
-  "./data/modules_1_to_6.js?v=10",
-  "./data/modules_7_to_12.js?v=10",
-  "./data/modules_13_to_18.js?v=10",
-  "./data/audio_manifest.js?v=10",
-  "./data/audio_learning_manifest.js?v=10",
-  "./data/verbs_top200.js?v=10",
-  "./data/grammar_n5_n3.js?v=10",
-  "./data/learning_extras.js?v=10"
+  "./styles.css?v=12",
+  "./app.js?v=12",
+  "./oral_coach.js?v=12",
+  "./learning.js?v=12",
+  "./manifest.json?v=12",
+  "./vendor/leaflet/leaflet.css?v=12",
+  "./vendor/leaflet/leaflet.js?v=12",
+  "./data/itinerary.js?v=12",
+  "./data/modules_1_to_6.js?v=12",
+  "./data/modules_7_to_12.js?v=12",
+  "./data/modules_13_to_18.js?v=12",
+  "./data/audio_manifest.js?v=12",
+  "./data/audio_learning_manifest.js?v=12",
+  "./data/verbs_top200.js?v=12",
+  "./data/grammar_n5_n3.js?v=12",
+  "./data/learning_extras.js?v=12"
 ];
 
 self.addEventListener("install", (event) => {
