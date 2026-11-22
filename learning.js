@@ -170,8 +170,8 @@
             </div>
           </div>
           <div style="display:flex;gap:0.4rem;">
-            <button type="button" class="action-btn primary-audio modal-v-speak" data-jp="${escapeHtml(verb.kana)}">🔊 读原形</button>
-            <button type="button" class="action-btn modal-v-speak-slow" data-jp="${escapeHtml(verb.kana)}">🐢 慢读</button>
+            <button type="button" class="action-btn primary-audio modal-v-speak" data-jp="${escapeHtml(verb.dict)}">🔊 读原形</button>
+            <button type="button" class="action-btn modal-v-speak-slow" data-jp="${escapeHtml(verb.dict)}">🐢 慢读</button>
           </div>
         </div>
         <div class="tb-rule-banner" style="margin:0.6rem 0;">
@@ -184,7 +184,7 @@
             const f = verb.forms[fm.key];
             const disabled = !f || f.jp.startsWith("—");
             return `
-              <button type="button" class="conj-modal-cell ${disabled ? "disabled" : "modal-v-speak"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.kana || f.jp)}"`}>
+              <button type="button" class="conj-modal-cell ${disabled ? "disabled" : "modal-v-speak"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.jp)}"`}>
                 <div class="conj-cell-label">${fm.label} <span>${fm.sub}</span></div>
                 <div class="conj-cell-jp">${escapeHtml(f ? f.jp : "—")}</div>
                 <div class="conj-cell-kana">${escapeHtml(f && f.kana ? f.kana : "")}</div>
@@ -439,8 +439,8 @@
                         <div class="cn-text" style="margin-bottom:0;">${escapeHtml(v.cn)}</div>
                       </div>
                       <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;">
-                        <button type="button" class="action-btn primary-audio v-speak-btn" data-jp="${escapeHtml(v.kana)}">🔊 朗读</button>
-                        <button type="button" class="action-btn v-speak-slow-btn" data-jp="${escapeHtml(v.kana)}">🐢</button>
+                        <button type="button" class="action-btn primary-audio v-speak-btn" data-jp="${escapeHtml(v.dict)}">🔊 朗读</button>
+                        <button type="button" class="action-btn v-speak-slow-btn" data-jp="${escapeHtml(v.dict)}">🐢</button>
                         <button type="button" class="action-btn v-allforms-btn" data-vid="${v.id}">📋 11种变形</button>
                       </div>
                     </div>
@@ -452,7 +452,7 @@
                           const f = v.forms[fm.key];
                           const disabled = !f || f.jp.startsWith("—");
                           return `
-                          <button type="button" class="verb-form-chip ${disabled ? "disabled" : "v-speak-btn"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.kana || f.jp)}"`} title="点击听「${fm.label}」发音">
+                          <button type="button" class="verb-form-chip ${disabled ? "disabled" : "v-speak-btn"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.jp)}"`} title="点击听「${fm.label}」发音">
                             <span class="vf-lbl">${fm.label}</span>
                             <span class="vf-val">${escapeHtml(f ? f.jp : "—")}</span>
                           </button>
@@ -953,7 +953,7 @@
       extraHtml: `ます形: <strong>${v.forms.masu.jp}</strong> ｜ て形: <strong>${v.forms.te.jp}</strong> ｜ ない形: <strong>${v.forms.nai.jp}</strong>`,
       exampleJp: v.examples[0] ? v.examples[0].jp : "",
       exampleCn: v.examples[0] ? v.examples[0].cn : "",
-      audioText: v.kana,
+      audioText: v.dict,
       audioKey: null
     }));
 
@@ -1801,7 +1801,7 @@
       } else {
         pState.conjStreak = 0;
       }
-      speakJapanese(q.answerKana || q.answerJp, 1.0);
+      speakJapanese(q.answerJp || q.answerKana, 1.0);
       renderPracticeView();
     }
 
@@ -1819,7 +1819,7 @@
       };
     }
     const btnCjPlay = document.getElementById("btn-conj-play-ans");
-    if (btnCjPlay && pState.conjQuestion) btnCjPlay.onclick = function () { speakJapanese(pState.conjQuestion.answerKana || pState.conjQuestion.answerJp, 1.0, this); };
+    if (btnCjPlay && pState.conjQuestion) btnCjPlay.onclick = function () { speakJapanese(pState.conjQuestion.answerJp || pState.conjQuestion.answerKana, 1.0, this); };
     const btnCjNext = document.getElementById("btn-conj-next");
     if (btnCjNext) btnCjNext.onclick = () => { generateConjQuestion(); renderPracticeView(); };
 

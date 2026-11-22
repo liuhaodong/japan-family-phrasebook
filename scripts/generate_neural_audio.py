@@ -2,32 +2,52 @@ import asyncio
 import hashlib
 import json
 import re
+import subprocess
 from pathlib import Path
 import edge_tts
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_DIR / "data"
 AUDIO_DIR = PROJECT_DIR / "audio"
+LEARN_AUDIO_DIR = AUDIO_DIR / "learn"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+LEARN_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def parse_js_modules(filepath: Path):
-    text = filepath.read_text(encoding="utf-8")
-    idx = text.find("[")
-    r_idx = text.rfind("]")
-    body = text[idx:r_idx + 1]
-    lines = []
-    for line in body.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith("//"):
-            continue
-        line = re.sub(r'(?<=[,"\]\}])\s*//.*$', '', line)
-        lines.append(line)
-    cleaned = "\n".join(lines)
-    cleaned = re.sub(r'(?m)^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
-    cleaned = re.sub(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1 "\2":', cleaned)
-    cleaned = re.sub(r',(\s*[\}\]])', r'\1', cleaned)
-    return json.loads(cleaned)
+def parse_js_data(filepath: Path):
+    """Parse JS window.VAR = ... data files reliably using Node (fallback to Python regex)."""
+    try:
+        script = (
+            "global.window = {};"
+            f"require({json.dumps(str(filepath))});"
+            "const keys = Object.keys(global.window);"
+            "process.stdout.write(JSON.stringify(global.window[keys[0]]));"
+        )
+        res = subprocess.run(
+            ["node", "-e", script],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+        )
+        return json.loads(res.stdout)
+    except Exception:
+        text = filepath.read_text(encoding="utf-8")
+        idx = min(x for x in (text.find("["), text.find("{")) if x != -1)
+        r_idx = max(text.rfind("]"), text.rfind("}"))
+        body = text[idx : r_idx + 1]
+        lines = []
+        for line in body.splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("//"):
+                continue
+            line = re.sub(r'(?<=[,"\]\}])\s*//.*$', "", line)
+            lines.append(line)
+        cleaned = "\n".join(lines)
+        cleaned = re.sub(r'(?m)^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1"\2":', cleaned)
+        cleaned = re.sub(r'([\{,])\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:', r'\1 "\2":', cleaned)
+        cleaned = re.sub(r',(\s*[\}\]])', r"\1", cleaned)
+        return json.loads(cleaned)
 
 
 def clean_spoken_japanese(raw: str) -> str:
@@ -35,7 +55,7 @@ def clean_spoken_japanese(raw: str) -> str:
     Convert display Japanese (with furigana, bracketed options, or Chinese labels)
     into 100% pure, natural spoken Japanese for Neural TTS.
     """
-    s = raw
+    s = str(raw or "")
     # 1. Special handling for Module 14 appliance dictionary item
     if "【洗衣机】" in s:
         return "洗濯、洗濯乾燥、洗剤自動投入。ふろ自動、追いだき。暖房、加湿。"
@@ -49,16 +69,16 @@ def clean_spoken_japanese(raw: str) -> str:
     # 4. Remove full-width square bracket options/notes ［...］
     s = re.sub(r"［[^］]*］", "", s)
 
-    # 5. Remove parenthetical notes starting with ※ or containing Chinese
+    # 5. Remove parenthetical notes starting with ※
     s = re.sub(r"（※[^）]*）", "", s)
     s = re.sub(r"\(※[^\)]*\)", "", s)
 
-    # 6. Remove furigana in （...） (Hiragana, Katakana, numbers, romaji)
+    # 6. Remove furigana in （...） / (...)
     s = re.sub(r"（[\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+）", "", s)
     s = re.sub(r"\([\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+\)", "", s)
 
-    # 7. Replace slash separator ／ with a gentle pause so alternatives read smoothly
-    s = re.sub(r"\s*／\s*", "。　", s)
+    # 7. Replace slash separator / or ／ with a gentle pause so alternatives read smoothly
+    s = re.sub(r"\s*[/／]\s*", "。 ", s)
 
     # 8. Replace 〇〇 placeholder with まるまる
     s = s.replace("〇〇", "まるまる")
@@ -76,24 +96,177 @@ def choose_voice_and_pitch(speaker: str = "us", speaker_name: str = "", item_id:
     """
     name = speaker_name or ""
     if "Jinny" in name or "ジニー" in name or item_id.startswith("m17-s1"):
-        # Cute child-like higher pitch using NanamiNeural
         return ("ja-JP-NanamiNeural", "+18Hz", "+0%")
     if any(k in name for k in ["Sherry", "日本妈妈", "保育园老师", "仲居", "女将", "专柜", "甜品", "收银", "客房"]):
         return ("ja-JP-NanamiNeural", "+0Hz", "+0%")
     if any(k in name for k in ["浩东", "大将", "司机", "爸爸", "主厨", "先生", "售票", "租赁", "药剂师"]):
         return ("ja-JP-KeitaNeural", "+0Hz", "+0%")
-    # For standalone sentences: alternate or pick based on speaker context
     if item_id.startswith(("m1-s1", "m1-s2", "m3-", "m4-s2", "m5-s1", "m7-s1", "m7-s2", "m8-s3", "m11-")):
         return ("ja-JP-KeitaNeural", "+0Hz", "+0%")
     return ("ja-JP-NanamiNeural", "+0Hz", "+0%")
 
 
+def build_learning_tasks():
+    """
+    Collect all unique spoken Japanese clips across:
+      - data/verbs_top200.js (200 verbs + 10 forms + 5 derived patterns + 400 daily examples)
+      - data/grammar_n5_n3.js (258 daily examples + 96 quiz complete sentences)
+      - data/learning_extras.js (50 adjectives + 50 examples + 28 counters + 46 kana)
+    Returns:
+      unique_jobs: dict[tts_key -> (tts_text, voice, rel_path)]
+      lookup_map: dict[clean_lookup_key -> [rel_path, voice_code]]
+    """
+    unique_jobs = {}  # (tts_text, voice) -> rel_path
+    lookup_map = {}   # normalized_lookup_text -> [rel_path, "F"|"M"]
+
+    # Disambiguation overrides where isolated Kanji could be misread by TTS
+    TTS_OVERRIDES = {
+        "辛い": "からい",
+        "いい": "いい",
+        "好き": "すき",
+        "入る": "はいる",
+        "行く": "いく",
+    }
+
+    def register(lookup_keys, tts_text, voice):
+        tts_clean = clean_spoken_japanese(tts_text)
+        if not tts_clean:
+            return
+        # Gently separate middle-dot lists like げつ・か・すい for natural pauses
+        tts_spoken = tts_clean.replace("・", "、")
+        tts_spoken = TTS_OVERRIDES.get(tts_spoken, tts_spoken)
+
+        vcode = "M" if "Keita" in voice else "F"
+        h = hashlib.sha1(f"{vcode}:{tts_spoken}".encode("utf-8")).hexdigest()[:12]
+        bucket = h[0]
+        rel_path = f"audio/learn/{bucket}/{h}.mp3"
+
+        job_key = (tts_spoken, voice)
+        if job_key not in unique_jobs:
+            unique_jobs[job_key] = rel_path
+
+        for lk in lookup_keys:
+            ck = clean_spoken_japanese(lk)
+            if ck and ck not in lookup_map:
+                lookup_map[ck] = [unique_jobs[job_key], vcode]
+
+    # 1. Top 200 Verbs
+    verbs_path = DATA_DIR / "verbs_top200.js"
+    if verbs_path.exists():
+        verbs = parse_js_data(verbs_path)
+        for idx, v in enumerate(verbs):
+            # Base verb: crisp Nanami female voice
+            register([v["dict"], v["jp"]], v["dict"], "ja-JP-NanamiNeural")
+            # All 10 conjugated forms
+            for fk in ("masu", "te", "ta", "nai", "tai", "potential", "volitional", "ba", "passive", "causative"):
+                fobj = v["forms"].get(fk)
+                if fobj and fobj.get("jp") and not fobj["jp"].startswith("—"):
+                    register([fobj["jp"]], fobj["jp"], "ja-JP-NanamiNeural")
+            # 5 derived modal patterns
+            te_jp = v["forms"]["te"]["jp"]
+            nai_jp = v["forms"]["nai"]["jp"]
+            nai_stem = nai_jp[:-1] if nai_jp.endswith("ない") else nai_jp
+            derived_voice = "ja-JP-KeitaNeural" if idx % 2 == 1 else "ja-JP-NanamiNeural"
+            for dp in (
+                f"{te_jp}います",
+                f"{te_jp}ください",
+                f"{te_jp}もいいですか？",
+                f"{nai_stem}ければなりません",
+                f"{te_jp}みます",
+            ):
+                register([dp], dp, derived_voice)
+            # 2 daily example sentences (alternate Nanami & Keita so examples feel lively)
+            for ex_idx, ex in enumerate(v.get("examples", [])):
+                ex_voice = "ja-JP-NanamiNeural" if (idx + ex_idx) % 2 == 0 else "ja-JP-KeitaNeural"
+                register([ex["jp"]], ex["jp"], ex_voice)
+
+    # 2. Grammar N5-N3
+    grammar_path = DATA_DIR / "grammar_n5_n3.js"
+    if grammar_path.exists():
+        grammar = parse_js_data(grammar_path)
+        for idx, g in enumerate(grammar):
+            for ex_idx, ex in enumerate(g.get("dailyExamples", [])):
+                ex_voice = "ja-JP-KeitaNeural" if (idx + ex_idx) % 2 == 1 else "ja-JP-NanamiNeural"
+                register([ex["jp"]], ex["jp"], ex_voice)
+            q = g.get("quiz")
+            if q and q.get("promptJp") and q.get("answer"):
+                full_q = q["promptJp"].replace("＿＿", q["answer"])
+                q_voice = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"
+                register([full_q], full_q, q_voice)
+
+    # 3. Learning Extras (Adjectives 50, Counters/Time/Money, 50-On Kana)
+    extras_path = DATA_DIR / "learning_extras.js"
+    if extras_path.exists():
+        extras = parse_js_data(extras_path)
+        for idx, a in enumerate(extras.get("adjectives", [])):
+            # Register both cleaned kanji form and kana form
+            adj_kanji = clean_spoken_japanese(a["jp"])
+            tts_src = a["kana"] if adj_kanji in ("辛い", "いい", "好き") else adj_kanji
+            register([adj_kanji, a["jp"], a["kana"]], tts_src, "ja-JP-NanamiNeural")
+            ex_voice = "ja-JP-KeitaNeural" if idx % 2 == 1 else "ja-JP-NanamiNeural"
+            register([a["ex"]], a["ex"], ex_voice)
+
+        for grp in extras.get("counters", []):
+            for it in grp.get("items", []):
+                register([it["kana"], it["jp"]], it["kana"], "ja-JP-NanamiNeural")
+
+        for row in extras.get("kanaRows", []):
+            for cell in row.get("cells", []):
+                hira = cell[0] if cell else ""
+                if hira:
+                    register([hira], hira, "ja-JP-NanamiNeural")
+
+    return unique_jobs, lookup_map
+
+
+async def generate_batch(jobs, concurrency=12):
+    """
+    jobs: list of (out_path: Path, text: str, voice: str, pitch: str, rate: str, label: str)
+    """
+    sem = asyncio.Semaphore(concurrency)
+    pending = [j for j in jobs if not (j[0].exists() and j[0].stat().st_size > 400)]
+    total_pending = len(pending)
+    if total_pending == 0:
+        print("All target MP3 files already exist on disk!")
+        return 0
+
+    print(f"Generating {total_pending} missing neural MP3 clips (concurrency={concurrency})...")
+    done = 0
+    failed = 0
+
+    async def gen_one(out_file: Path, text: str, voice: str, pitch: str, rate: str, label: str):
+        nonlocal done, failed
+        out_file.parent.mkdir(parents=True, exist_ok=True)
+        async with sem:
+            for attempt in range(5):
+                try:
+                    comm = edge_tts.Communicate(text=text, voice=voice, pitch=pitch, rate=rate)
+                    await comm.save(str(out_file))
+                    if out_file.exists() and out_file.stat().st_size > 400:
+                        done += 1
+                        if done % 200 == 0 or done == total_pending:
+                            print(f"  Progress: {done}/{total_pending} generated (failed={failed})")
+                        return
+                except Exception as e:
+                    if attempt == 4:
+                        failed += 1
+                        print(f"  FAILED [{label}] ({text}): {e}")
+                    await asyncio.sleep(0.8 * (attempt + 1))
+
+    await asyncio.gather(*(gen_one(*j) for j in pending))
+    return failed
+
+
 async def main():
+    # =========================================================================
+    # PART 1: Original 18 Phrasebook Modules + 7 Taxi Cards
+    # =========================================================================
     mods = []
     for fname in ["modules_1_to_6.js", "modules_7_to_12.js", "modules_13_to_18.js"]:
-        mods.extend(parse_js_modules(DATA_DIR / fname))
+        mods.extend(parse_js_data(DATA_DIR / fname))
 
-    tasks_info = []  # (key, spoken_text, voice, pitch, rate, filename)
+    phrase_jobs = []
+    manifest = {}
 
     for m in mods:
         for sec in m.get("sections", []):
@@ -101,14 +274,25 @@ async def main():
                 iid = item["id"]
                 spoken = clean_spoken_japanese(item["jp"])
                 voice, pitch, rate = choose_voice_and_pitch(item_id=iid)
-                tasks_info.append((iid, spoken, voice, pitch, rate, f"{iid}.mp3"))
+                fname = f"{iid}.mp3"
+                manifest[iid] = {
+                    "file": f"audio/{fname}",
+                    "spoken": spoken,
+                    "voice": "👨 男声 (Keita)" if "Keita" in voice else ("👧 童声 (Jinny)" if pitch != "+0Hz" else "👩 女声 (Nanami)")
+                }
+                phrase_jobs.append((AUDIO_DIR / fname, spoken, voice, pitch, rate, iid))
 
                 for r_idx, rep in enumerate(item.get("replies", [])):
                     rid = f"{iid}-rep-{r_idx}"
                     r_spoken = clean_spoken_japanese(rep["jp"])
-                    # Counterparty replies use opposite voice for contrast
                     r_voice = "ja-JP-NanamiNeural" if voice == "ja-JP-KeitaNeural" else "ja-JP-KeitaNeural"
-                    tasks_info.append((rid, r_spoken, r_voice, "+0Hz", "+0%", f"{rid}.mp3"))
+                    rfname = f"{rid}.mp3"
+                    manifest[rid] = {
+                        "file": f"audio/{rfname}",
+                        "spoken": r_spoken,
+                        "voice": "👨 男声 (Keita)" if "Keita" in r_voice else "👩 女声 (Nanami)"
+                    }
+                    phrase_jobs.append((AUDIO_DIR / rfname, r_spoken, r_voice, "+0Hz", "+0%", rid))
 
         for dlg in m.get("dialogues", []):
             did = dlg["id"]
@@ -118,47 +302,66 @@ async def main():
                 voice, pitch, rate = choose_voice_and_pitch(
                     speaker=turn.get("speaker", "us"),
                     speaker_name=turn.get("speakerName", ""),
-                    item_id=tid
+                    item_id=tid,
                 )
-                tasks_info.append((tid, t_spoken, voice, pitch, rate, f"{tid}.mp3"))
+                tfname = f"{tid}.mp3"
+                manifest[tid] = {
+                    "file": f"audio/{tfname}",
+                    "spoken": t_spoken,
+                    "voice": "👨 男声 (Keita)" if "Keita" in voice else ("👧 童声 (Jinny)" if pitch != "+0Hz" else "👩 女声 (Nanami)")
+                }
+                phrase_jobs.append((AUDIO_DIR / tfname, t_spoken, voice, pitch, rate, tid))
 
-    # Also add the 7 hotel taxi driver audio clips!
     itin_text = (DATA_DIR / "itinerary.js").read_text(encoding="utf-8")
     taxi_matches = re.findall(r'taxiDriverText:\s*"([^"]+)"', itin_text)
     for idx, t_text in enumerate(taxi_matches):
         tid = f"taxi-{idx}"
-        tasks_info.append((tid, clean_spoken_japanese(t_text), "ja-JP-KeitaNeural", "+0Hz", "+0%", f"{tid}.mp3"))
-
-    print(f"Total neural audio clips to generate: {len(tasks_info)}")
-
-    sem = asyncio.Semaphore(10)
-    manifest = {}
-
-    async def gen_one(key, text, voice, pitch, rate, fname):
-        out_file = AUDIO_DIR / fname
-        manifest[key] = {
-            "file": f"audio/{fname}",
-            "spoken": text,
-            "voice": "👨 男声 (Keita)" if "Keita" in voice else ("👧 童声 (Jinny)" if pitch != "+0Hz" else "👩 女声 (Nanami)")
+        spoken = clean_spoken_japanese(t_text)
+        tfname = f"{tid}.mp3"
+        manifest[tid] = {
+            "file": f"audio/{tfname}",
+            "spoken": spoken,
+            "voice": "👨 男声 (Keita)"
         }
-        if out_file.exists() and out_file.stat().st_size > 500:
-            return
-        async with sem:
-            for attempt in range(3):
-                try:
-                    comm = edge_tts.Communicate(text=text, voice=voice, pitch=pitch, rate=rate)
-                    await comm.save(str(out_file))
-                    break
-                except Exception as e:
-                    if attempt == 2:
-                        print(f"Failed {key}: {e}")
-                    await asyncio.sleep(0.6)
+        phrase_jobs.append((AUDIO_DIR / tfname, spoken, "ja-JP-KeitaNeural", "+0Hz", "+0%", tid))
 
-    await asyncio.gather(*(gen_one(*info) for info in tasks_info))
+    print(f"Phrasebook clips: {len(phrase_jobs)}")
+    fail1 = await generate_batch(phrase_jobs, concurrency=10)
 
-    manifest_js = "// Auto-generated Neural Audio Manifest (ja-JP-NanamiNeural & ja-JP-KeitaNeural)\nwindow.AUDIO_MANIFEST = " + json.dumps(manifest, ensure_ascii=False, indent=2) + ";\n"
+    manifest_js = (
+        "// Auto-generated Neural Audio Manifest (ja-JP-NanamiNeural & ja-JP-KeitaNeural)\n"
+        "window.AUDIO_MANIFEST = " + json.dumps(manifest, ensure_ascii=False, indent=2) + ";\n"
+    )
     (DATA_DIR / "audio_manifest.js").write_text(manifest_js, encoding="utf-8")
-    print(f"Successfully generated {len(manifest)} neural audio files and data/audio_manifest.js!")
+
+    # =========================================================================
+    # PART 2: Learning Hub Studio Neural Audio (Verbs 200, Grammar N5-N3, Toolbox)
+    # =========================================================================
+    unique_jobs, lookup_map = build_learning_tasks()
+    learn_jobs = [
+        (PROJECT_DIR / rel_path, tts_text, voice, "+0Hz", "+0%", rel_path)
+        for (tts_text, voice), rel_path in unique_jobs.items()
+    ]
+    print(f"Learning hub unique studio neural MP3 clips: {len(learn_jobs)} (lookup keys: {len(lookup_map)})")
+    fail2 = await generate_batch(learn_jobs, concurrency=14)
+
+    # Filter lookup_map to only entries whose file actually exists (>400 bytes)
+    valid_lookup = {
+        k: v for k, v in lookup_map.items()
+        if (PROJECT_DIR / v[0]).exists() and (PROJECT_DIR / v[0]).stat().st_size > 400
+    }
+    learn_manifest_js = (
+        "// Auto-generated Studio Neural Learning Audio Manifest (ja-JP-NanamiNeural & ja-JP-KeitaNeural)\n"
+        "// Format: { normalizedSpokenJapanese: [relativeMp3Path, 'F'|'M'] }\n"
+        "window.LEARNING_AUDIO_MANIFEST = " + json.dumps(valid_lookup, ensure_ascii=False, separators=(",", ":")) + ";\n"
+    )
+    (DATA_DIR / "audio_learning_manifest.js").write_text(learn_manifest_js, encoding="utf-8")
+
+    total_bytes = sum(f.stat().st_size for f in LEARN_AUDIO_DIR.rglob("*.mp3"))
+    print(
+        f"Done! Phrasebook={len(manifest)} clips (failed={fail1}) | "
+        f"Learning={len(valid_lookup)} keys / {len(learn_jobs)} MP3s ({total_bytes / 1024 / 1024:.2f} MB, failed={fail2})"
+    )
 
 
 if __name__ == "__main__":

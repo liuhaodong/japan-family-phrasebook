@@ -8,6 +8,15 @@
   ];
   const ITINERARY = window.TRIP_ITINERARY;
   const AUDIO_MANIFEST = window.AUDIO_MANIFEST || {};
+  const LEARNING_AUDIO_MANIFEST = window.LEARNING_AUDIO_MANIFEST || {};
+
+  // Build reverse index from spoken Japanese text -> neural MP3 for seamless playback across all tabs
+  const PHRASE_SPOKEN_INDEX = {};
+  Object.values(AUDIO_MANIFEST).forEach((entry) => {
+    if (entry && entry.spoken && entry.file && !PHRASE_SPOKEN_INDEX[entry.spoken]) {
+      PHRASE_SPOKEN_INDEX[entry.spoken] = entry.file;
+    }
+  });
 
   // Load persisted UI preferences
   const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
@@ -133,19 +142,21 @@
     );
   }
 
-  // Clean display Japanese into pure spoken Japanese (for copying & fallback TTS)
+  // Clean display Japanese into pure spoken Japanese (matches scripts/generate_neural_audio.py 1-to-1)
   function stripFurigana(text) {
     if (!text) return "";
     if (text.includes("【洗衣机】")) {
       return "洗濯、洗濯乾燥、洗剤自動投入。ふろ自動、追いだき。暖房、加湿。";
     }
-    return text
+    return String(text)
       .replace(/【[^】]*】/g, "")
       .replace(/→/g, "。 ")
       .replace(/［[^］]*］/g, "")
       .replace(/（※[^）]*）/g, "")
+      .replace(/\(※[^\)]*\)/g, "")
       .replace(/（[\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+）/g, "")
-      .replace(/\s*／\s*/g, "。 ")
+      .replace(/\([\u3040-\u309F\u30A0-\u30FFー・〜0-9０-９a-zA-Z\s/／]+\)/g, "")
+      .replace(/\s*[/／]\s*/g, "。 ")
       .replace(/〇〇/g, "まるまる")
       .replace(/。+/g, "。")
       .replace(/\s+/g, " ")
@@ -225,10 +236,11 @@
     if (!("speechSynthesis" in window)) return;
     const voices = window.speechSynthesis.getVoices();
     const jaVoices = voices.filter((v) => v.lang && (v.lang === "ja-JP" || v.lang.startsWith("ja")));
-    // Prefer Google 日本語 or Enhanced/Premium Apple voices over compact robotic voices
+    // Strictly prefer neural / online / enhanced voices over compact robotic OS voices
     jpVoice =
-      jaVoices.find((v) => /Google|Enhanced|Premium|Natural|Siri/i.test(v.name)) ||
-      jaVoices.find((v) => /Kyoko|Otoya|O-Ren|Haruka/i.test(v.name)) ||
+      jaVoices.find((v) => /Nanami|Keita|Online.*Natural|Natural/i.test(v.name)) ||
+      jaVoices.find((v) => /Google|Enhanced|Premium|Siri/i.test(v.name)) ||
+      jaVoices.find((v) => /O-Ren|Kyoko|Otoya/i.test(v.name)) ||
       jaVoices[0] ||
       null;
   }
@@ -246,20 +258,37 @@
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
-    document.querySelectorAll(".action-btn.speaking, .icon-btn.speaking").forEach((b) => b.classList.remove("speaking"));
+    document
+      .querySelectorAll(".speaking")
+      .forEach((b) => b.classList.remove("speaking"));
+  }
+
+  function resolveNeuralAudioFile(rawJpText, audioKey = null) {
+    // 1. Explicit phrasebook key (if user didn't edit the JP text)
+    if (audioKey && !state.edits[audioKey] && AUDIO_MANIFEST[audioKey] && AUDIO_MANIFEST[audioKey].file) {
+      return AUDIO_MANIFEST[audioKey].file;
+    }
+    // 2. Content-addressed Studio Neural Learning Manifest (Verbs 200, Conjugations, Grammar N5-N3, Toolbox)
+    const cleanSpoken = stripFurigana(rawJpText);
+    if (cleanSpoken) {
+      const learnHit = LEARNING_AUDIO_MANIFEST[cleanSpoken];
+      if (learnHit) return Array.isArray(learnHit) ? learnHit[0] : learnHit;
+      // 3. Reverse index across Phrasebook Studio Neural MP3s
+      if (PHRASE_SPOKEN_INDEX[cleanSpoken]) return PHRASE_SPOKEN_INDEX[cleanSpoken];
+    }
+    return null;
   }
 
   function speakJapanese(rawJpText, rate = 1.0, btnEl = null, onEndCallback = null, audioKey = null) {
     stopAllAudio();
 
-    // Check if we have a pre-generated Studio Neural MP3 (and item wasn't custom-edited in JP text)
-    const manifestEntry = audioKey && !state.edits[audioKey] ? AUDIO_MANIFEST[audioKey] : null;
+    const neuralFile = resolveNeuralAudioFile(rawJpText, audioKey);
 
-    if (manifestEntry && manifestEntry.file) {
+    if (neuralFile) {
       if (btnEl) btnEl.classList.add("speaking");
-      neuralAudioPlayer.src = manifestEntry.file;
-      // Preserve natural human pitch even when slowed down (0.78x is optimal for shadowing)
-      const targetRate = rate < 1.0 ? 0.78 : 1.0;
+      neuralAudioPlayer.src = neuralFile;
+      // 0.84x preserves clean natural human voice quality without pitch-shift warble
+      const targetRate = rate < 1.0 ? 0.84 : 1.0;
       neuralAudioPlayer.playbackRate = targetRate;
       neuralAudioPlayer.defaultPlaybackRate = targetRate;
       if ("preservesPitch" in neuralAudioPlayer) neuralAudioPlayer.preservesPitch = true;
@@ -272,7 +301,7 @@
       };
       neuralAudioPlayer.onerror = () => {
         if (btnEl) btnEl.classList.remove("speaking");
-        // Fallback to Web Speech API if offline and MP3 not cached yet
+        // Fallback to Web Speech API only if offline & MP3 not cached
         speakFallbackBrowserTTS(rawJpText, rate, btnEl, onEndCallback);
       };
 
