@@ -2022,6 +2022,46 @@
     return results.slice(0, 5);
   }
 
+  function isEndMoraSimilar(tM, tPrev, hM, hPrev) {
+    if (tM === hM) return true;
+    if (inSameSetGroup(tM, hM, EXACT_MORA_GROUPS)) return true;
+    if (isProlongingMora(tM, tPrev) && isProlongingMora(hM, hPrev)) return true;
+    if (inSameSetGroup(tM, hM, VOICING_GROUPS)) return true;
+    if (inSameSetGroup(tM, hM, CONSONANT_CONFUSION_GROUPS)) return true;
+    return false;
+  }
+
+  function hasTargetEndingMatch(targetMorae, heardMorae) {
+    if (!Array.isArray(targetMorae) || !Array.isArray(heardMorae) || targetMorae.length === 0 || heardMorae.length === 0) {
+      return false;
+    }
+    const k = Math.min(3, targetMorae.length);
+    const targetTail = targetMorae.slice(-k);
+    const tailWindow = heardMorae.slice(-Math.min(heardMorae.length, k + 2));
+    let hPos = 0;
+    let matches = 0;
+    let matchedTail2 = false;
+
+    for (let i = 0; i < k; i++) {
+      const tM = targetTail[i];
+      const tPrev = i > 0 ? targetTail[i - 1] : (targetMorae.length > k ? targetMorae[targetMorae.length - k - 1] : "");
+      for (let j = hPos; j < tailWindow.length; j++) {
+        const hM = tailWindow[j];
+        const hPrev = j > 0 ? tailWindow[j - 1] : "";
+        if (isEndMoraSimilar(tM, tPrev, hM, hPrev)) {
+          matches++;
+          if (i >= k - 2) matchedTail2 = true;
+          hPos = j + 1;
+          break;
+        }
+      }
+    }
+
+    if (k === 1) return matches >= 1;
+    if (k === 2) return matches >= 2;
+    return matches >= 2 && matchedTail2;
+  }
+
   function shouldAutoStopCapture({
     elapsedMs = 0,
     hasMeaningfulSpeech = false,
@@ -2029,21 +2069,29 @@
     asrQuietMs = 0,
     voiceQuietMs = 0,
     hasFinalComplete = false,
+    tailMatched = false,
+    browserSpeechActive = false,
     hasSR = true
   }) {
     if (!hasMeaningfulSpeech) {
-      return elapsedMs > 8000;
+      return elapsedMs > 10000;
     }
     if (!hasSR) {
-      return voiceQuietMs >= 1800;
+      return voiceQuietMs >= 2000;
     }
-    if (spokenRatio >= 0.88) {
-      return (hasFinalComplete && asrQuietMs >= 900) || voiceQuietMs >= 1000 || asrQuietMs >= 1650;
+    if (tailMatched && spokenRatio >= 0.78) {
+      if (!browserSpeechActive && voiceQuietMs >= 1200 && ((hasFinalComplete && asrQuietMs >= 900) || asrQuietMs >= 1050)) {
+        return true;
+      }
+      return asrQuietMs >= 2800;
     }
-    if (spokenRatio >= 0.60) {
-      return voiceQuietMs >= 1450 || asrQuietMs >= 2100;
+    if (spokenRatio >= 0.90) {
+      return (!browserSpeechActive && voiceQuietMs >= 2200 && asrQuietMs >= 2000) || asrQuietMs >= 4200;
     }
-    return voiceQuietMs >= 2500 || asrQuietMs >= 3200;
+    if (spokenRatio >= 0.55) {
+      return (!browserSpeechActive && voiceQuietMs >= 2800 && asrQuietMs >= 2600) || asrQuietMs >= 4800;
+    }
+    return (!browserSpeechActive && voiceQuietMs >= 3600 && asrQuietMs >= 3400) || asrQuietMs >= 5500;
   }
 
   // =========================================================================
@@ -2092,10 +2140,10 @@
     coachState.lastVoiceOrAsrMs = startNow;
     coachState.lastVoiceRmsMs = startNow;
     coachState.lastAsrChangeMs = startNow;
-    coachState.noiseFloor = 2.0;
+    coachState.noiseFloor = 1.2;
     coachState.elapsedSec = 0;
     coachState.statusText = SR
-      ? "🎙️ 请跟着朗读！说完停顿约 1 秒即自动评分"
+      ? "🎙️ 请从容读完！说完停顿约 1.2 秒即自动评分"
       : "🎙️ 正在录音（当前浏览器不支持自动转写，将进行节奏对比与录音回放）...";
 
     let finalized = false;
@@ -2108,10 +2156,11 @@
     let currentFinalSegments = [];
     let currentInterim = "";
     let srRestarts = 0;
-    const MAX_SR_RESTARTS = 6;
+    const MAX_SR_RESTARTS = 8;
     let burstCommitted = false;
     let lastDispSig = "";
     let hasFinalComplete = false;
+    let browserSpeechActive = false;
 
     function updateInterimDisplay() {
       const combined = buildCombinedHypotheses(committedSegments, currentFinalSegments, currentInterim);
@@ -2245,13 +2294,14 @@
       }
     }
 
-    // 2. Setup continuous Web SpeechRecognition (ja-JP, 5 alternatives, smart dedupe & auto-finish)
+    // 2. Setup continuous Web SpeechRecognition (ja-JP, 5 alternatives, smart dedupe & tail-aware auto-finish)
     function startRecognitionInstance() {
       if (!SR || mySession !== coachState.captureSessionId || stopping || coachState.phase !== "listening") {
         srDone = true;
         return;
       }
       burstCommitted = false;
+      browserSpeechActive = false;
       currentFinalSegments = [];
       currentInterim = "";
       try {
@@ -2260,6 +2310,18 @@
         rec.interimResults = true;
         rec.maxAlternatives = 5;
         rec.continuous = true;
+
+        rec.onspeechstart = () => {
+          if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = true;
+          const now = performance.now();
+          coachState.lastVoiceRmsMs = Math.max(coachState.lastVoiceRmsMs, now);
+        };
+
+        rec.onspeechend = () => {
+          if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = false;
+        };
 
         rec.onresult = (ev) => {
           if (mySession !== coachState.captureSessionId || finalized) return;
@@ -2297,6 +2359,7 @@
 
         rec.onerror = (ev) => {
           if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = false;
           const errCode = ev && ev.error;
           if (errCode === "not-allowed" || errCode === "service-not-allowed") {
             coachState.statusText = "⚠️ 麦克风权限被拒绝，请在浏览器地址栏允许使用麦克风。";
@@ -2312,12 +2375,14 @@
 
         rec.onend = () => {
           if (mySession !== coachState.captureSessionId || finalized) return;
+          browserSpeechActive = false;
           commitActiveAsrBurst();
           if (!stopping && coachState.phase === "listening") {
             const disp = coachState.asrHypotheses[0] || "";
-            const spokenMoraCount = disp ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)).length : 0;
-            const spokenRatio = spokenMoraCount / targetMoraLen;
-            if (!coachState.manualStop && spokenRatio >= 0.82) {
+            const spokenMorae = disp ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)) : [];
+            const spokenRatio = spokenMorae.length / targetMoraLen;
+            const tailMatched = hasTargetEndingMatch(targetInfo.targetMorae, spokenMorae);
+            if (!coachState.manualStop && tailMatched && spokenRatio >= 0.78 && (performance.now() - coachState.lastVoiceRmsMs >= 700)) {
               srDone = true;
               stopCaptureGracefully();
               return;
@@ -2373,10 +2438,10 @@
         (coachState.heardAnyVoice && coachState.speechOffsetMs - coachState.speechOnsetMs >= 320) ||
         disp.length >= 2;
 
-      const spokenMoraCount = disp
-        ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)).length
-        : Math.round(Math.max(0, coachState.speechOffsetMs - coachState.speechOnsetMs) / 170);
+      const spokenMorae = disp ? tokenizeMorae(toHiraganaReading(disp, targetInfo.localKanjiMap)) : [];
+      const spokenMoraCount = spokenMorae.length || Math.round(Math.max(0, coachState.speechOffsetMs - coachState.speechOnsetMs) / 170);
       const spokenRatio = spokenMoraCount / targetMoraLen;
+      const tailMatched = hasTargetEndingMatch(targetInfo.targetMorae, spokenMorae);
       const asrQuietMs = now - coachState.lastAsrChangeMs;
       const voiceQuietMs = now - Math.max(coachState.lastVoiceRmsMs, coachState.lastAsrChangeMs);
 
@@ -2388,6 +2453,8 @@
           asrQuietMs,
           voiceQuietMs,
           hasFinalComplete,
+          tailMatched,
+          browserSpeechActive,
           hasSR: Boolean(SR)
         })
       ) {
@@ -2411,7 +2478,7 @@
     if (!analyser || (coachState.phase !== "listening" && coachState.ftPhase !== "listening")) return;
 
     coachState.vadStartMs = performance.now();
-    coachState.noiseFloor = 2.0;
+    coachState.noiseFloor = 1.2;
     const freqData = new Uint8Array(analyser.frequencyBinCount);
     const timeData = new Uint8Array(analyser.fftSize);
 
@@ -2432,7 +2499,7 @@
       if (now - coachState.vadStartMs < 220) {
         coachState.noiseFloor = coachState.noiseFloor * 0.6 + rms * 0.4;
       } else {
-        const voiceThreshold = Math.max(4.5, coachState.noiseFloor * 2.6);
+        const voiceThreshold = Math.max(2.2, coachState.noiseFloor * 2.0 + 0.6);
         if (rms > voiceThreshold) {
           if (!coachState.heardAnyVoice) {
             coachState.heardAnyVoice = true;
@@ -2441,8 +2508,10 @@
           coachState.speechOffsetMs = now;
           coachState.lastVoiceRmsMs = now;
           coachState.lastVoiceOrAsrMs = now;
-        } else {
-          coachState.noiseFloor = coachState.noiseFloor * 0.96 + rms * 0.04;
+        } else if (rms < coachState.noiseFloor) {
+          coachState.noiseFloor = coachState.noiseFloor * 0.92 + rms * 0.08;
+        } else if (rms < coachState.noiseFloor * 1.3) {
+          coachState.noiseFloor = Math.min(6.0, coachState.noiseFloor * 0.995 + rms * 0.005);
         }
       }
 
@@ -2456,7 +2525,7 @@
         const step = Math.max(1, Math.floor(freqData.length / bars));
         const barW = Math.floor((w - (bars - 1) * 3) / bars);
         const isDark = document.body.classList.contains("dark-mode");
-        const activeThresh = Math.max(4.5, coachState.noiseFloor * 2.6);
+        const activeThresh = Math.max(2.2, coachState.noiseFloor * 2.0 + 0.6);
         for (let b = 0; b < bars; b++) {
           const val = freqData[Math.min(freqData.length - 1, b * step)] / 255;
           const barH = Math.max(4, Math.round(val * (h - 6)));
@@ -2988,7 +3057,7 @@
     coachState.lastVoiceOrAsrMs = startNow;
     coachState.lastVoiceRmsMs = startNow;
     coachState.lastAsrChangeMs = startNow;
-    coachState.noiseFloor = 2.0;
+    coachState.noiseFloor = 1.2;
     coachState.elapsedSec = 0;
     coachState.asrHypotheses = [];
 
@@ -3004,6 +3073,7 @@
     let srRestarts = 0;
     let burstCommitted = false;
     let lastDispSig = "";
+    let browserSpeechActive = false;
 
     function updateFtInterim() {
       const combined = buildCombinedHypotheses(committedSegments, currentFinalSegments, currentInterim);
@@ -3134,6 +3204,7 @@
         return;
       }
       burstCommitted = false;
+      browserSpeechActive = false;
       currentFinalSegments = [];
       currentInterim = "";
       try {
@@ -3142,6 +3213,16 @@
         rec.interimResults = true;
         rec.maxAlternatives = 3;
         rec.continuous = true;
+        rec.onspeechstart = () => {
+          if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = true;
+          const now = performance.now();
+          coachState.lastVoiceRmsMs = Math.max(coachState.lastVoiceRmsMs, now);
+        };
+        rec.onspeechend = () => {
+          if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = false;
+        };
         rec.onresult = (ev) => {
           if (mySession !== coachState.captureSessionId || finalized) return;
           const newFinals = [];
@@ -3171,6 +3252,7 @@
         };
         rec.onerror = (ev) => {
           if (mySession !== coachState.captureSessionId) return;
+          browserSpeechActive = false;
           const errCode = ev && ev.error;
           if (errCode === "not-allowed" || errCode === "service-not-allowed") {
             srDone = true;
@@ -3182,14 +3264,15 @@
         };
         rec.onend = () => {
           if (mySession !== coachState.captureSessionId || finalized) return;
+          browserSpeechActive = false;
           commitFtBurst();
           if (!stopping && coachState.ftPhase === "listening") {
-            if (!coachState.manualStop && coachState.ftHeard.length >= 4) {
+            if (!coachState.manualStop && coachState.ftHeard.length >= 6 && (performance.now() - coachState.lastVoiceRmsMs >= 1000)) {
               srDone = true;
               stopFtGracefully();
               return;
             }
-            if (srRestarts < 4) {
+            if (srRestarts < 6) {
               srRestarts++;
               setTimeout(() => {
                 if (mySession !== coachState.captureSessionId) return;
@@ -3228,12 +3311,12 @@
       if (coachState.manualStop) return;
       const hasSpoken = coachState.heardAnyVoice || coachState.ftHeard.length >= 2;
       if (!hasSpoken) {
-        if (now - coachState.recStartMs > 8500) stopFtGracefully();
+        if (now - coachState.recStartMs > 10000) stopFtGracefully();
         return;
       }
       const asrQuietMs = now - coachState.lastAsrChangeMs;
       const voiceQuietMs = now - Math.max(coachState.lastVoiceRmsMs, coachState.lastAsrChangeMs);
-      if (voiceQuietMs >= 1600 || asrQuietMs >= 2400) {
+      if ((!browserSpeechActive && voiceQuietMs >= 2000 && asrQuietMs >= 1600) || asrQuietMs >= 3600) {
         stopFtGracefully();
       }
     }, 120);
@@ -4859,6 +4942,7 @@
     _testEvaluate,
     _testCombineHypotheses,
     _testShouldAutoStop: shouldAutoStopCapture,
+    _testTailMatch: hasTargetEndingMatch,
     _testPitchContour,
     _testWeaknessProfile,
     _testDeckInfo,
