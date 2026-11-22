@@ -3,35 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
-  <title>日本家庭35晚长假 · 行程地图 & 全方位日语学习手册 (2026.12.5 – 2027.1.10)</title>
-  <meta name="description" content="刘浩东、滕帅帅 (Sherry)、Jinny (6岁半)、Jaycie (2岁半) 35晚日本家庭旅行可视化行程地图、双人对话手册、高频200动词、N5-N3核心语法与交互式闪卡练习 Web App" />
+  <title>日本家庭35晚长假 · N5–N3 日语学习手册 & 行程地图</title>
+  <meta name="description" content="JLPT N5核心词汇250+75形容词、高频300自他成对动词、N5–N3核心语法132条、实战SRS闪卡/盲听/自他助词测验、双人情景对话与日本35晚行程地图 Web App" />
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=8" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=8" />
-  <link rel="stylesheet" href="styles.css?v=8" />
+  <link rel="manifest" href="manifest.json?v=9" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=9" />
+  <link rel="stylesheet" href="styles.css?v=9" />
 </head>
 <body>
-  <!-- Compact Top Header -->
+  <!-- Compact Learning-First Top Header -->
   <header class="hero-header">
     <div class="hero-container">
       <div class="hero-top">
         <div class="hero-brand">
-          <h1 class="hero-title">🗾 日本家庭旅行 & 日语学习手册</h1>
-          <span class="streak-pill" id="header-streak-pill" title="每日学习打卡连胜与掌握进度">🔥 0天连学</span>
-          <button type="button" class="hero-info-toggle" id="btn-toggle-trip-info" title="展开/收起行程与家庭信息">
-            ℹ️ 家庭与行程 ▾
-          </button>
+          <h1 class="hero-title">🗾 日本旅行 · N5–N3 日语学习手册</h1>
+          <span class="streak-pill" id="header-streak-pill" title="点击进入实战练习 · 查看每日连胜进度">🔥 0天连学</span>
         </div>
 
         <div class="hero-actions">
-          <button type="button" class="btn-vault gold" id="btn-open-hotels">📍 7家酒店&打车卡</button>
-          <button type="button" class="btn-vault" id="btn-open-ginza">🥂 银座5场预约</button>
-          <button type="button" class="btn-vault" id="btn-open-toolbox">📘 速查表</button>
-          <button type="button" class="btn-vault" id="btn-add-phrase">➕ 新增句子</button>
-          <button type="button" class="btn-vault" id="btn-share-sync">📲 同步</button>
-          <button type="button" class="btn-vault" id="btn-filter-starred">⭐ 收藏</button>
+          <button type="button" class="btn-vault" id="btn-open-toolbox">📘 五十音·量词</button>
+
+          <div class="popover-anchor mobile-display-trigger">
+            <button type="button" class="btn-vault" id="btn-display-popover" aria-expanded="false" aria-controls="display-popover" title="显示与夜览设置">Aa</button>
+            <div class="header-popover" id="display-popover" hidden>
+              <div class="popover-title">显示设置</div>
+              <div class="popover-toggle-list">
+                <button type="button" class="toggle-chip active" data-pref-toggle="showFurigana" aria-pressed="true">あ 汉字假名注音</button>
+                <button type="button" class="toggle-chip active" data-pref-toggle="showRomaji" aria-pressed="true">A 罗马音拼读</button>
+                <button type="button" class="toggle-chip active" data-pref-toggle="showCn" aria-pressed="true">中 显示中文释义</button>
+                <button type="button" class="toggle-chip" data-pref-toggle="darkMode" aria-pressed="false">🌙 夜间护眼模式</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="popover-anchor">
+            <button type="button" class="btn-vault" id="btn-more-menu" aria-expanded="false" aria-controls="more-actions-popover">⋯ 工具</button>
+            <div class="header-popover" id="more-actions-popover" hidden>
+              <button type="button" class="popover-menu-item" id="btn-open-hotels">📍 7家酒店地址与打车卡</button>
+              <button type="button" class="popover-menu-item" id="btn-open-ginza">🥂 银座5场周年午餐预约</button>
+              <button type="button" class="popover-menu-item" id="btn-add-phrase">➕ 新增自定义日语句子</button>
+              <button type="button" class="popover-menu-item" id="btn-share-sync">📲 夫妻同步与离线备份</button>
+              <button type="button" class="popover-menu-item" id="btn-filter-starred">⭐ 只看场景收藏句</button>
+              <button type="button" class="popover-menu-item" id="btn-toggle-trip-info">ℹ️ 展开/收起家庭行程简介</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -53,36 +70,36 @@
   <!-- Compact Sticky Filter & Mode Switcher Deck -->
   <section class="sticky-controls" id="sticky-controls" aria-label="主模式切换与筛选工具栏">
     <div class="controls-inner">
-      <!-- Top Row: 5 Primary Mode Switcher Tabs + Global Display Mini-Toggles -->
+      <!-- Top Row: 5 Learning-First Mode Tabs + Desktop Display Mini-Toggles -->
       <div class="mode-and-search-row">
         <div class="app-mode-switcher" role="tablist" aria-label="切换主要功能模块">
-          <button type="button" class="mode-tab active" id="mode-btn-itinerary" data-appmode="itinerary" role="tab">
-            📅 行程地图
+          <button type="button" class="mode-tab active" id="mode-btn-verbs" data-appmode="verbs" role="tab" aria-selected="true">
+            📚 词汇·动词
           </button>
-          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook" role="tab">
-            🗣️ 场景日语
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-verbs" data-appmode="verbs" role="tab">
-            ⚡ 动词200
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-grammar" data-appmode="grammar" role="tab">
+          <button type="button" class="mode-tab" id="mode-btn-grammar" data-appmode="grammar" role="tab" aria-selected="false">
             📖 语法 N5–N3
           </button>
-          <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab">
+          <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab" aria-selected="false">
             🎯 实战练习
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook" role="tab" aria-selected="false">
+            🗣️ 场景对话
+          </button>
+          <button type="button" class="mode-tab" id="mode-btn-itinerary" data-appmode="itinerary" role="tab" aria-selected="false">
+            📅 行程地图
           </button>
         </div>
 
-        <!-- Global Learning Display Chips (Always accessible on desktop & compact on mobile) -->
+        <!-- Desktop Global Display Chips -->
         <div class="global-display-bar" id="global-display-bar">
-          <button type="button" class="toggle-chip active" id="toggle-furigana" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
-          <button type="button" class="toggle-chip active" id="toggle-romaji" title="显示或隐藏罗马音拼音">A 罗马音</button>
-          <button type="button" class="toggle-chip active" id="toggle-cn" title="隐藏中文意思进行背诵自测">中 释义</button>
-          <button type="button" class="toggle-chip" id="toggle-dark" title="切换深色/浅色模式">🌙 夜览</button>
+          <button type="button" class="toggle-chip active" data-pref-toggle="showFurigana" aria-pressed="true" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
+          <button type="button" class="toggle-chip active" data-pref-toggle="showRomaji" aria-pressed="true" title="显示或隐藏罗马音拼音">A 罗马音</button>
+          <button type="button" class="toggle-chip active" data-pref-toggle="showCn" aria-pressed="true" title="隐藏中文意思进行背诵自测">中 释义</button>
+          <button type="button" class="toggle-chip" data-pref-toggle="darkMode" aria-pressed="false" title="切换深色/浅色模式">🌙 夜览</button>
         </div>
       </div>
 
-      <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button (Visible in Phrasebook mode) -->
+      <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button -->
       <div class="search-and-drawer-row" id="phrasebook-toolbar-row" style="display:none;">
         <div class="search-box">
           <span class="search-icon">🔍</span>
@@ -95,16 +112,16 @@
         </div>
 
         <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
-          <option value="">📑 跳至模块...</option>
+          <option value="">📑 目录...</option>
         </select>
 
-        <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起显示设置与筛选">
+        <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起筛选选项">
           ⚙️ 筛选
         </button>
       </div>
 
-      <!-- Row 2: Slim Horizontal Trip Leg Bar (Visible in Itinerary & Phrasebook modes) -->
-      <div class="leg-tabs" id="leg-tabs-container"></div>
+      <!-- Slim Horizontal Trip Leg Bar (Visible in Itinerary & Phrasebook modes) -->
+      <div class="leg-tabs scroll-fade-x" id="leg-tabs-container"></div>
 
       <!-- Collapsible Toggles Drawer (For Phrasebook mode) -->
       <div class="toolbar-collapsible" id="toolbar-collapsible" style="display:none;">
@@ -123,9 +140,42 @@
   </section>
 
   <!-- =================================================================== -->
-  <!-- VIEW 1: VISUAL ITINERARY & INTERACTIVE MAP VIEW                     -->
+  <!-- VIEW 1 (DEFAULT): VOCABULARY & TOP 300 VERBS HUB                    -->
   <!-- =================================================================== -->
-  <section id="itinerary-view-container" class="itinerary-view-wrapper">
+  <section id="verbs-view-container" class="learning-view-wrapper"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 2: JAPANESE GRAMMAR GUIDE (N5 / N4 / N3 — 132 PATTERNS)        -->
+  <!-- =================================================================== -->
+  <section id="grammar-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 3: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
+  <!-- =================================================================== -->
+  <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 4: 18-MODULE PHRASEBOOK & ROLEPLAY DIALOGUES                   -->
+  <!-- =================================================================== -->
+  <main class="app-layout" id="phrasebook-view-container" style="display:none;">
+    <aside class="module-sidebar" aria-label="18大模块目录">
+      <div class="sidebar-header">
+        <span>📑 18大场景目录</span>
+        <span id="sidebar-total-stats">已背熟 0 / 0 句</span>
+      </div>
+      <ul class="sidebar-list" id="sidebar-module-list"></ul>
+    </aside>
+
+    <div class="main-content-column" style="min-width:0;">
+      <div class="leg-context-banner" id="leg-context-banner"></div>
+      <div id="modules-main-container"></div>
+    </div>
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 5: VISUAL ITINERARY & INTERACTIVE MAP VIEW                     -->
+  <!-- =================================================================== -->
+  <section id="itinerary-view-container" class="itinerary-view-wrapper" style="display:none;">
     <!-- 1. Trip KPI Overview Strip -->
     <div class="itin-kpi-strip" id="itin-kpi-strip"></div>
 
@@ -134,7 +184,7 @@
       <div class="itin-map-header">
         <div>
           <h2 class="itin-section-title">🗺️ 35晚全行程互动地图 (酒店 · 机场车站 · 银座5场纪念日午餐)</h2>
-          <p class="itin-section-sub">点击上方行程阶段 (Leg 1–6) 或下方区域按钮，地图自动飞行聚焦并展示路线；右上角可自由切换双语街道 / 日本国土地理院 / 卫星实景图层</p>
+          <p class="itin-section-sub">点击上方阶段或下方区域按钮，地图自动聚焦路线；地图右上角可切换双语街道 / 日本国土地理院 / 卫星实景图层</p>
         </div>
         <div class="map-controls-stack">
           <div class="map-region-pills" id="map-region-pills">
@@ -144,16 +194,18 @@
             <button type="button" class="map-pill" data-mapregion="karuizawa">⛷️ 轻井泽滑雪</button>
             <button type="button" class="map-pill" data-mapregion="kyushu">♨️ 福冈 & 由布院</button>
           </div>
-          <div class="map-layer-pills" id="map-layer-pills" aria-label="切换地图底图图层">
-            <button type="button" class="map-layer-pill active" data-maplayer="esri_street">🗺️ 双语街道</button>
-            <button type="button" class="map-layer-pill" data-maplayer="gsi_pale">🇯🇵 日本国土地理院</button>
-            <button type="button" class="map-layer-pill" data-maplayer="esri_sat">🛰️ 卫星实景</button>
-          </div>
         </div>
       </div>
 
       <div class="itin-map-grid">
-        <div id="trip-leaflet-map" class="trip-leaflet-map" aria-label="日本旅行互动地图"></div>
+        <div class="map-canvas-wrap">
+          <div id="trip-leaflet-map" class="trip-leaflet-map" aria-label="日本旅行互动地图"></div>
+          <div class="map-layer-overlay" id="map-layer-pills" aria-label="切换地图底图图层">
+            <button type="button" class="map-layer-pill active" data-maplayer="esri_street">🗺️ 街道</button>
+            <button type="button" class="map-layer-pill" data-maplayer="gsi_pale">🇯🇵 地理院</button>
+            <button type="button" class="map-layer-pill" data-maplayer="esri_sat">🛰️ 卫星</button>
+          </div>
+        </div>
         <div class="map-pin-list" id="map-pin-list"></div>
       </div>
     </div>
@@ -161,8 +213,11 @@
     <!-- 3. 36-Day Visual Calendar Strip (Dec 5, 2026 – Jan 10, 2027) -->
     <div class="itin-card-block">
       <div class="itin-block-header">
-        <h2 class="itin-section-title">📆 36天全周期日历总览 (2026.12.5 – 2027.1.10)</h2>
-        <span class="itin-section-sub">点击任意日期可快速跳转至对应阶段详情</span>
+        <div>
+          <h2 class="itin-section-title">📆 36天全周期日历总览 (2026.12.5 – 2027.1.10)</h2>
+          <span class="itin-section-sub">点击任意日期可快速跳转至对应阶段详情</span>
+        </div>
+        <div id="itin-today-action"></div>
       </div>
       <div class="calendar-strip-grid" id="itin-calendar-grid"></div>
     </div>
@@ -205,45 +260,37 @@
     </div>
   </section>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 2: 18-MODULE PHRASEBOOK & ROLEPLAY DIALOGUES                   -->
-  <!-- =================================================================== -->
-  <main class="app-layout" id="phrasebook-view-container" style="display:none;">
-    <!-- Left Sidebar: 18 Modules Directory & Progress (Desktop only; mobile uses top dropdown) -->
-    <aside class="module-sidebar" aria-label="18大模块目录">
-      <div class="sidebar-header">
-        <span>📑 18大场景目录</span>
-        <span id="sidebar-total-stats">已背熟 0 / 0 句</span>
-      </div>
-      <ul class="sidebar-list" id="sidebar-module-list"></ul>
-    </aside>
+  <!-- Floating Dialogue Now-Playing Bar -->
+  <div class="dialogue-now-playing" id="dialogue-now-playing" style="display:none;"></div>
 
-    <!-- Right Content: Modules, Phrases & Roleplay Dialogues -->
-    <div class="main-content-column" style="min-width:0;">
-      <div class="leg-context-banner" id="leg-context-banner"></div>
-      <div id="modules-main-container"></div>
-    </div>
-  </main>
+  <!-- Fixed Mobile Bottom Tab Navigation (<= 768px) -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" role="tablist" aria-label="移动端主导航">
+    <button type="button" class="mnav-btn active" data-appmode="verbs" role="tab" aria-selected="true">
+      <span class="mnav-ico">📚</span>
+      <span class="mnav-lbl">词汇·动词</span>
+    </button>
+    <button type="button" class="mnav-btn" data-appmode="grammar" role="tab" aria-selected="false">
+      <span class="mnav-ico">📖</span>
+      <span class="mnav-lbl">语法</span>
+    </button>
+    <button type="button" class="mnav-btn" data-appmode="practice" role="tab" aria-selected="false">
+      <span class="mnav-ico">🎯</span>
+      <span class="mnav-lbl">练习</span>
+    </button>
+    <button type="button" class="mnav-btn" data-appmode="phrasebook" role="tab" aria-selected="false">
+      <span class="mnav-ico">🗣️</span>
+      <span class="mnav-lbl">场景</span>
+    </button>
+    <button type="button" class="mnav-btn" data-appmode="itinerary" role="tab" aria-selected="false">
+      <span class="mnav-ico">📅</span>
+      <span class="mnav-lbl">行程</span>
+    </button>
+  </nav>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 3: TOP 200 HIGH-FREQUENCY JAPANESE VERBS & CONJUGATIONS        -->
-  <!-- =================================================================== -->
-  <section id="verbs-view-container" class="learning-view-wrapper" style="display:none;"></section>
-
-  <!-- =================================================================== -->
-  <!-- VIEW 4: JAPANESE GRAMMAR GUIDE (GROUPED BY N5 / N4 / N3)            -->
-  <!-- =================================================================== -->
-  <section id="grammar-view-container" class="learning-view-wrapper" style="display:none;"></section>
-
-  <!-- =================================================================== -->
-  <!-- VIEW 5: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
-  <!-- =================================================================== -->
-  <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
-
-  <!-- Fullscreen Modal ("Show to Staff", Vaults, Quick Reference Toolbox, Conjugation Details) -->
+  <!-- Modal (Quick Reference Toolbox, Conjugation Details, Hotels/Ginza Vaults, Editor, Sync) -->
   <div class="modal-overlay" id="app-modal" role="dialog" aria-modal="true">
     <div class="modal-card">
-      <button type="button" class="modal-close" id="modal-close-btn" title="关闭">✕</button>
+      <button type="button" class="modal-close" id="modal-close-btn" title="关闭 (Esc)">✕</button>
       <div id="modal-body-content"></div>
     </div>
   </div>
@@ -252,18 +299,18 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="vendor/leaflet/leaflet.js?v=8"></script>
-  <script src="data/itinerary.js?v=8"></script>
-  <script src="data/modules_1_to_6.js?v=8"></script>
-  <script src="data/modules_7_to_12.js?v=8"></script>
-  <script src="data/modules_13_to_18.js?v=8"></script>
-  <script src="data/audio_manifest.js?v=8"></script>
-  <script src="data/audio_learning_manifest.js?v=8"></script>
-  <script src="data/verbs_top200.js?v=8"></script>
-  <script src="data/grammar_n5_n3.js?v=8"></script>
-  <script src="data/learning_extras.js?v=8"></script>
-  <script src="app.js?v=8"></script>
-  <script src="learning.js?v=8"></script>
+  <script src="vendor/leaflet/leaflet.js?v=9"></script>
+  <script src="data/itinerary.js?v=9"></script>
+  <script src="data/modules_1_to_6.js?v=9"></script>
+  <script src="data/modules_7_to_12.js?v=9"></script>
+  <script src="data/modules_13_to_18.js?v=9"></script>
+  <script src="data/audio_manifest.js?v=9"></script>
+  <script src="data/audio_learning_manifest.js?v=9"></script>
+  <script src="data/verbs_top200.js?v=9"></script>
+  <script src="data/grammar_n5_n3.js?v=9"></script>
+  <script src="data/learning_extras.js?v=9"></script>
+  <script src="app.js?v=9"></script>
+  <script src="learning.js?v=9"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -272,7 +319,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=8").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=9").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

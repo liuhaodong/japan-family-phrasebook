@@ -19,11 +19,12 @@
   });
 
   // Load persisted UI preferences
+  const VALID_MODES = new Set(["verbs", "grammar", "practice", "phrasebook", "itinerary"]);
   const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
 
   // App State
   const state = {
-    appMode: "itinerary", // 'itinerary' | 'phrasebook' | 'verbs' | 'grammar' | 'practice'
+    appMode: VALID_MODES.has(savedPrefs.appMode) ? savedPrefs.appMode : "verbs",
     mapRegion: "all", // 'all' | 'tokyo' | 'ginza' | 'karuizawa' | 'kyushu'
     mapLayer: savedPrefs.mapLayer || "esri_street", // 'esri_street' | 'gsi_pale' | 'esri_sat'
     activeLeg: "all",
@@ -89,6 +90,7 @@
     localStorage.setItem(
       "jp_phrasebook_prefs_v1",
       JSON.stringify({
+        appMode: state.appMode,
         showFurigana: state.showFurigana,
         showRomaji: state.showRomaji,
         showCn: state.showCn,
@@ -339,12 +341,30 @@
     window.speechSynthesis.speak(utter);
   }
 
+  function updateDialogueFloatingBar(dialogueTitle = null, turnNum = 0, totalTurns = 0) {
+    const bar = document.getElementById("dialogue-now-playing");
+    if (!bar) return;
+    if (!dialogueTitle || !state.playingDialogueId) {
+      bar.style.display = "none";
+      bar.innerHTML = "";
+      return;
+    }
+    bar.style.display = "flex";
+    bar.innerHTML = `
+      <span class="dnp-label">🔊 ${escapeHtml(dialogueTitle)} · 第 ${turnNum}/${totalTurns} 句</span>
+      <button type="button" class="action-btn speaking" id="btn-floating-stop-dlg">⏹ 停止</button>
+    `;
+    const stopBtn = document.getElementById("btn-floating-stop-dlg");
+    if (stopBtn) stopBtn.onclick = () => playDialogue(state.playingDialogueId);
+  }
+
   // Play an entire multi-turn dialogue sequentially with multi-character Neural Voices
   function playDialogue(dialogueId) {
     if (state.playingDialogueId === dialogueId) {
       state.stopDialogueRequested = true;
       state.playingDialogueId = null;
       stopAllAudio();
+      updateDialogueFloatingBar(null);
       document.querySelectorAll(".dialogue-turn.active-playing").forEach((el) => el.classList.remove("active-playing"));
       renderAll();
       return;
@@ -369,11 +389,13 @@
     function playNextTurn() {
       if (state.stopDialogueRequested || state.playingDialogueId !== dialogueId || idx >= foundDialogue.turns.length) {
         state.playingDialogueId = null;
+        updateDialogueFloatingBar(null);
         document.querySelectorAll(".dialogue-turn.active-playing").forEach((el) => el.classList.remove("active-playing"));
         renderAll();
         return;
       }
       const turn = foundDialogue.turns[idx];
+      updateDialogueFloatingBar(foundDialogue.title, idx + 1, foundDialogue.turns.length);
       const turnAudioKey = `${dialogueId}-turn-${idx}`;
       const turnDomId = `turn-${dialogueId}-${idx}`;
       document.querySelectorAll(".dialogue-turn.active-playing").forEach((el) => el.classList.remove("active-playing"));
@@ -422,21 +444,23 @@
     if (!modal || !body) return null;
     body.innerHTML = html;
     modal.classList.add("open");
+    document.body.style.overflow = "hidden";
+    const card = modal.querySelector(".modal-card");
+    if (card) card.scrollTop = 0;
     return body;
   }
 
   function closeModal() {
     const modal = document.getElementById("app-modal");
     if (modal) modal.classList.remove("open");
+    document.body.style.overflow = "";
   }
 
-  // Open Quick Reference Learning Toolbox Modal (Top 50 Adjectives, Counters/Numbers/Prices, 50-On Kana Chart)
-  function openToolboxModal(defaultTab = "adjectives") {
+  // Open Quick Reference Toolbox Modal (Counters/Numbers/Prices + 50-On Kana Audio Chart)
+  function openToolboxModal(defaultTab = "counters") {
     const extras = window.JP_LEARNING_EXTRAS;
     if (!extras) return;
-    let activeTab = defaultTab;
-    let adjTypeFilter = "all";
-    let adjSearch = "";
+    let activeTab = defaultTab === "kana" ? "kana" : "counters";
 
     const body = openModalHtml(`<div id="toolbox-modal-root"></div>`);
     if (!body) return;
@@ -446,54 +470,7 @@
       if (!root) return;
 
       let tabContent = "";
-      if (activeTab === "adjectives") {
-        const q = adjSearch.trim().toLowerCase();
-        const list = (extras.adjectives || []).filter((a) => {
-          if (adjTypeFilter === "i" && !a.type.startsWith("い")) return false;
-          if (adjTypeFilter === "na" && !a.type.startsWith("な")) return false;
-          if (!q) return true;
-          return `${a.jp} ${a.kana} ${a.romaji} ${a.cn} ${a.ex} ${a.exCn}`.toLowerCase().includes(q);
-        });
-        tabContent = `
-          <div class="toolbox-filter-row">
-            <input type="text" id="tb-adj-search" class="tb-input" value="${escapeHtml(adjSearch)}" placeholder="搜形容词（如：おいしい、静か、冷、贵）..." />
-            <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
-              <button type="button" class="toggle-chip ${adjTypeFilter === "all" ? "active" : ""}" data-adjtype="all">全部 (${extras.adjectives.length})</button>
-              <button type="button" class="toggle-chip ${adjTypeFilter === "i" ? "active" : ""}" data-adjtype="i">い形容词</button>
-              <button type="button" class="toggle-chip ${adjTypeFilter === "na" ? "active" : ""}" data-adjtype="na">な形容词</button>
-            </div>
-          </div>
-          <div class="tb-rule-banner">
-            💡 <strong>形容词速记：</strong>い形否定「去い＋くない」・过去「去い＋かった」（いい例外→よくない/よかった）｜ な形否定「＋じゃない」・过去「＋だった」
-          </div>
-          <div class="tb-adj-grid">
-            ${list
-              .map(
-                (a) => `
-              <div class="tb-adj-card">
-                <div class="tb-adj-top">
-                  <div>
-                    <span class="tb-adj-jp">${formatRuby(a.jp)}</span>
-                    <span class="tb-badge ${a.type.startsWith("い") ? "badge-i" : "badge-na"}">${escapeHtml(a.type)}</span>
-                  </div>
-                  <button type="button" class="icon-btn tb-speak-btn" data-jp="${escapeHtml(a.kana)}">🔊 读词</button>
-                </div>
-                <div class="tb-adj-cn">${escapeHtml(a.cn)} <span class="tb-romaji">${escapeHtml(a.romaji)}</span></div>
-                <div class="tb-adj-forms">否定: <strong>${escapeHtml(a.neg)}</strong> · 过去: <strong>${escapeHtml(a.past)}</strong></div>
-                <div class="tb-adj-ex">
-                  <div style="flex:1;">
-                    <div class="tb-ex-jp">${formatRuby(a.ex)}</div>
-                    <div class="tb-ex-cn">${escapeHtml(a.exCn)}</div>
-                  </div>
-                  <button type="button" class="icon-btn tb-speak-btn" data-jp="${escapeHtml(a.ex)}">🔊</button>
-                </div>
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-        `;
-      } else if (activeTab === "counters") {
+      if (activeTab === "counters") {
         tabContent = `
           <div class="tb-counters-stack">
             ${(extras.counters || [])
@@ -507,7 +484,7 @@
                     .map(
                       (it) => `
                     <button type="button" class="tb-counter-chip tb-speak-btn" data-jp="${escapeHtml(it.kana)}">
-                      <div class="tb-c-jp">${escapeHtml(it.jp)}</div>
+                      <div class="tb-c-jp" lang="ja">${escapeHtml(it.jp)}</div>
                       <div class="tb-c-kana">${escapeHtml(it.kana)}</div>
                       <div class="tb-c-romaji">${escapeHtml(it.romaji)}</div>
                       <div class="tb-c-cn">${escapeHtml(it.cn)}</div>
@@ -522,10 +499,10 @@
               .join("")}
           </div>
         `;
-      } else if (activeTab === "kana") {
+      } else {
         tabContent = `
           <div class="tb-rule-banner">
-            🔊 点击任意平假名 / 片假名方块即可收听标准日语发音（适合亲子一起认假名、练听辨）！
+            🔊 点击任意平假名 / 片假名方块即可收听标准日语发音（适合快速查读音、巩固五十音）！
           </div>
           <div class="tb-kana-table">
             ${(extras.kanaRows || [])
@@ -537,8 +514,8 @@
                   .map(([h, k, rom]) =>
                     h
                       ? `<button type="button" class="tb-kana-cell tb-speak-btn" data-jp="${escapeHtml(h)}">
-                          <span class="tb-k-hira">${h}</span>
-                          <span class="tb-k-kata">${k}</span>
+                          <span class="tb-k-hira" lang="ja">${h}</span>
+                          <span class="tb-k-kata" lang="ja">${k}</span>
                           <span class="tb-k-rom">${rom}</span>
                         </button>`
                       : `<div class="tb-kana-cell empty"></div>`
@@ -553,12 +530,11 @@
       }
 
       root.innerHTML = `
-        <h2 style="font-size:1.25rem;font-weight:800;margin-bottom:0.25rem;">📘 日语随身速查工具箱 (点击任意词条即可发声)</h2>
+        <h2 style="font-size:1.22rem;font-weight:800;margin-bottom:0.25rem;">📘 五十音 & 量词·数字·时间·价钱速查卡</h2>
         <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.75rem;">
-          覆盖最高频 50 形容词、日本点餐/购物必背量词与金额读法、以及亲子互动五十音发声表。
+          点击任意方块即播 Studio 真人发音；核心形容词 75、N5 词汇 250 及 N4–N3 进阶词库已直接整合至「📚 词汇·动词」主界面。
         </p>
         <div class="toolbox-tabs">
-          <button type="button" class="map-pill ${activeTab === "adjectives" ? "active" : ""}" data-tbtab="adjectives">✨ 高频形容词 50</button>
           <button type="button" class="map-pill ${activeTab === "counters" ? "active" : ""}" data-tbtab="counters">🔢 量词·数字·时间·价钱</button>
           <button type="button" class="map-pill ${activeTab === "kana" ? "active" : ""}" data-tbtab="kana">🔤 五十音发声表</button>
         </div>
@@ -571,25 +547,6 @@
           renderToolbox();
         };
       });
-      root.querySelectorAll("[data-adjtype]").forEach((btn) => {
-        btn.onclick = () => {
-          adjTypeFilter = btn.dataset.adjtype;
-          renderToolbox();
-        };
-      });
-      const searchEl = document.getElementById("tb-adj-search");
-      if (searchEl) {
-        searchEl.oninput = (e) => {
-          adjSearch = e.target.value;
-          const pos = e.target.selectionStart;
-          renderToolbox();
-          const nextEl = document.getElementById("tb-adj-search");
-          if (nextEl) {
-            nextEl.focus();
-            nextEl.setSelectionRange(pos, pos);
-          }
-        };
-      }
       root.querySelectorAll(".tb-speak-btn").forEach((btn) => {
         btn.onclick = function () {
           speakJapanese(this.dataset.jp, 1.0, this);
@@ -614,10 +571,6 @@
 
   // Open In-App Add / Edit Phrase Modal
   function openPhraseEditorModal(editItemId = null) {
-    const modal = document.getElementById("app-modal");
-    const body = document.getElementById("modal-body-content");
-    if (!modal || !body) return;
-
     const existing = editItemId ? findPhraseById(editItemId) : null;
     const item = existing ? existing.item : null;
     const defaultModId = existing ? existing.mod.id : 1;
@@ -626,7 +579,7 @@
       (m) => `<option value="${m.id}" ${m.id === defaultModId ? "selected" : ""}>${m.id}. ${escapeHtml(m.title)}</option>`
     ).join("");
 
-    body.innerHTML = `
+    const body = openModalHtml(`
       <div>
         <h2 style="font-size:1.28rem;font-weight:800;margin-bottom:0.2rem;">
           ${item ? "✏️ 编辑日语句子 / 添加专属备忘" : "➕ 新增自定义日语句子 / 旅途笔记"}
@@ -682,8 +635,8 @@
           </div>
         </div>
       </div>
-    `;
-    modal.classList.add("open");
+    `);
+    if (!body) return;
 
     document.getElementById("editor-test-audio-btn").onclick = function () {
       const jpVal = document.getElementById("editor-jp").value.trim();
@@ -729,7 +682,7 @@
       }
 
       saveUserState();
-      modal.classList.remove("open");
+      closeModal();
       renderAll();
     };
 
@@ -740,7 +693,7 @@
         delete state.starred[item.id];
         delete state.mastered[item.id];
         saveUserState();
-        modal.classList.remove("open");
+        closeModal();
         showToast("🗑 已删除自定义句子");
         renderAll();
       };
@@ -751,7 +704,7 @@
       resetBtn.onclick = () => {
         delete state.edits[item.id];
         saveUserState();
-        modal.classList.remove("open");
+        closeModal();
         showToast("↺ 已恢复默认句子内容");
         renderAll();
       };
@@ -760,10 +713,6 @@
 
   // Open Share with Sherry & Couple Sync Modal
   function openShareSyncModal() {
-    const modal = document.getElementById("app-modal");
-    const body = document.getElementById("modal-body-content");
-    if (!modal || !body) return;
-
     const baseUrl = location.origin + location.pathname;
     const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(baseUrl)}`;
 
@@ -771,7 +720,7 @@
     const editCount = Object.keys(state.edits).length;
     const starCount = Object.keys(state.starred).length;
 
-    body.innerHTML = `
+    const body = openModalHtml(`
       <div>
         <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">📲 分享给 Sherry & 夫妻双向同步</h2>
         <p style="font-size:0.86rem;color:var(--text-secondary);">
@@ -808,8 +757,8 @@
           </div>
         </div>
       </div>
-    `;
-    modal.classList.add("open");
+    `);
+    if (!body) return;
 
     document.getElementById("btn-native-share").onclick = async () => {
       const url = generateSyncUrl();
@@ -873,7 +822,7 @@
           if (data.streak) state.streak = data.streak;
           saveUserState();
           updateHeaderStreak();
-          modal.classList.remove("open");
+          closeModal();
           showToast("🎉 成功导入备份数据！");
           renderAll();
         } catch (err) {
@@ -884,18 +833,27 @@
     };
   }
 
-  // Open Fullscreen "Show to Staff" Card
-  function openStaffCard(jp, cn, tag, audioKey = null) {
-    const modal = document.getElementById("app-modal");
-    const body = document.getElementById("modal-body-content");
-    if (!modal || !body) return;
-
+  // Open High-Contrast Destination / Reservation Card (Used only in Hotel/Ginza Vault & Map)
+  function openStaffCard(jp, cn, tag, audioKey = null, extraAddress = null) {
     const cleanJp = stripFurigana(jp);
-    body.innerHTML = `
+    const addrHtml = extraAddress
+      ? `
+        <div class="staff-address-box">
+          <div>
+            <div class="staff-addr-lbl">📍 日文住所（可复制给导航/司机）</div>
+            <div class="staff-addr-val" lang="ja">${escapeHtml(extraAddress)}</div>
+          </div>
+          <button type="button" class="action-btn" id="modal-copy-addr">📋 复制住所</button>
+        </div>
+      `
+      : "";
+
+    const body = openModalHtml(`
       <div>
-        <span class="staff-card-badge">📱 指差し会話カード · 请直接出示给日本工作人员</span>
-        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4rem;">${escapeHtml(tag || "日本人工作人员阅读区")}</div>
-        <div class="staff-jp-huge">${formatRuby(jp)}</div>
+        <span class="staff-card-badge">🚕 目的地·预约卡（白底高对比显示）</span>
+        <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.4rem;">${escapeHtml(tag || "目的地详情")}</div>
+        <div class="staff-jp-huge" lang="ja">${formatRuby(jp)}</div>
+        ${addrHtml}
         <div class="staff-cn-sub">🇨🇳 中文意思：${escapeHtml(cn)}</div>
         <div style="display:flex;gap:0.65rem;flex-wrap:wrap;">
           <button class="action-btn primary-audio" id="modal-speak-normal">🔊 真人发音朗读 (1.0x)</button>
@@ -903,8 +861,8 @@
           <button class="action-btn" id="modal-copy-jp">📋 复制纯日文</button>
         </div>
       </div>
-    `;
-    modal.classList.add("open");
+    `);
+    if (!body) return;
 
     document.getElementById("modal-speak-normal").onclick = function () {
       speakJapanese(jp, 1.0, this, null, audioKey);
@@ -916,14 +874,17 @@
       navigator.clipboard.writeText(cleanJp);
       showToast("📋 已复制日文到剪贴板");
     };
+    const copyAddrBtn = document.getElementById("modal-copy-addr");
+    if (copyAddrBtn && extraAddress) {
+      copyAddrBtn.onclick = () => {
+        navigator.clipboard.writeText(extraAddress);
+        showToast("📋 已复制日文地址");
+      };
+    }
   }
 
   // Open Hotel & Taxi Vault Modal
   function openHotelsVault() {
-    const modal = document.getElementById("app-modal");
-    const body = document.getElementById("modal-body-content");
-    if (!modal || !body) return;
-
     const cardsHtml = ITINERARY.accommodations
       .map(
         (h, i) => `
@@ -933,8 +894,8 @@
         <div class="vault-item-address">📍 ${escapeHtml(h.address)}</div>
         <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.6rem;">💡 ${escapeHtml(h.note)}</div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <button class="action-btn primary-audio vault-taxi-show" data-idx="${i}">📱 全屏出示给司机</button>
-          <button class="action-btn vault-taxi-speak" data-idx="${i}">🔊 真人语音读给司机</button>
+          <button class="action-btn primary-audio vault-taxi-speak" data-idx="${i}">🔊 朗读目的地</button>
+          <button class="action-btn vault-taxi-show" data-idx="${i}">🚕 放大目的地卡</button>
           <button class="action-btn vault-copy-addr" data-addr="${escapeHtml(h.address)}">📋 复制地址</button>
         </div>
       </div>
@@ -942,24 +903,25 @@
       )
       .join("");
 
-    body.innerHTML = `
+    const body = openModalHtml(`
       <div>
-        <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">📍 全程7家酒店地址 & 出租车司机出示卡</h2>
-        <p style="font-size:0.86rem;color:var(--text-secondary);">上出租车后点击「📱 全屏出示给司机」或「🔊 真人语音读给司机」即可一键直达酒店正门。</p>
+        <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">📍 全程7家酒店地址 & 出租车卡</h2>
+        <p style="font-size:0.86rem;color:var(--text-secondary);">一键复制日文地址、播报目的地语音或放大查看酒店信息。</p>
         <div class="vault-grid">${cardsHtml}</div>
       </div>
-    `;
-    modal.classList.add("open");
+    `);
+    if (!body) return;
 
     body.querySelectorAll(".vault-taxi-show").forEach((btn) => {
       btn.onclick = () => {
         const idx = Number(btn.dataset.idx);
         const h = ITINERARY.accommodations[idx];
         openStaffCard(
-          `${h.taxiDriverText}（住所：${h.address}）`,
-          `司机您好，麻烦去 ${h.jpName}（${h.address}）。`,
+          h.taxiDriverText,
+          `司机您好，麻烦去 ${h.jpName}。`,
           `${h.dates} · 出租车目的地卡`,
-          `taxi-${idx}`
+          `taxi-${idx}`,
+          h.address
         );
       };
     });
@@ -980,10 +942,6 @@
 
   // Open Ginza 7th Anniversary Lunches Vault Modal
   function openGinzaVault() {
-    const modal = document.getElementById("app-modal");
-    const body = document.getElementById("modal-body-content");
-    if (!modal || !body) return;
-
     const cardsHtml = ITINERARY.ginzaLunches
       .map(
         (g, i) => `
@@ -993,22 +951,22 @@
         <div class="vault-item-address">📍 ${escapeHtml(g.address)}<br>🍽️ ${escapeHtml(g.course)}</div>
         <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.6rem;">✨ ${escapeHtml(g.highlight)}</div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <button class="action-btn primary-audio ginza-checkin-btn" data-idx="${i}">📱 进店报预约出示卡</button>
-          <button class="action-btn ginza-anniv-btn">🥂 7周年纪念日破冰神句</button>
+          <button class="action-btn primary-audio ginza-checkin-btn" data-idx="${i}">🗣️ 报预约信息卡</button>
+          <button class="action-btn ginza-anniv-btn">🥂 7周年纪念日表达</button>
         </div>
       </div>
     `
       )
       .join("");
 
-    body.innerHTML = `
+    const body = openModalHtml(`
       <div>
         <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:0.25rem;">🍣 银座夫妻结婚7周年 Omakase 午餐预约夹 (12/14–12/18)</h2>
-        <p style="font-size:0.86rem;color:var(--text-secondary);">Jinny 和 Jaycie 在保育园期间的5场银座二人世界午餐预约信息与一键进店出示卡。</p>
+        <p style="font-size:0.86rem;color:var(--text-secondary);">Jinny 和 Jaycie 在保育园期间的5场银座二人世界午餐预约信息。</p>
         <div class="vault-grid">${cardsHtml}</div>
       </div>
-    `;
-    modal.classList.add("open");
+    `);
+    if (!body) return;
 
     body.querySelectorAll(".ginza-checkin-btn").forEach((btn) => {
       btn.onclick = () => {
@@ -1017,7 +975,8 @@
           `こんにちは。本日予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。（予約番号：${g.resCode}）`,
           `您好，我是今天有预约的刘 (LIU Haodong)，2位。（预约号：${g.resCode}）`,
           `${g.date} · ${g.name}`,
-          "m7-s1-1"
+          "m7-s1-1",
+          g.address
         );
       };
     });
@@ -1080,13 +1039,24 @@
     const banner = document.getElementById("leg-context-banner");
     if (!container) return;
 
+    const MOBILE_LEG_NAMES = {
+      all: "全部",
+      leg1: "L1 成田",
+      leg2: "L2 高轮",
+      leg3: "L3 轻井泽",
+      leg4: "L4 银座",
+      leg5: "L5 九州",
+      leg6: "L6 跨年"
+    };
+
     if (container.children.length === 0) {
       container.innerHTML = ITINERARY.legs
         .map(
           (leg) => `
         <button type="button" class="leg-tab ${state.activeLeg === leg.id ? "active" : ""}" data-leg="${leg.id}">
           <span>${leg.icon}</span>
-          <span>${escapeHtml(leg.shortTitle)}</span>
+          <span class="leg-title-desktop">${escapeHtml(leg.shortTitle)}</span>
+          <span class="leg-title-mobile">${escapeHtml(MOBILE_LEG_NAMES[leg.id] || leg.shortTitle)}</span>
           <span class="leg-dates">(${escapeHtml(leg.dates)})</span>
         </button>
       `
@@ -1153,7 +1123,7 @@
 
     if (mobileSelectEl) {
       mobileSelectEl.innerHTML =
-        `<option value="">📂 跳至模块 (${filteredModules.length}个 · 已背${totalMastered}/${totalItems})...</option>` +
+        `<option value="">📑 目录 (${filteredModules.length})</option>` +
         filteredModules
           .map(
             (mod) =>
@@ -1232,23 +1202,23 @@
                   const isStar = !!state.starred[item.id];
                   const isMast = !!state.mastered[item.id];
                   const voiceMeta = AUDIO_MANIFEST[item.id];
-                  const voiceBadge = voiceMeta ? `<span style="font-size:0.72rem;color:var(--text-muted);margin-left:0.4rem;">🎙️ ${escapeHtml(voiceMeta.voice)}</span>` : "";
+                  const voiceHint = voiceMeta ? `Studio 发音：${voiceMeta.voice}` : "Studio 真人日语朗读";
                   const badgeHtml = item.isCustom
-                    ? `<span class="custom-badge">✨ 夫妻新增</span>`
+                    ? `<span class="custom-badge">✨ 新增</span>`
                     : item.isEdited
-                    ? `<span class="custom-badge">✏️ 已修改</span>`
+                    ? `<span class="custom-badge">✏️ 已改</span>`
                     : "";
                   const repliesHtml =
                     item.replies && item.replies.length
                       ? `
                     <div class="phrase-replies">
-                      <div class="reply-label">👂 对方常见回答（听力预判 · 真人分角色发音）：</div>
+                      <div class="reply-label">👂 对方常见回答（听力预判）：</div>
                       ${item.replies
                         .map(
                           (rep, rIdx) => `
                         <div class="reply-item">
                           <div>
-                            <div class="reply-jp">${formatRuby(rep.jp)}</div>
+                            <div class="reply-jp" lang="ja">${formatRuby(rep.jp)}</div>
                             <div class="reply-cn">${escapeHtml(rep.cn)}</div>
                           </div>
                           <button class="action-btn speak-reply-btn" data-jp="${escapeHtml(rep.jp)}" data-akey="${item.id}-rep-${rIdx}">🔊 听对方说</button>
@@ -1266,31 +1236,25 @@
                       <div>
                         <span class="phrase-tag">${escapeHtml(item.tag)}</span>
                         ${badgeHtml}
-                        ${voiceBadge}
                       </div>
                       <div class="phrase-status-btns">
-                        <button class="icon-btn edit-phrase-btn" data-edit="${item.id}" title="编辑此句或添加个人备忘">
-                          ✏️ 编辑
-                        </button>
-                        <button class="icon-btn ${isStar ? "starred-active" : ""}" data-star="${item.id}" title="加入必背收藏">
-                          ${isStar ? "⭐ 已收藏" : "☆ 收藏"}
-                        </button>
+                        <button class="icon-btn edit-phrase-btn" data-edit="${item.id}" title="编辑此句或添加备忘">✏️</button>
+                        <button class="icon-btn ${isStar ? "starred-active" : ""}" data-star="${item.id}" title="加入收藏">${isStar ? "⭐" : "☆"}</button>
                         <button class="icon-btn ${isMast ? "mastered-active" : ""}" data-master="${item.id}" title="标记为已背熟">
-                          ${isMast ? "✅ 已背熟" : "○ 标记背熟"}
+                          ${isMast ? "✅ 已掌握" : "○ 掌握"}
                         </button>
                       </div>
                     </div>
-                    <div class="jp-text">${formatRuby(item.jp)}</div>
+                    <div class="jp-text" lang="ja">${formatRuby(item.jp)}</div>
                     ${item.romaji ? `<div class="romaji-text">${escapeHtml(item.romaji)}</div>` : ""}
                     <div class="cn-text" title="点击显示中文">${escapeHtml(item.cn)}</div>
+                    <div class="phrase-actions">
+                      <button class="action-btn primary-audio speak-normal-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}" title="${escapeHtml(voiceHint)}">🔊 朗读 (1.0x)</button>
+                      <button class="action-btn speak-slow-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🐢 慢速 (0.8x)</button>
+                      <button class="action-btn copy-jp-btn" data-jp="${escapeHtml(item.jp)}" title="复制纯日文">📋 复制</button>
+                    </div>
                     ${item.tip ? `<div class="phrase-tip">💡 <strong>实用提示：</strong>${escapeHtml(item.tip)}</div>` : ""}
                     ${repliesHtml}
-                    <div class="phrase-actions">
-                      <button class="action-btn primary-audio speak-normal-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🔊 真人朗读 (1.0x)</button>
-                      <button class="action-btn speak-slow-btn" data-jp="${escapeHtml(item.jp)}" data-akey="${item.id}">🐢 慢速跟读 (0.78x)</button>
-                      <button class="action-btn show-staff-btn" data-jp="${escapeHtml(item.jp)}" data-cn="${escapeHtml(item.cn)}" data-tag="${escapeHtml(item.tag)}" data-akey="${item.id}">📱 出示给店员 (大字卡)</button>
-                      <button class="action-btn copy-jp-btn" data-jp="${escapeHtml(item.jp)}">📋 复制</button>
-                    </div>
                   </div>
                 `;
                 })
@@ -1335,11 +1299,10 @@
                           <span>${turn.speaker === "us" ? "👨‍👩‍👧‍👧 " : "🇯🇵 "}${escapeHtml(turn.speakerName)}<span style="font-weight:500;opacity:0.78;">${escapeHtml(vLabel)}</span></span>
                           <span style="display:flex;gap:0.35rem;">
                             <button class="icon-btn speak-normal-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🔊 1.0x</button>
-                            <button class="icon-btn speak-slow-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🐢 0.78x</button>
-                            <button class="icon-btn show-staff-btn" data-jp="${escapeHtml(turn.jp)}" data-cn="${escapeHtml(turn.cn)}" data-tag="${escapeHtml(dlg.title)}" data-akey="${turnKey}">📱 大字</button>
+                            <button class="icon-btn speak-slow-btn" data-jp="${escapeHtml(turn.jp)}" data-akey="${turnKey}">🐢 0.8x</button>
                           </span>
                         </div>
-                        <div class="jp-text" style="font-size:1.08rem;margin:0.15rem 0;">${formatRuby(turn.jp)}</div>
+                        <div class="jp-text" lang="ja" style="font-size:1.08rem;margin:0.15rem 0;">${formatRuby(turn.jp)}</div>
                         <div class="romaji-text" style="margin-bottom:0.2rem;">${escapeHtml(turn.romaji)}</div>
                         <div class="cn-text" style="margin-bottom:0;">${escapeHtml(turn.cn)}</div>
                         ${turn.note ? `<div class="turn-note">💡 ${escapeHtml(turn.note)}</div>` : ""}
@@ -1387,11 +1350,6 @@
     mainEl.querySelectorAll(".speak-reply-btn").forEach((btn) => {
       btn.onclick = function () {
         speakJapanese(this.dataset.jp, 1.0, this, null, this.dataset.akey);
-      };
-    });
-    mainEl.querySelectorAll(".show-staff-btn").forEach((btn) => {
-      btn.onclick = function () {
-        openStaffCard(this.dataset.jp, this.dataset.cn, this.dataset.tag, this.dataset.akey);
       };
     });
     mainEl.querySelectorAll(".copy-jp-btn").forEach((btn) => {
@@ -1443,6 +1401,7 @@
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
       options: {
         attribution: "Tiles &copy; Esri &mdash; Esri, HERE, Garmin, OSM",
+        maxNativeZoom: 18,
         maxZoom: 19
       }
     },
@@ -1451,13 +1410,16 @@
       options: {
         attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院 (GSI Japan)</a>',
         minZoom: 5,
-        maxZoom: 18
+        maxNativeZoom: 17,
+        maxZoom: 18,
+        updateWhenZooming: false
       }
     },
     esri_sat: {
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       options: {
         attribution: "Tiles &copy; Esri &mdash; Earthstar Geographics",
+        maxNativeZoom: 18,
         maxZoom: 19
       }
     }
@@ -1521,7 +1483,7 @@
         note: `${g.statusLabel} · ${g.resCode} · ${g.course}`,
         lat: g.lat,
         lng: g.lng,
-        taxiText: `運転手さん、銀座の「${g.jpName}」（${g.address}）までお願いします。`,
+        taxiText: `運転手さん、銀座の「${g.jpName}」までお願いします。`,
         audioKey: "m7-s1-1"
       });
     });
@@ -1540,7 +1502,7 @@
         note: lm.note,
         lat: lm.lat,
         lng: lm.lng,
-        taxiText: `運転手さん、「${lm.jpName}」（${lm.address}）までお願いします。`,
+        taxiText: `運転手さん、「${lm.jpName}」までお願いします。`,
         audioKey: null
       });
     });
@@ -1606,10 +1568,11 @@
         const pin = allPins.find((x) => x.id === btn.dataset.pinid);
         if (pin) {
           openStaffCard(
-            `${pin.taxiText}（住所：${pin.address}）`,
-            `司机您好，麻烦去 ${pin.title}（${pin.address}）。`,
+            pin.taxiText,
+            `司机您好，麻烦去 ${pin.title}。`,
             pin.badge,
-            pin.audioKey
+            pin.audioKey,
+            pin.address
           );
         }
       };
@@ -1673,10 +1636,11 @@
         if (entry && entry.pin) {
           const p = entry.pin;
           openStaffCard(
-            `${p.taxiText}（住所：${p.address}）`,
-            `司机您好，麻烦去 ${p.title}（${p.address}）。`,
+            p.taxiText,
+            `司机您好，麻烦去 ${p.title}。`,
             p.badge,
-            p.audioKey
+            p.audioKey,
+            p.address
           );
         }
       });
@@ -1825,25 +1789,76 @@
 
     // 2. Interactive Map & Directory
     initOrUpdateMap();
+    if (leafletMap) {
+      setTimeout(() => leafletMap.invalidateSize(), 120);
+    }
 
-    // 3. 36-Day Calendar Strip
+    // 2.5 Today / Countdown Quick-Focus Pill
+    const todayActionEl = document.getElementById("itin-today-action");
+    const nowLocal = new Date();
+    const todayDateOnly = new Date(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate());
+    const tripStart = new Date(2026, 11, 5); // Dec 5, 2026
+    const tripEnd = new Date(2027, 0, 10);  // Jan 10, 2027
+    const todayMD = `${nowLocal.getMonth() + 1}/${nowLocal.getDate()}`;
+    const allDays = build36DaysCalendar();
+    const todayCalObj =
+      todayDateOnly >= tripStart && todayDateOnly <= tripEnd
+        ? allDays.find((x) => x.d === todayMD)
+        : null;
+
+    if (todayActionEl) {
+      if (todayCalObj) {
+        todayActionEl.innerHTML = `<button type="button" class="action-btn primary-audio" id="btn-focus-today-leg">📍 今日行程 (${escapeHtml(todayMD)} · ${escapeHtml(todayCalObj.city)})</button>`;
+        document.getElementById("btn-focus-today-leg").onclick = () => {
+          state.activeLeg = todayCalObj.leg;
+          renderAll();
+          focusMapByLeg(todayCalObj.leg);
+        };
+      } else if (todayDateOnly < tripStart) {
+        const diffDays = Math.round((tripStart - todayDateOnly) / 86400000);
+        todayActionEl.innerHTML = `<button type="button" class="action-btn primary-audio" id="btn-focus-today-leg">✈️ 距出发还有 ${diffDays} 天 · 聚焦 Leg 1</button>`;
+        document.getElementById("btn-focus-today-leg").onclick = () => {
+          state.activeLeg = "leg1";
+          renderAll();
+          focusMapByLeg("leg1");
+        };
+      } else {
+        todayActionEl.innerHTML = "";
+      }
+    }
+
+    // 3. 36-Day Calendar Strip (7-Col Mon-Sun Grid when viewing All Legs)
     const calEl = document.getElementById("itin-calendar-grid");
     if (calEl) {
-      const days = build36DaysCalendar().filter((x) => state.activeLeg === "all" || x.leg === state.activeLeg);
-      calEl.innerHTML = days
-        .map(
-          (day) => `
-        <div class="cal-day-cell" style="border-top-color:${day.color};" data-targetleg="${day.leg}">
-          <div class="cal-day-top">
-            <span>${day.d}</span>
-            <span class="cal-day-dow">${day.dow}</span>
+      const days = allDays.filter((x) => state.activeLeg === "all" || x.leg === state.activeLeg);
+      const isWeekGrid = state.activeLeg === "all";
+      calEl.dataset.calmode = isWeekGrid ? "week" : "filtered";
+
+      const weekdayHeaders = isWeekGrid
+        ? ["一", "二", "三", "四", "五", "六", "日"]
+            .map((w) => `<div class="cal-weekday-hdr">周${w}</div>`)
+            .join("")
+        : "";
+      // Dec 5, 2026 is Saturday (Mon=0 .. Sat=5) -> 5 leading blank cells
+      const leadingEmpties = isWeekGrid ? `<div class="cal-day-empty"></div>`.repeat(5) : "";
+
+      calEl.innerHTML =
+        weekdayHeaders +
+        leadingEmpties +
+        days
+          .map(
+            (day) => `
+          <div class="cal-day-cell ${todayCalObj && day.d === todayCalObj.d ? "is-today" : ""}" style="border-top-color:${day.color};" data-targetleg="${day.leg}">
+            <div class="cal-day-top">
+              <span>${day.d}</span>
+              <span class="cal-day-dow">${day.dow}</span>
+            </div>
+            <div class="cal-day-city">${escapeHtml(day.city)}</div>
+            <div class="cal-day-sub">${escapeHtml(day.sub)}</div>
           </div>
-          <div class="cal-day-city">${escapeHtml(day.city)}</div>
-          <div class="cal-day-sub">${escapeHtml(day.sub)}</div>
-        </div>
-      `
-        )
-        .join("");
+        `
+          )
+          .join("");
 
       calEl.querySelectorAll(".cal-day-cell").forEach((cell) => {
         cell.onclick = () => {
@@ -1988,7 +2003,7 @@
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.3rem;">
             <a class="mini-link-btn" href="${getGoogleMapsUrl(g.jpName, g.address)}" target="_blank" rel="noopener">🗺️ Google Maps</a>
-            <button type="button" class="mini-link-btn ginza-card-checkin" data-idx="${idx}">📱 进店报预约卡</button>
+            <button type="button" class="mini-link-btn ginza-card-checkin" data-idx="${idx}">🗣️ 报预约卡</button>
             <button type="button" class="mini-link-btn ginza-card-map" data-pinid="${g.id}">🎯 地图定位</button>
           </div>
         </div>
@@ -2003,7 +2018,8 @@
             `こんにちは。本日予約（よやく）している劉（りゅう）［LIU Haodong］です。2名（にめい）です。（予約番号：${g.resCode}）`,
             `您好，我是今天有预约的刘 (LIU Haodong)，2位。（预约号：${g.resCode}）`,
             `${g.date} · ${g.name}`,
-            "m7-s1-1"
+            "m7-s1-1",
+            g.address
           );
         };
       });
@@ -2073,6 +2089,25 @@
     itineraryInitialized = true;
   }
 
+  function syncStickyOffset() {
+    const stickyEl = document.getElementById("sticky-controls");
+    if (!stickyEl) return;
+    const h = stickyEl.offsetHeight || 0;
+    document.documentElement.style.setProperty("--sticky-offset", `${Math.max(16, Math.ceil(h + 10))}px`);
+  }
+
+  function closeAllPopovers() {
+    [
+      ["btn-display-popover", "display-popover"],
+      ["btn-more-menu", "more-actions-popover"]
+    ].forEach(([btnId, popId]) => {
+      const btn = document.getElementById(btnId);
+      const pop = document.getElementById(popId);
+      if (btn) btn.setAttribute("aria-expanded", "false");
+      if (pop) pop.hidden = true;
+    });
+  }
+
   // Sync body classes & toolbar buttons
   function syncToolbarUI() {
     document.body.classList.toggle("hide-furigana", !state.showFurigana);
@@ -2082,6 +2117,7 @@
     document.body.classList.toggle("dark-mode", state.darkMode);
 
     // Sync all 5 Primary App Modes
+    const stickyEl = document.getElementById("sticky-controls");
     const itinView = document.getElementById("itinerary-view-container");
     const phraseView = document.getElementById("phrasebook-view-container");
     const verbsView = document.getElementById("verbs-view-container");
@@ -2103,29 +2139,41 @@
     if (toolbarCollapsible) toolbarCollapsible.style.display = mode === "phrasebook" ? "" : "none";
     if (legTabs) legTabs.style.display = mode === "itinerary" || mode === "phrasebook" ? "flex" : "none";
     if (globalDisplayBar) globalDisplayBar.style.display = "flex";
+    if (stickyEl) {
+      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "practice");
+    }
 
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.appmode === mode);
+      const active = btn.dataset.appmode === mode;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
     });
 
-    const setChip = (id, active, cls = "active") => {
-      const el = document.getElementById(id);
-      if (el) el.classList.toggle(cls, active);
-    };
+    document.querySelectorAll("[data-pref-toggle]").forEach((btn) => {
+      const key = btn.dataset.prefToggle;
+      const active = !!state[key];
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
 
-    setChip("toggle-furigana", state.showFurigana);
-    setChip("toggle-romaji", state.showRomaji);
-    setChip("toggle-cn", state.showCn);
-    setChip("toggle-practice", state.practiceMode, "practice-active");
-    setChip("toggle-dark", state.darkMode);
+    const togglePractice = document.getElementById("toggle-practice");
+    if (togglePractice) {
+      togglePractice.classList.toggle("practice-active", state.practiceMode);
+      togglePractice.setAttribute("aria-pressed", state.practiceMode ? "true" : "false");
+    }
 
     document.querySelectorAll("[data-viewmode]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.viewmode === state.viewMode);
     });
+
+    requestAnimationFrame(syncStickyOffset);
   }
 
   function switchAppMode(newMode) {
+    if (!VALID_MODES.has(newMode)) return;
     state.appMode = newMode;
+    savePrefs();
+    closeAllPopovers();
     renderAll();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -2201,42 +2249,70 @@
       };
     });
 
-    const bindToggle = (id, key) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.onclick = () => {
-          state[key] = !state[key];
-          savePrefs();
-          renderAll();
-        };
-      }
+    document.querySelectorAll("[data-pref-toggle]").forEach((btn) => {
+      btn.onclick = () => {
+        const key = btn.dataset.prefToggle;
+        state[key] = !state[key];
+        savePrefs();
+        renderAll();
+      };
+    });
+
+    const togglePracticeEl = document.getElementById("toggle-practice");
+    if (togglePracticeEl) {
+      togglePracticeEl.onclick = () => {
+        state.practiceMode = !state.practiceMode;
+        savePrefs();
+        renderAll();
+      };
+    }
+
+    // Popover Menus (Display Aa & More Tools)
+    const bindPopover = (btnId, popId) => {
+      const btn = document.getElementById(btnId);
+      const pop = document.getElementById(popId);
+      if (!btn || !pop) return;
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const willOpen = pop.hidden;
+        closeAllPopovers();
+        if (willOpen) {
+          pop.hidden = false;
+          btn.setAttribute("aria-expanded", "true");
+        }
+      };
     };
-    bindToggle("toggle-furigana", "showFurigana");
-    bindToggle("toggle-romaji", "showRomaji");
-    bindToggle("toggle-cn", "showCn");
-    bindToggle("toggle-practice", "practiceMode");
-    bindToggle("toggle-dark", "darkMode");
+    bindPopover("btn-display-popover", "display-popover");
+    bindPopover("btn-more-menu", "more-actions-popover");
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".popover-anchor")) {
+        closeAllPopovers();
+      }
+    });
 
     const btnHotels = document.getElementById("btn-open-hotels");
-    if (btnHotels) btnHotels.onclick = openHotelsVault;
+    if (btnHotels) btnHotels.onclick = () => { closeAllPopovers(); openHotelsVault(); };
 
     const btnGinza = document.getElementById("btn-open-ginza");
-    if (btnGinza) btnGinza.onclick = openGinzaVault;
+    if (btnGinza) btnGinza.onclick = () => { closeAllPopovers(); openGinzaVault(); };
 
     const btnToolbox = document.getElementById("btn-open-toolbox");
-    if (btnToolbox) btnToolbox.onclick = () => openToolboxModal("adjectives");
+    if (btnToolbox) btnToolbox.onclick = () => { closeAllPopovers(); openToolboxModal("counters"); };
 
     const btnAddPhrase = document.getElementById("btn-add-phrase");
-    if (btnAddPhrase) btnAddPhrase.onclick = () => openPhraseEditorModal(null);
+    if (btnAddPhrase) btnAddPhrase.onclick = () => { closeAllPopovers(); openPhraseEditorModal(null); };
 
     const btnShareSync = document.getElementById("btn-share-sync");
-    if (btnShareSync) btnShareSync.onclick = openShareSyncModal;
+    if (btnShareSync) btnShareSync.onclick = () => { closeAllPopovers(); openShareSyncModal(); };
 
     const btnStarred = document.getElementById("btn-filter-starred");
     if (btnStarred) {
       btnStarred.onclick = () => {
+        closeAllPopovers();
         state.appMode = "phrasebook";
         state.viewMode = state.viewMode === "starred" ? "all" : "starred";
+        savePrefs();
         renderAll();
       };
     }
@@ -2247,12 +2323,9 @@
       headerStreak.onclick = () => switchAppMode("practice");
     }
 
-    // Bind Top-Level App Mode Switcher (5 Modes)
+    // Bind Top-Level & Bottom-Nav App Mode Switcher (5 Modes)
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
-      btn.onclick = () => {
-        state.appMode = btn.dataset.appmode;
-        renderAll();
-      };
+      btn.onclick = () => switchAppMode(btn.dataset.appmode);
     });
 
     // Bind Map Region Pills
@@ -2271,19 +2344,26 @@
       };
     });
 
+    const stickyEl = document.getElementById("sticky-controls");
+    if (stickyEl && "ResizeObserver" in window) {
+      new ResizeObserver(syncStickyOffset).observe(stickyEl);
+    }
+
     window.addEventListener("resize", () => {
+      syncStickyOffset();
       if (leafletMap && state.appMode === "itinerary") {
         leafletMap.invalidateSize();
       }
     });
 
-    // Mobile Trip Info Drawer Toggle
+    // Trip Info Drawer Toggle
     const btnToggleTripInfo = document.getElementById("btn-toggle-trip-info");
     const heroDetailsDrawer = document.getElementById("hero-details-drawer");
     if (btnToggleTripInfo && heroDetailsDrawer) {
       btnToggleTripInfo.onclick = () => {
+        closeAllPopovers();
         const isOpen = heroDetailsDrawer.classList.toggle("open");
-        btnToggleTripInfo.textContent = isOpen ? "🔼 收起家庭行程简介" : "ℹ️ 家庭与行程 ▾";
+        btnToggleTripInfo.textContent = isOpen ? "🔼 收起家庭行程简介" : "ℹ️ 展开/收起家庭行程简介";
       };
     }
 
@@ -2294,6 +2374,7 @@
       btnToggleFilters.onclick = () => {
         const isOpen = toolbarCollapsible.classList.toggle("open");
         btnToggleFilters.classList.toggle("active", isOpen);
+        syncStickyOffset();
       };
     }
 
@@ -2312,12 +2393,21 @@
 
     const modal = document.getElementById("app-modal");
     const modalClose = document.getElementById("modal-close-btn");
-    if (modalClose) modalClose.onclick = () => modal.classList.remove("open");
+    if (modalClose) modalClose.onclick = closeModal;
     if (modal) {
       modal.onclick = (e) => {
-        if (e.target === modal) modal.classList.remove("open");
+        if (e.target === modal) closeModal();
       };
     }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeAllPopovers();
+        if (modal && modal.classList.contains("open")) {
+          closeModal();
+        }
+      }
+    });
 
     renderAll();
   });

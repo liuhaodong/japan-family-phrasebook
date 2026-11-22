@@ -36,6 +36,10 @@ def parse_js_data(filepath: Path):
         idx = min(x for x in (text.find("["), text.find("{")) if x != -1)
         r_idx = max(text.rfind("]"), text.rfind("}"))
         body = text[idx : r_idx + 1]
+        try:
+            return json.loads(body)
+        except Exception:
+            pass
         lines = []
         for line in body.splitlines():
             stripped = line.lstrip()
@@ -109,9 +113,10 @@ def choose_voice_and_pitch(speaker: str = "us", speaker_name: str = "", item_id:
 def build_learning_tasks():
     """
     Collect all unique spoken Japanese clips across:
-      - data/verbs_top200.js (200 verbs + 10 forms + 5 derived patterns + 400 daily examples)
-      - data/grammar_n5_n3.js (258 daily examples + 96 quiz complete sentences)
-      - data/learning_extras.js (50 adjectives + 50 examples + 28 counters + 46 kana)
+      - data/verbs_top200.js (300 verbs + 12 forms + 5 derived patterns + 900 daily examples)
+      - data/grammar_n5_n3.js (132 patterns: 396 daily examples + 132 quiz complete sentences)
+      - data/learning_extras.js (75 adjectives, 250 N5 vocab, counters, kana, comparisons,
+        contractions, adverbs, onomatopoeia, keigo verbs, staff decoder, kanji traps, street signs, vi/vt quizzes)
     Returns:
       unique_jobs: dict[tts_key -> (tts_text, voice, rel_path)]
       lookup_map: dict[clean_lookup_key -> [rel_path, voice_code]]
@@ -126,6 +131,32 @@ def build_learning_tasks():
         "好き": "すき",
         "入る": "はいる",
         "行く": "いく",
+        "開く": "あく",
+        "空く": "すく",
+        "掛かる": "かかる",
+        "掛ける": "かける",
+        "苦い": "にがい",
+        "細い": "ほそい",
+        "太い": "ふとい",
+        "風": "かぜ",
+        "中": "なか",
+        "間": "あいだ",
+        "角": "かど",
+        "箸": "はし",
+        "橋": "はし",
+        "雨": "あめ",
+        "体": "からだ",
+        "熱": "ねつ",
+        "白": "しろ",
+        "黒": "くろ",
+        "赤": "あか",
+        "青": "あお",
+        "方": "かた",
+        "満席": "まんせき",
+        "土足厳禁": "どそくげんきん",
+        "貸切風呂": "かしきりぶろ",
+        "精算機": "せいさんき",
+        "両替": "りょうがえ",
     }
 
     def register(lookup_keys, tts_text, voice):
@@ -150,15 +181,16 @@ def build_learning_tasks():
             if ck and ck not in lookup_map:
                 lookup_map[ck] = [unique_jobs[job_key], vcode]
 
-    # 1. Top 200 Verbs
+    # 1. Top 300 Verbs
     verbs_path = DATA_DIR / "verbs_top200.js"
     if verbs_path.exists():
         verbs = parse_js_data(verbs_path)
         for idx, v in enumerate(verbs):
-            # Base verb: crisp Nanami female voice
-            register([v["dict"], v["jp"]], v["dict"], "ja-JP-NanamiNeural")
-            # All 10 conjugated forms
-            for fk in ("masu", "te", "ta", "nai", "tai", "potential", "volitional", "ba", "passive", "causative"):
+            # Base verb: crisp Nanami female voice (use kana for ambiguous single-kanji dict words)
+            base_tts = v["kana"] if v["dict"] in ("開く", "空く", "入る", "行く") else v["dict"]
+            register([v["dict"], v["jp"], v["kana"]], base_tts, "ja-JP-NanamiNeural")
+            # All 12 conjugated forms
+            for fk in ("masu", "te", "ta", "nai", "tai", "potential", "volitional", "ba", "passive", "causative", "causative_passive", "imperative"):
                 fobj = v["forms"].get(fk)
                 if fobj and fobj.get("jp") and not fobj["jp"].startswith("—"):
                     register([fobj["jp"]], fobj["jp"], "ja-JP-NanamiNeural")
@@ -175,7 +207,7 @@ def build_learning_tasks():
                 f"{te_jp}みます",
             ):
                 register([dp], dp, derived_voice)
-            # 2 daily example sentences (alternate Nanami & Keita so examples feel lively)
+            # 3 daily example sentences (alternate Nanami & Keita)
             for ex_idx, ex in enumerate(v.get("examples", [])):
                 ex_voice = "ja-JP-NanamiNeural" if (idx + ex_idx) % 2 == 0 else "ja-JP-KeitaNeural"
                 register([ex["jp"]], ex["jp"], ex_voice)
@@ -194,17 +226,23 @@ def build_learning_tasks():
                 q_voice = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"
                 register([full_q], full_q, q_voice)
 
-    # 3. Learning Extras (Adjectives 50, Counters/Time/Money, 50-On Kana)
+    # 3. Learning Extras (Adjectives 75, N5 Vocab 250, Counters, Kana, and all N4-N3 sets)
     extras_path = DATA_DIR / "learning_extras.js"
     if extras_path.exists():
         extras = parse_js_data(extras_path)
         for idx, a in enumerate(extras.get("adjectives", [])):
-            # Register both cleaned kanji form and kana form
             adj_kanji = clean_spoken_japanese(a["jp"])
-            tts_src = a["kana"] if adj_kanji in ("辛い", "いい", "好き") else adj_kanji
+            tts_src = a["kana"] if adj_kanji in ("辛い", "いい", "好き", "苦い", "細い", "太い") else adj_kanji
             register([adj_kanji, a["jp"], a["kana"]], tts_src, "ja-JP-NanamiNeural")
             ex_voice = "ja-JP-KeitaNeural" if idx % 2 == 1 else "ja-JP-NanamiNeural"
             register([a["ex"]], a["ex"], ex_voice)
+
+        for idx, nv in enumerate(extras.get("n5Vocab", [])):
+            word_voice = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"
+            ex_voice = "ja-JP-KeitaNeural" if idx % 2 == 0 else "ja-JP-NanamiNeural"
+            register([nv["kana"], nv["jp"]], nv["kana"], word_voice)
+            if nv.get("ex"):
+                register([nv["ex"]], nv["ex"], ex_voice)
 
         for grp in extras.get("counters", []):
             for it in grp.get("items", []):
@@ -215,6 +253,49 @@ def build_learning_tasks():
                 hira = cell[0] if cell else ""
                 if hira:
                     register([hira], hira, "ja-JP-NanamiNeural")
+
+        for cmp_item in extras.get("grammarComparisons", []):
+            for r_idx, r in enumerate(cmp_item.get("rows", [])):
+                if r.get("exJp"):
+                    v = "ja-JP-NanamiNeural" if r_idx % 2 == 0 else "ja-JP-KeitaNeural"
+                    register([r["exJp"]], r["exJp"], v)
+
+        for idx, c in enumerate(extras.get("contractions", [])):
+            register([c["exFormal"]], c["exFormal"], "ja-JP-KeitaNeural")
+            register([c["exCasual"]], c["exCasual"], "ja-JP-NanamiNeural")
+
+        for idx, adv in enumerate(extras.get("adverbs", [])):
+            register([adv["kana"], adv["jp"]], adv["kana"], "ja-JP-NanamiNeural")
+            v = "ja-JP-KeitaNeural" if idx % 2 == 1 else "ja-JP-NanamiNeural"
+            register([adv["ex"]], adv["ex"], v)
+
+        for idx, ono in enumerate(extras.get("onomatopoeia", [])):
+            clean_o = clean_spoken_japanese(ono["jp"])
+            register([ono["jp"], clean_o], clean_o, "ja-JP-NanamiNeural")
+            v = "ja-JP-KeitaNeural" if idx % 2 == 0 else "ja-JP-NanamiNeural"
+            register([ono["ex"]], ono["ex"], v)
+
+        for idx, kg in enumerate(extras.get("keigoVerbs", [])):
+            register([kg["sonkeigo"]], kg["sonkeigo"], "ja-JP-NanamiNeural")
+            register([kg["kenjougo"]], kg["kenjougo"], "ja-JP-KeitaNeural")
+            register([kg["ex"]], kg["ex"], "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural")
+
+        for idx, st in enumerate(extras.get("staffDecoder", [])):
+            staff_v = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"
+            reply_v = "ja-JP-KeitaNeural" if staff_v == "ja-JP-NanamiNeural" else "ja-JP-NanamiNeural"
+            register([st["hearJp"]], st["hearJp"], staff_v)
+            register([st["replyJp"]], st["replyJp"], reply_v)
+
+        for idx, kt in enumerate(extras.get("kanjiTraps", [])):
+            register([kt["kana"], kt["jp"]], kt["kana"], "ja-JP-NanamiNeural")
+            register([kt["ex"]], kt["ex"], "ja-JP-KeitaNeural" if idx % 2 == 1 else "ja-JP-NanamiNeural")
+
+        for idx, ss in enumerate(extras.get("streetSigns", [])):
+            register([ss["kana"], ss["jp"]], ss["kana"], "ja-JP-NanamiNeural")
+
+        for idx, q in enumerate(extras.get("viVtQuizzes", [])):
+            full_q = q["promptJp"].replace("＿＿", q["answer"])
+            register([full_q], full_q, "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural")
 
     return unique_jobs, lookup_map
 
@@ -241,7 +322,7 @@ async def generate_batch(jobs, concurrency=12):
             for attempt in range(5):
                 try:
                     comm = edge_tts.Communicate(text=text, voice=voice, pitch=pitch, rate=rate)
-                    await comm.save(str(out_file))
+                    await asyncio.wait_for(comm.save(str(out_file)), timeout=25)
                     if out_file.exists() and out_file.stat().st_size > 400:
                         done += 1
                         if done % 200 == 0 or done == total_pending:

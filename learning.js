@@ -1,15 +1,22 @@
-// Interactive Japanese Learning Engine:
-// 1. Top 200 High-Frequency Verbs & Conjugations (#verbs-view-container)
-// 2. JLPT N5 / N4 / N3 Grammar Guide Ordered by Importance (#grammar-view-container)
-// 3. Interactive Practice Lab: SRS Flashcards, Conjugation Drill, Grammar & Listening Quiz, Shadowing (#practice-view-container)
+// Interactive Japanese Learning Engine (N5 Review + N4->N3 Fluency):
+// 1. Vocabulary & Verbs Hub: Top 300 Verbs (Vi/Vt Pairs & 13 Forms), N5 Core Vocab (250 + 75 Adj), N4-N3 Library
+// 2. JLPT N5 / N4 / N3 Grammar Guide (132 Patterns + 6 Confusable Comparisons)
+// 3. Interactive Practice Lab: SRS (incl. N5 Vocab & Blind Mode), Vi/Vt & Particle Blitz, Conjugation Blitz, Grammar/Listening/Staff Quiz, Shadowing
 (function () {
   const VERBS = window.JP_TOP_VERBS || [];
   const GRAMMAR = window.JP_GRAMMAR_LIST || [];
+  const EXTRAS = window.JP_LEARNING_EXTRAS || {};
 
   const GROUP_LABELS = {
     godan: "五段 (u-verb)",
     ichidan: "一段 (ru-verb)",
     irregular: "不规则"
+  };
+
+  const TRANS_LABELS = {
+    vi: "🔵 自动词 (が)",
+    vt: "🟠 他动词 (を)",
+    both: "🟣 自他两用"
   };
 
   const FORM_META = [
@@ -22,18 +29,30 @@
     { key: "volitional", label: "意向形", sub: "一起吧" },
     { key: "ba", label: "ば形", sub: "如果" },
     { key: "passive", label: "受身形", sub: "被动" },
-    { key: "causative", label: "使役形", sub: "让做" }
+    { key: "causative", label: "使役形", sub: "让做" },
+    { key: "causative_passive", label: "使役被动", sub: "被迫做" },
+    { key: "imperative", label: "命令形", sub: "命令/标牌" }
   ];
 
   // Local view states for the 3 learning tabs
   const vState = {
+    subTab: "verbs300", // 'verbs300' | 'n5vocab' | 'n4n3lib'
+    // Verbs 300
     search: "",
     jlpt: "all",
     group: "all",
+    transitivity: "all", // 'all' | 'vi' | 'vt' | 'paired'
     category: "all",
     status: "all",
-    range: "1-50", // '1-50' | '51-100' | '101-150' | '151-200' | 'all'
-    showCheatSheet: false
+    range: "1-50", // '1-50' .. '251-300' | 'all'
+    showCheatSheet: false,
+    // N5 Core Vocabulary (250 words + 75 adjectives)
+    n5Cat: "all",
+    n5Search: "",
+    n5Status: "all",
+    // N4-N3 Practical Library
+    libTab: "contractions", // 'contractions' | 'adverbs' | 'onomatopoeia' | 'keigo' | 'staff' | 'signs'
+    libSearch: ""
   };
 
   const gState = {
@@ -42,29 +61,37 @@
     importance: "all", // 'all' | '5' | '4' | '3'
     status: "all",
     orderMode: "n5_first", // 'n5_first' | 'n3_first' | 'importance_all'
+    showComparisons: false,
     openQuizIds: {}
   };
 
   const pState = {
-    subMode: "srs", // 'srs' | 'conj' | 'quiz' | 'shadow'
+    subMode: "srs", // 'srs' | 'vivt' | 'conj' | 'quiz' | 'shadow'
     // SRS Flashcards
-    srsDeck: "verbs", // 'due' | 'verbs' | 'grammar' | 'phrases' | 'starred'
+    srsDeck: "verbs", // 'due' | 'n5vocab' | 'verbs' | 'pairs' | 'grammar' | 'phrases' | 'starred'
     srsJlpt: "all",
     srsListenFirst: false,
     srsAutoPlay: true,
     srsFlipped: false,
     srsCurrentCard: null,
+    // Vi/Vt & Particle Blitz
+    vivtKind: "all", // 'all' | 'vivt' | 'particle'
+    vivtQuestion: null,
+    vivtAnswered: null,
+    vivtStreak: 0,
+    vivtCorrect: 0,
+    vivtTotal: 0,
     // Conjugation Drill
     conjJlpt: "all",
-    conjForm: "mixed", // 'mixed' | 'te' | 'masu' | 'nai' | 'ta' | 'tai' | 'potential' | 'volitional'
+    conjForm: "mixed",
     conjInputMode: "choice", // 'choice' | 'type'
     conjQuestion: null,
     conjAnswered: null,
     conjStreak: 0,
     conjCorrect: 0,
     conjTotal: 0,
-    // Grammar & Listening Quiz
-    quizKind: "grammar", // 'grammar' | 'listening'
+    // Grammar, Listening & Staff Decoder Quiz
+    quizKind: "grammar", // 'grammar' | 'listening' | 'staff'
     quizLevel: "all",
     quizQuestion: null,
     quizAnswered: null,
@@ -72,7 +99,7 @@
     quizCorrect: 0,
     quizTotal: 0,
     // Shadowing
-    shadowDeck: "phrases", // 'phrases' | 'verbs' | 'grammar'
+    shadowDeck: "phrases", // 'phrases' | 'verbs' | 'grammar' | 'n5vocab'
     shadowIndex: 0,
     shadowRunning: false,
     shadowPhase: "",
@@ -106,14 +133,42 @@
     return items;
   }
 
+  function getN5VocabUnified() {
+    const words = (EXTRAS.n5Vocab || []).map((w) => ({
+      id: w.id,
+      kind: "word",
+      cat: w.cat,
+      jp: w.jp,
+      kana: w.kana,
+      romaji: w.romaji,
+      cn: w.cn,
+      subMeta: "",
+      ex: w.ex,
+      exCn: w.exCn
+    }));
+    const adjs = (EXTRAS.adjectives || []).map((a, idx) => ({
+      id: a.id || `adj-${String(idx + 1).padStart(3, "0")}`,
+      kind: "adj",
+      cat: "✨ 核心形容词 (75)",
+      jp: a.jp,
+      kana: a.kana,
+      romaji: a.romaji,
+      cn: a.cn,
+      subMeta: `${a.type} · 否定: ${a.neg} · 过去: ${a.past}`,
+      ex: a.ex,
+      exCn: a.exCn
+    }));
+    return [...words, ...adjs];
+  }
+
   // Explain conjugation rule concisely for drill feedback
   function getConjugationRuleHint(verb, formKey) {
     if (verb.group === "irregular") {
-      if (verb.dict.endsWith("する")) return "サ变动词「〜する」：します / して / した / しない / できる / しよう";
-      return "カ变动词「来る（くる）」：きます / きて / きた / こない / こられる / こよう";
+      if (verb.dict.endsWith("する")) return "サ变动词「〜する」：します / して / した / しない / できる / しよう / させられる";
+      return "カ变动词「来る（くる）」：きます / きて / きた / こない / こられる / こよう / こい";
     }
     if (verb.group === "ichidan") {
-      return "一段动词（ru-verb）：直接去掉末尾「る」再接 ます / て / た / ない / たい / られる / よう！";
+      return "一段动词（ru-verb）：直接去掉末尾「る」再接 ます / て / た / ない / れば / られる / させる / させられる / ろ！";
     }
     const last = verb.dict.slice(-1);
     if (verb.dict === "行く" && (formKey === "te" || formKey === "ta")) {
@@ -123,25 +178,97 @@
       return "⚠️ 特例：「ある」的否定不是あらない，而是直接用「ない」！";
     }
     if (formKey === "te" || formKey === "ta") {
-      if ("うつる".includes(last)) return `五段「う・つ・る」音变 → 促音「って / った」`;
-      if ("むぶぬ".includes(last)) return `五段「む・ぶ・ぬ」音变 → 拨音「んで / んだ」`;
-      if (last === "く") return `五段「く」音变 →「いて / いた」`;
-      if (last === "ぐ") return `五段「ぐ」音变 →「いで / いだ」`;
-      if (last === "す") return `五段「す」音变 →「して / した」`;
+      if ("うつる".includes(last)) return "五段「う・つ・る」音变 → 促音「って / った」";
+      if ("むぶぬ".includes(last)) return "五段「む・ぶ・ぬ」音变 → 拨音「んで / んだ」";
+      if (last === "く") return "五段「く」音变 →「いて / いた」";
+      if (last === "ぐ") return "五段「ぐ」音变 →「いで / いだ」";
+      if (last === "す") return "五段「す」音变 →「して / した」";
     }
     if (formKey === "masu" || formKey === "tai") return `五段动词把词尾「${last}」移到同行的い段，再接 ます / たい`;
     if (formKey === "nai") return `五段动词把词尾「${last}」移到同行的あ段（う→わ），再接 ない`;
     if (formKey === "potential") return `五段动词把词尾「${last}」移到同行的え段，再接 る`;
     if (formKey === "volitional") return `五段动词把词尾「${last}」移到同行的お段，再接 う`;
+    if (formKey === "ba") return `五段动词把词尾「${last}」移到同行的え段，再接 ば`;
+    if (formKey === "passive") return `五段动词把词尾「${last}」移到同行的あ段，再接 れる`;
+    if (formKey === "causative") return `五段动词把词尾「${last}」移到同行的あ段，再接 せる`;
+    if (formKey === "causative_passive") {
+      return last === "す"
+        ? "⚠️ 五段「す」结尾不能缩短，使役被动必须用完整形「さ＋せられる」（如：話させられる）"
+        : `五段动词（非す）使役被动常用短缩形：词尾「${last}」→ あ段 ＋ される（例：待たされる）`;
+    }
+    if (formKey === "imperative") return `五段动词把词尾「${last}」直接变为同行的え段即可（如：待て / 行け）`;
     return `五段动词变形规则（词尾：${last}）`;
   }
 
   // =========================================================================
-  // TAB 3: TOP 200 HIGH-FREQUENCY JAPANESE VERBS
+  // MODALS: 13-FORM CONJUGATION & VI/VT PAIR SIDE-BY-SIDE COMPARISON
   // =========================================================================
+  function openViVtCompareModal(vid1, vid2) {
+    const vA = VERBS.find((v) => v.id === vid1);
+    const vB = VERBS.find((v) => v.id === vid2);
+    if (!vA || !vB) return;
+    const viVerb = vA.transitivity === "vi" ? vA : vB;
+    const vtVerb = viVerb === vA ? vB : vA;
+    const { formatRuby, escapeHtml, speakJapanese, openModalHtml } = app();
+
+    const renderSide = (v, isVi) => `
+      <div class="vivt-side-card ${isVi ? "side-vi" : "side-vt"}">
+        <div class="vivt-side-top">
+          <span class="trans-pill ${isVi ? "trans-vi" : "trans-vt"}">${isVi ? "🔵 自动词 (〜が)" : "🟠 他动词 (〜を)"}</span>
+          <span class="verb-group-pill">${GROUP_LABELS[v.group]}</span>
+        </div>
+        <div class="jp-text" lang="ja" style="font-size:1.45rem;margin:0.2rem 0;">${formatRuby(v.jp)}</div>
+        <div style="font-size:0.84rem;color:var(--text-muted);">${escapeHtml(v.kana)} · ${escapeHtml(v.romaji)}</div>
+        <div style="font-size:0.95rem;font-weight:800;color:var(--accent-indigo);margin:0.2rem 0;">${escapeHtml(v.cn)}</div>
+        <div class="particle-hint-chip" style="margin-bottom:0.5rem;">🔗 ${escapeHtml(v.particles || "")}</div>
+        <div style="display:flex;gap:0.35rem;margin-bottom:0.6rem;">
+          <button type="button" class="action-btn primary-audio modal-c-speak" data-jp="${escapeHtml(v.dict)}">🔊 朗读</button>
+          <button type="button" class="action-btn modal-c-slow" data-jp="${escapeHtml(v.dict)}">🐢 慢速</button>
+        </div>
+        <div class="vivt-side-examples">
+          ${(v.examples || [])
+            .slice(0, 3)
+            .map(
+              (ex) => `
+            <div class="vivt-ex-mini">
+              <div style="flex:1;min-width:0;">
+                <div class="jp-text" lang="ja" style="font-size:0.92rem;margin:0;">${formatRuby(ex.jp)}</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary);">${escapeHtml(ex.cn)}</div>
+              </div>
+              <button type="button" class="icon-btn modal-c-speak" data-jp="${escapeHtml(ex.jp)}">🔊</button>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+
+    const body = openModalHtml(`
+      <div>
+        <h2 style="font-size:1.25rem;font-weight:800;margin-bottom:0.25rem;">⇄ 自动词 vs 他动词成对对比</h2>
+        <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.75rem;">
+          💡 核心口诀：<strong>「〜が ＋ 自动词」</strong>描述事物自然发生或眼前状态（〜ている）；<strong>「〜を ＋ 他动词」</strong>表示人主动做出改变（〜てある / 〜ておく）。
+        </p>
+        <div class="vivt-compare-grid">
+          ${renderSide(viVerb, true)}
+          ${renderSide(vtVerb, false)}
+        </div>
+      </div>
+    `);
+    if (!body) return;
+    body.querySelectorAll(".modal-c-speak").forEach((b) => {
+      b.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); };
+    });
+    body.querySelectorAll(".modal-c-slow").forEach((b) => {
+      b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
+    });
+  }
+
   function openVerbConjugationModal(verbId) {
     const verb = VERBS.find((v) => v.id === verbId);
     if (!verb) return;
+    const partner = verb.pairId ? VERBS.find((v) => v.id === verb.pairId) : null;
     const { formatRuby, escapeHtml, speakJapanese, openModalHtml } = app();
 
     const teForm = verb.forms.te.jp;
@@ -156,29 +283,36 @@
 
     const body = openModalHtml(`
       <div>
-        <div style="display:flex;align-items:center;gap:0.45rem;flex-wrap:wrap;margin-bottom:0.35rem;">
+        <div style="display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.35rem;">
           <span class="jlpt-pill jlpt-${verb.jlpt.toLowerCase()}">${verb.jlpt}</span>
           <span class="verb-rank-pill">#${verb.rank}</span>
           <span class="verb-group-pill grp-${verb.group}">${GROUP_LABELS[verb.group]}</span>
+          <span class="trans-pill trans-${verb.transitivity}">${TRANS_LABELS[verb.transitivity]}</span>
           <span class="phrase-tag">${escapeHtml(verb.category)}</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.4rem;">
           <div>
-            <div class="jp-text" style="font-size:1.55rem;margin:0;">${formatRuby(verb.jp)}</div>
+            <div class="jp-text" lang="ja" style="font-size:1.55rem;margin:0;">${formatRuby(verb.jp)}</div>
             <div style="font-size:0.9rem;color:var(--accent-indigo);font-weight:700;">
               ${escapeHtml(verb.cn)} <span style="color:var(--text-muted);font-weight:500;">(${escapeHtml(verb.kana)} · ${escapeHtml(verb.romaji)})</span>
             </div>
+            ${verb.particles ? `<div class="particle-hint-chip" style="margin-top:0.3rem;">🔗 常见搭配：${escapeHtml(verb.particles)}</div>` : ""}
           </div>
-          <div style="display:flex;gap:0.4rem;">
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
             <button type="button" class="action-btn primary-audio modal-v-speak" data-jp="${escapeHtml(verb.dict)}">🔊 读原形</button>
             <button type="button" class="action-btn modal-v-speak-slow" data-jp="${escapeHtml(verb.dict)}">🐢 慢读</button>
+            ${
+              partner
+                ? `<button type="button" class="action-btn" id="modal-open-vivt-pair">⇄ 对照${partner.transitivity === "vi" ? "自动词" : "他动词"}：${escapeHtml(partner.dict)}</button>`
+                : ""
+            }
           </div>
         </div>
         <div class="tb-rule-banner" style="margin:0.6rem 0;">
           💡 ${escapeHtml(getConjugationRuleHint(verb, "te"))}
         </div>
 
-        <h3 style="font-size:0.92rem;font-weight:800;margin:0.8rem 0 0.45rem;">📐 全套核心变形表（点击任意格朗读）</h3>
+        <h3 style="font-size:0.92rem;font-weight:800;margin:0.8rem 0 0.45rem;">📐 全套 13 种核心变形表（含使役被动 & 命令形，点击朗读）</h3>
         <div class="conj-modal-grid">
           ${FORM_META.map((fm) => {
             const f = verb.forms[fm.key];
@@ -186,7 +320,7 @@
             return `
               <button type="button" class="conj-modal-cell ${disabled ? "disabled" : "modal-v-speak"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.jp)}"`}>
                 <div class="conj-cell-label">${fm.label} <span>${fm.sub}</span></div>
-                <div class="conj-cell-jp">${escapeHtml(f ? f.jp : "—")}</div>
+                <div class="conj-cell-jp" lang="ja">${escapeHtml(f ? f.jp : "—")}</div>
                 <div class="conj-cell-kana">${escapeHtml(f && f.kana ? f.kana : "")}</div>
               </button>
             `;
@@ -201,7 +335,7 @@
             <div class="derived-pattern-row">
               <div>
                 <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">${escapeHtml(dp.label)}</div>
-                <div style="font-size:0.95rem;font-weight:800;color:var(--text-primary);">${escapeHtml(dp.jp)}</div>
+                <div style="font-size:0.95rem;font-weight:800;color:var(--text-primary);" lang="ja">${escapeHtml(dp.jp)}</div>
                 <div style="font-size:0.78rem;color:var(--accent-indigo);">${escapeHtml(dp.cn)}</div>
               </div>
               <button type="button" class="icon-btn modal-v-speak" data-jp="${escapeHtml(dp.jp)}">🔊 朗读</button>
@@ -215,367 +349,825 @@
 
     if (!body) return;
     body.querySelectorAll(".modal-v-speak").forEach((btn) => {
-      btn.onclick = function () {
-        speakJapanese(this.dataset.jp, 1.0, this);
-      };
+      btn.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); };
     });
     body.querySelectorAll(".modal-v-speak-slow").forEach((btn) => {
-      btn.onclick = function () {
-        speakJapanese(this.dataset.jp, 0.78, this);
-      };
+      btn.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
     });
-  }
-
-  function renderVerbsView() {
-    const container = document.getElementById("verbs-view-container");
-    if (!container) return;
-    const { state, formatRuby, escapeHtml, speakJapanese, toggleStar, toggleMastered, openStaffCard, switchAppMode } = app();
-
-    const masteredCount = VERBS.filter((v) => state.mastered[v.id]).length;
-    const pct = VERBS.length ? Math.round((masteredCount / VERBS.length) * 100) : 0;
-    const categories = ["all", ...Array.from(new Set(VERBS.map((v) => v.category)))];
-
-    const q = vState.search.trim().toLowerCase();
-    const filtered = VERBS.filter((v) => {
-      if (vState.jlpt !== "all" && v.jlpt !== vState.jlpt) return false;
-      if (vState.group !== "all" && v.group !== vState.group) return false;
-      if (vState.category !== "all" && v.category !== vState.category) return false;
-      if (vState.status === "starred" && !state.starred[v.id]) return false;
-      if (vState.status === "mastered" && !state.mastered[v.id]) return false;
-      if (vState.status === "unmastered" && state.mastered[v.id]) return false;
-      if (q) {
-        const exText = v.examples.map((e) => `${e.jp} ${e.romaji} ${e.cn}`).join(" ");
-        const formText = Object.values(v.forms).map((f) => `${f.jp} ${f.kana}`).join(" ");
-        const hay = `${v.rank} ${v.dict} ${v.kana} ${v.romaji} ${v.cn} ${v.category} ${v.jlpt} ${formText} ${exText}`.toLowerCase();
-        return hay.includes(q);
-      }
-      if (vState.jlpt === "all" && vState.group === "all" && vState.category === "all" && vState.status === "all" && vState.range !== "all") {
-        const [lo, hi] = vState.range.split("-").map(Number);
-        return v.rank >= lo && v.rank <= hi;
-      }
-      return true;
-    });
-
-    const isFilteredActive = q || vState.jlpt !== "all" || vState.group !== "all" || vState.category !== "all" || vState.status !== "all";
-
-    container.innerHTML = `
-      <!-- Top Summary & Progress Banner -->
-      <div class="learning-hero-card">
-        <div class="learning-hero-top">
-          <div>
-            <h2 class="itin-section-title">⚡ 日语最高频 Top 200 动词 · 常用变形与 400 句日常例句</h2>
-            <p class="itin-section-sub">按真实生活出现频率排序 (#1–#200)，覆盖 N5/N4/N3 核心动词；点击任意变形标签或例句均可一键真人语速/慢速跟读！</p>
-          </div>
-          <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
-            <button type="button" class="action-btn ${vState.showCheatSheet ? "primary-audio" : ""}" id="btn-toggle-conj-sheet">
-              📐 ${vState.showCheatSheet ? "收起变形口诀" : "动词变形黄金口诀"}
-            </button>
-            <button type="button" class="action-btn primary-audio" id="btn-jump-conj-drill">
-              ⚡ 去练动词变形闪电战 →
-            </button>
-          </div>
-        </div>
-
-        <div class="learning-progress-row">
-          <div class="progress-text-meta">
-            <span>🎯 动词掌握进度：<strong>${masteredCount} / ${VERBS.length}</strong> (${pct}%)</span>
-            <span>当前筛选显示：<strong>${filtered.length}</strong> 个动词</span>
-          </div>
-          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;"></div></div>
-        </div>
-
-        ${
-          vState.showCheatSheet
-            ? `
-          <div class="conj-cheatsheet-box">
-            <div class="cheat-col">
-              <div class="cheat-col-title">🔵 五段动词 (u-verb · 113个)</div>
-              <ul>
-                <li><strong>ます形 / たい形：</strong>词尾 u段 → <strong>i段</strong> ＋ ます / たい（書く→書きます）</li>
-                <li><strong>て形 / た形（音变口诀）：</strong>
-                  <br>• <code>う・つ・る</code> → <strong>って / った</strong>（買う→買って）
-                  <br>• <code>む・ぶ・ぬ</code> → <strong>んで / んだ</strong>（飲む→飲んで）
-                  <br>• <code>く</code> → <strong>いて / いた</strong>（書く→書いて；⚠️ <strong>行く→行って</strong>）
-                  <br>• <code>ぐ</code> → <strong>いで / いだ</strong>（急ぐ→急いで）
-                  <br>• <code>す</code> → <strong>して / した</strong>（話す→話して）
-                </li>
-                <li><strong>ない形：</strong>词尾 u段 → <strong>a段</strong> ＋ ない（う→わ；⚠️ <strong>ある→ない</strong>）</li>
-                <li><strong>可能形：</strong>词尾 u段 → <strong>e段</strong> ＋ る（話す→話せる）</li>
-              </ul>
-            </div>
-            <div class="cheat-col">
-              <div class="cheat-col-title">🟢 一段动词 (ru-verb · 58个)</div>
-              <ul>
-                <li>特点：以 <code>い段/え段 + る</code> 结尾（例：食べる、見る、起きる）。</li>
-                <li><strong>超级简单：直接去「る」</strong>再接对应词尾！
-                  <br>• ます形：去る＋<strong>ます</strong>（食べます）
-                  <br>• て/た形：去る＋<strong>て / た</strong>（食べて / 食べた）
-                  <br>• ない形：去る＋<strong>ない</strong>（食べない）
-                  <br>• 可能形：去る＋<strong>られる</strong>（食べられる）
-                  <br>• 意向形：去る＋<strong>よう</strong>（食べよう）
-                </li>
-                <li>⚠️ 注意少数伪一段五段动词：<code>帰る・走る・入る・切る・知る・減る</code> 都是五段！</li>
-              </ul>
-            </div>
-            <div class="cheat-col">
-              <div class="cheat-col-title">🟣 不规则动词 (29个)</div>
-              <ul>
-                <li><strong>する（做）</strong>及所有 <code>汉字+する</code>（勉強する、予約する等）：
-                  <br>します / して / した / しない / したい / <strong>できる</strong> / しよう</li>
-                <li><strong>来る（くる · 来）：</strong>
-                  <br>来ます(きます) / 来て(きて) / 来た(きた) / 来ない(こない) / 来られる(こられる) / 来よう(こよう)</li>
-              </ul>
-            </div>
-          </div>
-        `
-            : ""
-        }
-      </div>
-
-      <!-- Filter Bar -->
-      <div class="learning-filter-card">
-        <div class="lf-row-top">
-          <div class="search-box" style="flex:1 1 240px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="verb-search-input" value="${escapeHtml(vState.search)}" placeholder="搜动词汉字、假名、罗马音、中文或变形（如：食べる、taberu、行って、预订）..." />
-            <button type="button" class="search-clear" id="verb-search-clear" style="display:${vState.search ? "block" : "none"};">✕</button>
-          </div>
-          <select id="verb-cat-select" class="lf-select" aria-label="按场景分类筛选">
-            ${categories.map((c) => `<option value="${escapeHtml(c)}" ${vState.category === c ? "selected" : ""}>${c === "all" ? "📂 全部分类" : `📂 ${escapeHtml(c)}`}</option>`).join("")}
-          </select>
-          <select id="verb-group-select" class="lf-select" aria-label="按变形组筛选">
-            <option value="all" ${vState.group === "all" ? "selected" : ""}>📐 全部变形类</option>
-            <option value="godan" ${vState.group === "godan" ? "selected" : ""}>五段 (u-verb)</option>
-            <option value="ichidan" ${vState.group === "ichidan" ? "selected" : ""}>一段 (ru-verb)</option>
-            <option value="irregular" ${vState.group === "irregular" ? "selected" : ""}>不规则 (する/来る)</option>
-          </select>
-        </div>
-
-        <div class="lf-chips-row">
-          <div class="toggle-group">
-            ${["all", "N5", "N4", "N3"]
-              .map(
-                (lvl) => `
-              <button type="button" class="toggle-chip ${vState.jlpt === lvl ? "active" : ""}" data-vjlpt="${lvl}">
-                ${lvl === "all" ? "全部级别" : lvl}
-              </button>
-            `
-              )
-              .join("")}
-          </div>
-          <div class="toggle-group">
-            ${[
-              ["all", "📚 全部"],
-              ["unmastered", "⏳ 未掌握"],
-              ["mastered", "✅ 已掌握"],
-              ["starred", "⭐ 收藏"]
-            ]
-              .map(
-                ([k, lbl]) => `
-              <button type="button" class="toggle-chip ${vState.status === k ? "active" : ""}" data-vstatus="${k}">${lbl}</button>
-            `
-              )
-              .join("")}
-          </div>
-        </div>
-
-        ${
-          !isFilteredActive
-            ? `
-          <div class="lf-range-row">
-            <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);">高频分段：</span>
-            ${[
-              ["1-50", "🔥 Top 1–50 (最核心)"],
-              ["51-100", "⭐ Top 51–100 (日常高频)"],
-              ["101-150", "📘 Top 101–150 (旅行生活)"],
-              ["151-200", "💎 Top 151–200 (进阶流利)"],
-              ["all", "📋 展开全部 200"]
-            ]
-              .map(
-                ([rk, rlbl]) => `
-              <button type="button" class="map-pill ${vState.range === rk ? "active" : ""}" data-vrange="${rk}">${rlbl}</button>
-            `
-              )
-              .join("")}
-          </div>
-        `
-            : ""
-        }
-      </div>
-
-      <!-- Verb Cards Grid -->
-      <div class="verbs-grid">
-        ${
-          filtered.length === 0
-            ? `<div class="itin-card-block" style="text-align:center;padding:2rem;">
-                <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
-                <div style="font-weight:700;margin-bottom:0.4rem;">没有找到匹配的动词</div>
-                <button type="button" class="action-btn primary-audio" id="btn-reset-verb-filters">重置动词筛选</button>
-              </div>`
-            : filtered
-                .map((v) => {
-                  const isStar = !!state.starred[v.id];
-                  const isMast = !!state.mastered[v.id];
-                  const top6 = FORM_META.slice(0, 6);
-                  return `
-                  <article class="verb-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}">
-                    <div class="verb-card-head">
-                      <div class="verb-badges">
-                        <span class="verb-rank-pill">#${v.rank}</span>
-                        <span class="jlpt-pill jlpt-${v.jlpt.toLowerCase()}">${v.jlpt}</span>
-                        <span class="verb-group-pill grp-${v.group}">${GROUP_LABELS[v.group]}</span>
-                        <span class="phrase-tag">${escapeHtml(v.category)}</span>
-                      </div>
-                      <div class="phrase-status-btns">
-                        <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-vstar="${v.id}">${isStar ? "⭐" : "☆"}</button>
-                        <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-vmaster="${v.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
-                      </div>
-                    </div>
-
-                    <div class="verb-main-row">
-                      <div style="flex:1;min-width:170px;">
-                        <div class="jp-text verb-jp-title">${formatRuby(v.jp)}</div>
-                        <div class="romaji-text" style="margin-bottom:0.12rem;">${escapeHtml(v.kana)} · ${escapeHtml(v.romaji)}</div>
-                        <div class="cn-text" style="margin-bottom:0;">${escapeHtml(v.cn)}</div>
-                      </div>
-                      <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;">
-                        <button type="button" class="action-btn primary-audio v-speak-btn" data-jp="${escapeHtml(v.dict)}">🔊 朗读</button>
-                        <button type="button" class="action-btn v-speak-slow-btn" data-jp="${escapeHtml(v.dict)}">🐢</button>
-                        <button type="button" class="action-btn v-allforms-btn" data-vid="${v.id}">📋 11种变形</button>
-                      </div>
-                    </div>
-
-                    <!-- 6 Most Frequently Used Forms (Tap any to speak!) -->
-                    <div class="verb-forms-strip">
-                      ${top6
-                        .map((fm) => {
-                          const f = v.forms[fm.key];
-                          const disabled = !f || f.jp.startsWith("—");
-                          return `
-                          <button type="button" class="verb-form-chip ${disabled ? "disabled" : "v-speak-btn"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.jp)}"`} title="点击听「${fm.label}」发音">
-                            <span class="vf-lbl">${fm.label}</span>
-                            <span class="vf-val">${escapeHtml(f ? f.jp : "—")}</span>
-                          </button>
-                        `;
-                        })
-                        .join("")}
-                    </div>
-
-                    <!-- 2 Daily Example Sentences -->
-                    <div class="verb-examples-list">
-                      ${v.examples
-                        .map(
-                          (ex) => `
-                        <div class="verb-example-item">
-                          <div style="flex:1;min-width:0;">
-                            <div class="vex-top">
-                              <span class="vex-form-badge">${escapeHtml(ex.form)}</span>
-                            </div>
-                            <div class="jp-text vex-jp">${formatRuby(ex.jp)}</div>
-                            <div class="romaji-text" style="margin-bottom:0.15rem;">${escapeHtml(ex.romaji)}</div>
-                            <div class="cn-text" style="font-size:0.84rem;margin-bottom:0;">${escapeHtml(ex.cn)}</div>
-                          </div>
-                          <div class="vex-btns">
-                            <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
-                            <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
-                            <button type="button" class="icon-btn v-staff-btn" data-jp="${escapeHtml(ex.jp)}" data-cn="${escapeHtml(ex.cn)}" data-tag="动词 #${v.rank} ${escapeHtml(v.dict)} · ${escapeHtml(ex.form)}" title="大字出示卡">📱</button>
-                          </div>
-                        </div>
-                      `
-                        )
-                        .join("")}
-                    </div>
-                  </article>
-                `;
-                })
-                .join("")
-        }
-      </div>
-    `;
-
-    // Bind Verb View Events
-    const toggleSheet = document.getElementById("btn-toggle-conj-sheet");
-    if (toggleSheet) {
-      toggleSheet.onclick = () => {
-        vState.showCheatSheet = !vState.showCheatSheet;
-        renderVerbsView();
-      };
-    }
-    const jumpDrill = document.getElementById("btn-jump-conj-drill");
-    if (jumpDrill) {
-      jumpDrill.onclick = () => {
-        pState.subMode = "conj";
-        pState.conjQuestion = null;
-        switchAppMode("practice");
-      };
-    }
-    const searchEl = document.getElementById("verb-search-input");
-    if (searchEl) {
-      searchEl.oninput = (e) => {
-        vState.search = e.target.value;
-        const pos = e.target.selectionStart;
-        renderVerbsView();
-        const next = document.getElementById("verb-search-input");
-        if (next) {
-          next.focus();
-          next.setSelectionRange(pos, pos);
-        }
-      };
-    }
-    const searchClr = document.getElementById("verb-search-clear");
-    if (searchClr) {
-      searchClr.onclick = () => {
-        vState.search = "";
-        renderVerbsView();
-      };
-    }
-    const catSel = document.getElementById("verb-cat-select");
-    if (catSel) catSel.onchange = (e) => { vState.category = e.target.value; renderVerbsView(); };
-    const grpSel = document.getElementById("verb-group-select");
-    if (grpSel) grpSel.onchange = (e) => { vState.group = e.target.value; renderVerbsView(); };
-
-    container.querySelectorAll("[data-vjlpt]").forEach((b) => {
-      b.onclick = () => { vState.jlpt = b.dataset.vjlpt; renderVerbsView(); };
-    });
-    container.querySelectorAll("[data-vstatus]").forEach((b) => {
-      b.onclick = () => { vState.status = b.dataset.vstatus; renderVerbsView(); };
-    });
-    container.querySelectorAll("[data-vrange]").forEach((b) => {
-      b.onclick = () => { vState.range = b.dataset.vrange; renderVerbsView(); };
-    });
-    container.querySelectorAll("[data-vstar]").forEach((b) => {
-      b.onclick = () => toggleStar(b.dataset.vstar);
-    });
-    container.querySelectorAll("[data-vmaster]").forEach((b) => {
-      b.onclick = () => toggleMastered(b.dataset.vmaster);
-    });
-    container.querySelectorAll(".v-speak-btn").forEach((b) => {
-      b.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); };
-    });
-    container.querySelectorAll(".v-speak-slow-btn").forEach((b) => {
-      b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
-    });
-    container.querySelectorAll(".v-allforms-btn").forEach((b) => {
-      b.onclick = () => openVerbConjugationModal(b.dataset.vid);
-    });
-    container.querySelectorAll(".v-staff-btn").forEach((b) => {
-      b.onclick = () => openStaffCard(b.dataset.jp, b.dataset.cn, b.dataset.tag);
-    });
-    const resetBtn = document.getElementById("btn-reset-verb-filters");
-    if (resetBtn) {
-      resetBtn.onclick = () => {
-        vState.search = "";
-        vState.jlpt = "all";
-        vState.group = "all";
-        vState.category = "all";
-        vState.status = "all";
-        renderVerbsView();
-      };
+    const pairBtn = document.getElementById("modal-open-vivt-pair");
+    if (pairBtn && partner) {
+      pairBtn.onclick = () => openViVtCompareModal(verb.id, partner.id);
     }
   }
 
   // =========================================================================
-  // TAB 4: JAPANESE GRAMMAR GUIDE (GROUPED BY N5 / N4 / N3, ORDERED BY IMPORTANCE)
+  // TAB 1: VOCABULARY & TOP 300 VERBS HUB
+  // =========================================================================
+  function renderVerbsView() {
+    const container = document.getElementById("verbs-view-container");
+    if (!container) return;
+    const { state, formatRuby, escapeHtml, speakJapanese, toggleStar, toggleMastered, switchAppMode } = app();
+
+    const n5List = getN5VocabUnified();
+    const verbsMastered = VERBS.filter((v) => state.mastered[v.id]).length;
+    const n5Mastered = n5List.filter((w) => state.mastered[w.id]).length;
+
+    const subTabBar = `
+      <div class="vocab-hub-switcher scroll-fade-x">
+        <button type="button" class="map-pill ${vState.subTab === "verbs300" ? "active" : ""}" data-vhub="verbs300">
+          ⚡ 高频动词 ${VERBS.length} (${verbsMastered}/${VERBS.length})
+        </button>
+        <button type="button" class="map-pill ${vState.subTab === "n5vocab" ? "active" : ""}" data-vhub="n5vocab">
+          🟢 N5 核心词汇 (${n5Mastered}/${n5List.length})
+        </button>
+        <button type="button" class="map-pill ${vState.subTab === "n4n3lib" ? "active" : ""}" data-vhub="n4n3lib">
+          🚀 N4–N3 进阶词库 (缩略·副词·拟态·敬语)
+        </button>
+      </div>
+    `;
+
+    // -----------------------------------------------------------------------
+    // SUB-TAB A: TOP 300 VERBS
+    // -----------------------------------------------------------------------
+    if (vState.subTab === "verbs300") {
+      const pct = VERBS.length ? Math.round((verbsMastered / VERBS.length) * 100) : 0;
+      const categories = ["all", ...Array.from(new Set(VERBS.map((v) => v.category)))];
+      const byId = {};
+      VERBS.forEach((v) => { byId[v.id] = v; });
+
+      const q = vState.search.trim().toLowerCase();
+      const filtered = VERBS.filter((v) => {
+        if (vState.jlpt !== "all" && v.jlpt !== vState.jlpt) return false;
+        if (vState.group !== "all" && v.group !== vState.group) return false;
+        if (vState.transitivity === "paired" && !v.pairId) return false;
+        if ((vState.transitivity === "vi" || vState.transitivity === "vt") && v.transitivity !== vState.transitivity) return false;
+        if (vState.category !== "all" && v.category !== vState.category) return false;
+        if (vState.status === "starred" && !state.starred[v.id]) return false;
+        if (vState.status === "mastered" && !state.mastered[v.id]) return false;
+        if (vState.status === "unmastered" && state.mastered[v.id]) return false;
+        if (q) {
+          const exText = v.examples.map((e) => `${e.jp} ${e.romaji} ${e.cn}`).join(" ");
+          const formText = Object.values(v.forms).map((f) => `${f.jp} ${f.kana}`).join(" ");
+          const hay = `${v.rank} ${v.dict} ${v.kana} ${v.romaji} ${v.cn} ${v.category} ${v.jlpt} ${v.particles || ""} ${formText} ${exText}`.toLowerCase();
+          return hay.includes(q);
+        }
+        if (
+          vState.jlpt === "all" &&
+          vState.group === "all" &&
+          vState.transitivity === "all" &&
+          vState.category === "all" &&
+          vState.status === "all" &&
+          vState.range !== "all"
+        ) {
+          const [lo, hi] = vState.range.split("-").map(Number);
+          return v.rank >= lo && v.rank <= hi;
+        }
+        return true;
+      });
+
+      const isFilteredActive =
+        q ||
+        vState.jlpt !== "all" ||
+        vState.group !== "all" ||
+        vState.transitivity !== "all" ||
+        vState.category !== "all" ||
+        vState.status !== "all";
+
+      container.innerHTML = `
+        <div class="learning-hero-card">
+          ${subTabBar}
+          <div class="learning-hero-top" style="margin-top:0.75rem;">
+            <div>
+              <h2 class="itin-section-title">⚡ 日语高频 Top 300 动词 · 自他成对对照 & 13 种变形</h2>
+              <p class="itin-section-sub">涵盖 N5 核心、56 组自他成对动词、N3 复合动词与服务业敬语动词，配助词搭配与 900 句日常/口语缩略例句。</p>
+            </div>
+            <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+              <button type="button" class="action-btn ${vState.showCheatSheet ? "primary-audio" : ""}" id="btn-toggle-conj-sheet">
+                📐 ${vState.showCheatSheet ? "收起变形口诀" : "变形 & 自他口诀"}
+              </button>
+              <button type="button" class="action-btn primary-audio" id="btn-jump-conj-drill">
+                ⚡ 动词变形闪电战 →
+              </button>
+            </div>
+          </div>
+
+          <div class="learning-progress-row">
+            <div class="progress-text-meta">
+              <span>🎯 动词掌握进度：<strong>${verbsMastered} / ${VERBS.length}</strong> (${pct}%)</span>
+              <span>当前显示：<strong>${filtered.length}</strong> 个动词</span>
+            </div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;"></div></div>
+          </div>
+
+          ${
+            vState.showCheatSheet
+              ? `
+            <div class="conj-cheatsheet-box">
+              <div class="cheat-col">
+                <div class="cheat-col-title">🔵 五段动词 (u-verb)</div>
+                <ul>
+                  <li><strong>ます/たい：</strong>词尾 u段 → <strong>i段</strong>＋ます/たい</li>
+                  <li><strong>て/た音变：</strong><code>うつる</code>→って｜<code>むぶぬ</code>→んで｜<code>く</code>→いて(⚠️行く→行って)｜<code>ぐ</code>→いで｜<code>す</code>→して</li>
+                  <li><strong>ない/可能/ば：</strong>あ段＋ない（う→わ）；え段＋る / ば</li>
+                  <li><strong>使役被动：</strong>非す结尾短缩「あ段＋される」（待たされる）；す结尾「さ＋せられる」</li>
+                </ul>
+              </div>
+              <div class="cheat-col">
+                <div class="cheat-col-title">🟢 一段动词 (ru-verb)</div>
+                <ul>
+                  <li>直接<strong>去「る」</strong>接词尾！</li>
+                  <li>ます / て・た / ない / たい / よう / れば / ろ(命令)</li>
+                  <li>可能・被动：去る＋<strong>られる</strong>｜使役：<strong>させる</strong>｜使役被动：<strong>させられる</strong></li>
+                  <li>⚠️ 伪一段五段：<code>帰る・走る・入る・切る・知る・減る・滑る・参る</code></li>
+                </ul>
+              </div>
+              <div class="cheat-col">
+                <div class="cheat-col-title">🟣 不规则动词</div>
+                <ul>
+                  <li><strong>〜する：</strong>します / して / した / しない / できる / しよう / され / させ / しろ</li>
+                  <li><strong>来る(くる)：</strong>きます / きて / きた / こない / こられる / こよう / こい</li>
+                </ul>
+              </div>
+              <div class="cheat-col">
+                <div class="cheat-col-title">🔗 自他动词成对规律</div>
+                <ul>
+                  <li><strong>-aru(自) ↔ -eru(他)：</strong>閉まる/閉める · 決まる/決める · 集まる/集める</li>
+                  <li><strong>-reru(自) ↔ -su(他)：</strong>壊れる/壊す · 汚れる/汚す · 外れる/外す</li>
+                  <li><strong>-u(自) ↔ -eru(他)：</strong>開く/開ける · 続く/続ける · 並ぶ/並べる</li>
+                  <li><strong>助词铁律：</strong>自动词配 <code>〜が</code>（〜ている）；他动词配 <code>〜を</code>（〜てある/〜ておく）</li>
+                </ul>
+              </div>
+            </div>
+          `
+              : ""
+          }
+        </div>
+
+        <div class="learning-filter-card">
+          <div class="lf-row-top">
+            <div class="search-box" style="flex:1 1 240px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="verb-search-input" value="${escapeHtml(vState.search)}" placeholder="搜动词、假名、罗马音、中文、助词搭配或例句..." />
+              <button type="button" class="search-clear" id="verb-search-clear" style="display:${vState.search ? "block" : "none"};">✕</button>
+            </div>
+            <select id="verb-cat-select" class="lf-select" aria-label="按场景分类筛选">
+              ${categories.map((c) => `<option value="${escapeHtml(c)}" ${vState.category === c ? "selected" : ""}>${c === "all" ? "📂 全部分类" : `📂 ${escapeHtml(c)}`}</option>`).join("")}
+            </select>
+            <select id="verb-group-select" class="lf-select" aria-label="按变形组筛选">
+              <option value="all" ${vState.group === "all" ? "selected" : ""}>📐 全部变形类</option>
+              <option value="godan" ${vState.group === "godan" ? "selected" : ""}>五段 (u-verb)</option>
+              <option value="ichidan" ${vState.group === "ichidan" ? "selected" : ""}>一段 (ru-verb)</option>
+              <option value="irregular" ${vState.group === "irregular" ? "selected" : ""}>不规则 (する/来る)</option>
+            </select>
+          </div>
+
+          <div class="lf-chips-row">
+            <div class="toggle-group">
+              ${["all", "N5", "N4", "N3"]
+                .map((lvl) => `<button type="button" class="toggle-chip ${vState.jlpt === lvl ? "active" : ""}" data-vjlpt="${lvl}">${lvl === "all" ? "全部级别" : lvl}</button>`)
+                .join("")}
+            </div>
+            <div class="toggle-group">
+              ${[
+                ["all", "全部自他"],
+                ["paired", "⇄ 仅看自他成对"],
+                ["vi", "🔵 自动词"],
+                ["vt", "🟠 他动词"]
+              ]
+                .map(([tk, tlbl]) => `<button type="button" class="toggle-chip ${vState.transitivity === tk ? "active" : ""}" data-vtrans="${tk}">${tlbl}</button>`)
+                .join("")}
+            </div>
+            <div class="toggle-group">
+              ${[
+                ["all", "📚 全部"],
+                ["unmastered", "⏳ 未掌握"],
+                ["mastered", "✅ 已掌握"],
+                ["starred", "⭐ 收藏"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.status === k ? "active" : ""}" data-vstatus="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+          </div>
+
+          ${
+            !isFilteredActive
+              ? `
+            <div class="lf-range-row">
+              <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);">高频分段：</span>
+              ${[
+                ["1-50", "🔥 1–50"],
+                ["51-100", "⭐ 51–100"],
+                ["101-150", "📘 101–150"],
+                ["151-200", "💎 151–200"],
+                ["201-250", "⇄ 201–250 (自他补完)"],
+                ["251-300", "🚀 251–300 (复合/敬语)"],
+                ["all", "📋 全部 300"]
+              ]
+                .map(([rk, rlbl]) => `<button type="button" class="map-pill ${vState.range === rk ? "active" : ""}" data-vrange="${rk}">${rlbl}</button>`)
+                .join("")}
+            </div>
+          `
+              : ""
+          }
+        </div>
+
+        <div class="verbs-grid">
+          ${
+            filtered.length === 0
+              ? `<div class="itin-card-block" style="text-align:center;padding:2rem;">
+                  <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
+                  <div style="font-weight:700;margin-bottom:0.4rem;">没有找到匹配的动词</div>
+                  <button type="button" class="action-btn primary-audio" id="btn-reset-verb-filters">重置动词筛选</button>
+                </div>`
+              : filtered
+                  .map((v) => {
+                    const isStar = !!state.starred[v.id];
+                    const isMast = !!state.mastered[v.id];
+                    const partner = v.pairId ? byId[v.pairId] : null;
+                    const top6 = FORM_META.slice(0, 6);
+                    return `
+                    <article class="verb-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}">
+                      <div class="verb-card-head">
+                        <div class="verb-badges">
+                          <span class="verb-rank-pill">#${v.rank}</span>
+                          <span class="jlpt-pill jlpt-${v.jlpt.toLowerCase()}">${v.jlpt}</span>
+                          <span class="verb-group-pill grp-${v.group}">${GROUP_LABELS[v.group]}</span>
+                          <span class="trans-pill trans-${v.transitivity}">${TRANS_LABELS[v.transitivity]}</span>
+                        </div>
+                        <div class="phrase-status-btns">
+                          <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-vstar="${v.id}">${isStar ? "⭐" : "☆"}</button>
+                          <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-vmaster="${v.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
+                        </div>
+                      </div>
+
+                      <div class="verb-main-row">
+                        <div style="flex:1;min-width:170px;">
+                          <div class="jp-text verb-jp-title" lang="ja">${formatRuby(v.jp)}</div>
+                          <div class="romaji-text" style="margin-bottom:0.12rem;">${escapeHtml(v.kana)} · ${escapeHtml(v.romaji)}</div>
+                          <div class="cn-text" style="margin-bottom:0.2rem;">${escapeHtml(v.cn)}</div>
+                          <div class="verb-meta-chips">
+                            ${v.particles ? `<span class="particle-hint-chip">🔗 ${escapeHtml(v.particles)}</span>` : ""}
+                            ${
+                              partner
+                                ? `<button type="button" class="pair-jump-btn v-pair-btn" data-v1="${v.id}" data-v2="${partner.id}">⇄ 对照${partner.transitivity === "vi" ? "自" : "他"}：${escapeHtml(partner.dict)}</button>`
+                                : ""
+                            }
+                          </div>
+                        </div>
+                        <div style="display:flex;gap:0.35rem;flex-wrap:wrap;align-items:center;">
+                          <button type="button" class="action-btn primary-audio v-speak-btn" data-jp="${escapeHtml(v.dict)}">🔊 朗读</button>
+                          <button type="button" class="action-btn v-speak-slow-btn" data-jp="${escapeHtml(v.dict)}">🐢</button>
+                          <button type="button" class="action-btn v-allforms-btn" data-vid="${v.id}">📋 13种变形</button>
+                        </div>
+                      </div>
+
+                      <div class="verb-forms-strip">
+                        ${top6
+                          .map((fm) => {
+                            const f = v.forms[fm.key];
+                            const disabled = !f || f.jp.startsWith("—");
+                            return `
+                            <button type="button" class="verb-form-chip ${disabled ? "disabled" : "v-speak-btn"}" ${disabled ? "disabled" : `data-jp="${escapeHtml(f.jp)}"`} title="点击听「${fm.label}」发音">
+                              <span class="vf-lbl">${fm.label}</span>
+                              <span class="vf-val" lang="ja">${escapeHtml(f ? f.jp : "—")}</span>
+                            </button>
+                          `;
+                          })
+                          .join("")}
+                      </div>
+
+                      <div class="verb-examples-list">
+                        ${v.examples
+                          .map(
+                            (ex) => `
+                          <div class="verb-example-item">
+                            <div style="flex:1;min-width:0;">
+                              <div class="vex-top">
+                                <span class="vex-form-badge">${escapeHtml(ex.form)}</span>
+                              </div>
+                              <div class="jp-text vex-jp" lang="ja">${formatRuby(ex.jp)}</div>
+                              <div class="romaji-text" style="margin-bottom:0.15rem;">${escapeHtml(ex.romaji)}</div>
+                              <div class="cn-text" style="font-size:0.84rem;margin-bottom:0;">${escapeHtml(ex.cn)}</div>
+                            </div>
+                            <div class="vex-btns">
+                              <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
+                              <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
+                            </div>
+                          </div>
+                        `
+                          )
+                          .join("")}
+                      </div>
+                    </article>
+                  `;
+                  })
+                  .join("")
+          }
+        </div>
+      `;
+
+      // Bind Verbs 300 Events
+      const toggleSheet = document.getElementById("btn-toggle-conj-sheet");
+      if (toggleSheet) toggleSheet.onclick = () => { vState.showCheatSheet = !vState.showCheatSheet; renderVerbsView(); };
+      const jumpDrill = document.getElementById("btn-jump-conj-drill");
+      if (jumpDrill) jumpDrill.onclick = () => { pState.subMode = "conj"; pState.conjQuestion = null; switchAppMode("practice"); };
+      const searchEl = document.getElementById("verb-search-input");
+      if (searchEl) {
+        searchEl.oninput = (e) => {
+          vState.search = e.target.value;
+          const pos = e.target.selectionStart;
+          renderVerbsView();
+          const next = document.getElementById("verb-search-input");
+          if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+        };
+      }
+      const searchClr = document.getElementById("verb-search-clear");
+      if (searchClr) searchClr.onclick = () => { vState.search = ""; renderVerbsView(); };
+      const catSel = document.getElementById("verb-cat-select");
+      if (catSel) catSel.onchange = (e) => { vState.category = e.target.value; renderVerbsView(); };
+      const grpSel = document.getElementById("verb-group-select");
+      if (grpSel) grpSel.onchange = (e) => { vState.group = e.target.value; renderVerbsView(); };
+      container.querySelectorAll("[data-vjlpt]").forEach((b) => { b.onclick = () => { vState.jlpt = b.dataset.vjlpt; renderVerbsView(); }; });
+      container.querySelectorAll("[data-vtrans]").forEach((b) => { b.onclick = () => { vState.transitivity = b.dataset.vtrans; renderVerbsView(); }; });
+      container.querySelectorAll("[data-vstatus]").forEach((b) => { b.onclick = () => { vState.status = b.dataset.vstatus; renderVerbsView(); }; });
+      container.querySelectorAll("[data-vrange]").forEach((b) => { b.onclick = () => { vState.range = b.dataset.vrange; renderVerbsView(); }; });
+      container.querySelectorAll(".v-allforms-btn").forEach((b) => { b.onclick = () => openVerbConjugationModal(b.dataset.vid); });
+      container.querySelectorAll(".v-pair-btn").forEach((b) => { b.onclick = () => openViVtCompareModal(b.dataset.v1, b.dataset.v2); });
+      const resetBtn = document.getElementById("btn-reset-verb-filters");
+      if (resetBtn) {
+        resetBtn.onclick = () => {
+          vState.search = ""; vState.jlpt = "all"; vState.group = "all";
+          vState.transitivity = "all"; vState.category = "all"; vState.status = "all";
+          renderVerbsView();
+        };
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // SUB-TAB B: N5 CORE VOCABULARY (250 Words + 75 Adjectives = 325)
+    // -----------------------------------------------------------------------
+    else if (vState.subTab === "n5vocab") {
+      const pct = n5List.length ? Math.round((n5Mastered / n5List.length) * 100) : 0;
+      const cats = ["all", ...Array.from(new Set(n5List.map((w) => w.cat)))];
+      const q = vState.n5Search.trim().toLowerCase();
+
+      const filtered = n5List.filter((w) => {
+        if (vState.n5Cat !== "all" && w.cat !== vState.n5Cat) return false;
+        if (vState.n5Status === "starred" && !state.starred[w.id]) return false;
+        if (vState.n5Status === "mastered" && !state.mastered[w.id]) return false;
+        if (vState.n5Status === "unmastered" && state.mastered[w.id]) return false;
+        if (q) {
+          return `${w.jp} ${w.kana} ${w.romaji} ${w.cn} ${w.cat} ${w.ex} ${w.exCn} ${w.subMeta}`.toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      container.innerHTML = `
+        <div class="learning-hero-card">
+          ${subTabBar}
+          <div class="learning-hero-top" style="margin-top:0.75rem;">
+            <div>
+              <h2 class="itin-section-title">🟢 JLPT N5 核心词汇总复习 (${n5List.length} 词 · 含 75 核心形容词)</h2>
+              <p class="itin-section-sub">完整覆盖指示词、时间日期、家人、方位场所、交通、饮食、身体日用品、天气颜色及 い/な 形容词四态变化，每词配 Studio 真人例句！</p>
+            </div>
+            <button type="button" class="action-btn primary-audio" id="btn-jump-n5-srs">
+              🃏 去刷 N5 词汇闪卡 →
+            </button>
+          </div>
+          <div class="learning-progress-row">
+            <div class="progress-text-meta">
+              <span>🎯 N5 词汇掌握进度：<strong>${n5Mastered} / ${n5List.length}</strong> (${pct}%)</span>
+              <span>当前显示：<strong>${filtered.length}</strong> 个词条</span>
+            </div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;background:#059669;"></div></div>
+          </div>
+        </div>
+
+        <div class="learning-filter-card">
+          <div class="lf-row-top">
+            <div class="search-box" style="flex:1 1 240px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="n5-search-input" value="${escapeHtml(vState.n5Search)}" placeholder="搜 N5 单词、假名、罗马音、中文（如：今日、駅、おいし、天気）..." />
+              <button type="button" class="search-clear" id="n5-search-clear" style="display:${vState.n5Search ? "block" : "none"};">✕</button>
+            </div>
+            <div class="toggle-group">
+              ${[
+                ["all", "📚 全部"],
+                ["unmastered", "⏳ 未掌握"],
+                ["mastered", "✅ 已掌握"],
+                ["starred", "⭐ 收藏"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.n5Status === k ? "active" : ""}" data-n5status="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+          </div>
+          <div class="lf-range-row">
+            ${cats
+              .map((c) => `<button type="button" class="map-pill ${vState.n5Cat === c ? "active" : ""}" data-n5cat="${escapeHtml(c)}">${c === "all" ? `全部 (${n5List.length})` : escapeHtml(c)}</button>`)
+              .join("")}
+          </div>
+        </div>
+
+        <div class="vocab-grid">
+          ${
+            filtered.length === 0
+              ? `<div class="itin-card-block" style="text-align:center;padding:2rem;grid-column:1/-1;">
+                  <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
+                  <div style="font-weight:700;margin-bottom:0.4rem;">没有找到匹配的 N5 词汇</div>
+                  <button type="button" class="action-btn primary-audio" id="btn-reset-n5-filters">重置筛选</button>
+                </div>`
+              : filtered
+                  .map((w) => {
+                    const isStar = !!state.starred[w.id];
+                    const isMast = !!state.mastered[w.id];
+                    return `
+                    <article class="vocab-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}">
+                      <div class="verb-card-head">
+                        <div class="verb-badges">
+                          <span class="jlpt-pill jlpt-n5">${escapeHtml(w.cat)}</span>
+                        </div>
+                        <div class="phrase-status-btns">
+                          <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-vstar="${w.id}">${isStar ? "⭐" : "☆"}</button>
+                          <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-vmaster="${w.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
+                        </div>
+                      </div>
+                      <div class="vocab-main-row">
+                        <div style="flex:1;min-width:0;">
+                          <div class="jp-text vocab-jp-title" lang="ja">${formatRuby(w.jp)}</div>
+                          <div class="romaji-text" style="margin-bottom:0.1rem;">${escapeHtml(w.kana)} · ${escapeHtml(w.romaji)}</div>
+                          <div class="cn-text" style="margin-bottom:0;">${escapeHtml(w.cn)}</div>
+                          ${w.subMeta ? `<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:0.2rem;">${escapeHtml(w.subMeta)}</div>` : ""}
+                        </div>
+                        <button type="button" class="action-btn primary-audio v-speak-btn" data-jp="${escapeHtml(w.kana)}">🔊 读词</button>
+                      </div>
+                      ${
+                        w.ex
+                          ? `<div class="verb-example-item" style="margin-top:0.15rem;">
+                              <div style="flex:1;min-width:0;">
+                                <div class="jp-text vex-jp" lang="ja">${formatRuby(w.ex)}</div>
+                                <div class="cn-text" style="font-size:0.82rem;margin-bottom:0;">${escapeHtml(w.exCn)}</div>
+                              </div>
+                              <div class="vex-btns">
+                                <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(w.ex)}" title="朗读例句">🔊</button>
+                                <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(w.ex)}" title="慢速跟读">🐢</button>
+                              </div>
+                            </div>`
+                          : ""
+                      }
+                    </article>
+                  `;
+                  })
+                  .join("")
+          }
+        </div>
+      `;
+
+      const jumpN5Srs = document.getElementById("btn-jump-n5-srs");
+      if (jumpN5Srs) {
+        jumpN5Srs.onclick = () => {
+          pState.subMode = "srs";
+          pState.srsDeck = "n5vocab";
+          pState.srsCurrentCard = null;
+          switchAppMode("practice");
+        };
+      }
+      const n5SearchEl = document.getElementById("n5-search-input");
+      if (n5SearchEl) {
+        n5SearchEl.oninput = (e) => {
+          vState.n5Search = e.target.value;
+          const pos = e.target.selectionStart;
+          renderVerbsView();
+          const next = document.getElementById("n5-search-input");
+          if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+        };
+      }
+      const n5Clr = document.getElementById("n5-search-clear");
+      if (n5Clr) n5Clr.onclick = () => { vState.n5Search = ""; renderVerbsView(); };
+      container.querySelectorAll("[data-n5cat]").forEach((b) => { b.onclick = () => { vState.n5Cat = b.dataset.n5cat; renderVerbsView(); }; });
+      container.querySelectorAll("[data-n5status]").forEach((b) => { b.onclick = () => { vState.n5Status = b.dataset.n5status; renderVerbsView(); }; });
+      const resetN5 = document.getElementById("btn-reset-n5-filters");
+      if (resetN5) resetN5.onclick = () => { vState.n5Cat = "all"; vState.n5Search = ""; vState.n5Status = "all"; renderVerbsView(); };
+    }
+
+    // -----------------------------------------------------------------------
+    // SUB-TAB C: N4-N3 PRACTICAL FLUENCY LIBRARY
+    // -----------------------------------------------------------------------
+    else {
+      const q = vState.libSearch.trim().toLowerCase();
+      let libContentHtml = "";
+
+      if (vState.libTab === "contractions") {
+        const list = (EXTRAS.contractions || []).filter((c) => !q || `${c.formal} ${c.casual} ${c.rule} ${c.exCasual} ${c.exCn}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <div class="tb-rule-banner">💡 日本日常口语 80% 都会缩略！重点掌握 <strong>〜てる / 〜ちゃう / 〜とく / 〜なきゃ / 〜んだ</strong>，瞬间打通日剧与街谈听力。</div>
+          <div class="vocab-grid">
+            ${list
+              .map(
+                (c) => `
+              <article class="vocab-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:0.4rem;flex-wrap:wrap;">
+                  <span class="phrase-tag" lang="ja">${escapeHtml(c.formal)} ➔ <strong style="color:var(--accent-red);">${escapeHtml(c.casual)}</strong></span>
+                  <span style="font-size:0.75rem;color:var(--text-muted);">${escapeHtml(c.rule)}</span>
+                </div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">📖 书面对照：</div>
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(c.exFormal)}</div>
+                  </div>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(c.exFormal)}">🔊</button>
+                </div>
+                <div class="verb-example-item" style="background:var(--bg-indigo-soft);">
+                  <div style="flex:1;">
+                    <div style="font-size:0.72rem;font-weight:800;color:var(--accent-indigo);">💬 地道口语：</div>
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(c.exCasual)}</div>
+                    <div class="cn-text" style="font-size:0.83rem;margin:0;">${escapeHtml(c.exCn)}</div>
+                  </div>
+                  <div class="vex-btns">
+                    <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(c.exCasual)}">🔊</button>
+                    <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(c.exCasual)}">🐢</button>
+                  </div>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (vState.libTab === "adverbs") {
+        const list = (EXTRAS.adverbs || []).filter((a) => !q || `${a.jp} ${a.kana} ${a.romaji} ${a.cn} ${a.pairing} ${a.ex} ${a.exCn}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <div class="vocab-grid">
+            ${list
+              .map(
+                (a) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <div class="verb-badges">
+                    <span class="jlpt-pill jlpt-${a.jlpt.toLowerCase()}">${a.jlpt}</span>
+                    <span class="particle-hint-chip">🔗 ${escapeHtml(a.pairing)}</span>
+                  </div>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(a.kana)}">🔊 读词</button>
+                </div>
+                <div class="jp-text vocab-jp-title" lang="ja">${formatRuby(a.jp)}</div>
+                <div class="romaji-text">${escapeHtml(a.kana)} · ${escapeHtml(a.romaji)}</div>
+                <div class="cn-text">${escapeHtml(a.cn)}</div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(a.ex)}</div>
+                    <div class="cn-text" style="font-size:0.83rem;margin:0;">${escapeHtml(a.exCn)}</div>
+                  </div>
+                  <div class="vex-btns">
+                    <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(a.ex)}">🔊</button>
+                    <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(a.ex)}">🐢</button>
+                  </div>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (vState.libTab === "onomatopoeia") {
+        const list = (EXTRAS.onomatopoeia || []).filter((o) => !q || `${o.cat} ${o.jp} ${o.romaji} ${o.cn} ${o.ex} ${o.exCn}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <div class="vocab-grid">
+            ${list
+              .map(
+                (o) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <span class="phrase-tag">${escapeHtml(o.cat)}</span>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(o.jp)}">🔊 读词</button>
+                </div>
+                <div class="jp-text vocab-jp-title" lang="ja">${escapeHtml(o.jp)}</div>
+                <div class="romaji-text">${escapeHtml(o.romaji)}</div>
+                <div class="cn-text">${escapeHtml(o.cn)}</div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(o.ex)}</div>
+                    <div class="cn-text" style="font-size:0.83rem;margin:0;">${escapeHtml(o.exCn)}</div>
+                  </div>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(o.ex)}">🔊</button>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (vState.libTab === "keigo") {
+        const list = (EXTRAS.keigoVerbs || []).filter((k) => !q || `${k.plain} ${k.cn} ${k.sonkeigo} ${k.kenjougo} ${k.tip} ${k.ex}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <div class="tb-rule-banner">💡 去日本餐厅和酒店听懂服务员敬语秘诀：别人动作（尊他语 <strong>いらっしゃる / 召し上がる</strong>）；我方动作（自谦语 <strong>伺う / いただく / 致す</strong>）。</div>
+          <div class="vocab-grid">
+            ${list
+              .map(
+                (k) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <span class="verb-rank-pill" lang="ja">基本：${escapeHtml(k.plain)}</span>
+                  <span style="font-weight:800;color:var(--accent-indigo);">${escapeHtml(k.cn)}</span>
+                </div>
+                <div class="keigo-pair-box">
+                  <div class="keigo-cell">
+                    <span class="keigo-lbl">👑 尊他语（对方/店员说）</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.35rem;">
+                      <strong lang="ja">${formatRuby(k.sonkeigo)}</strong>
+                      <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(k.sonkeigo)}">🔊</button>
+                    </div>
+                  </div>
+                  <div class="keigo-cell">
+                    <span class="keigo-lbl">🙇 自谦语（我方谦称）</span>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.35rem;">
+                      <strong lang="ja">${formatRuby(k.kenjougo)}</strong>
+                      <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(k.kenjougo)}">🔊</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="phrase-tip" style="margin:0;">💡 ${escapeHtml(k.tip)}</div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(k.ex)}</div>
+                    <div class="cn-text" style="font-size:0.83rem;margin:0;">${escapeHtml(k.exCn)}</div>
+                  </div>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(k.ex)}">🔊</button>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else if (vState.libTab === "staff") {
+        const list = (EXTRAS.staffDecoder || []).filter((s) => !q || `${s.scene} ${s.hearJp} ${s.keyword} ${s.cn} ${s.replyJp} ${s.replyCn}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <div class="tb-rule-banner">👂 <strong>听力抓关键词：</strong>不用每个字听懂！只要听清红色高亮的核心关键词，就能用绿色极简答句 1 秒接住！可去「🎯 实战练习 → 🏪 店员快语速听解」做盲听测验。</div>
+          <div class="vocab-grid">
+            ${list
+              .map(
+                (s) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <span class="phrase-tag">${escapeHtml(s.scene)}</span>
+                  <span class="imp-pill imp-5" lang="ja">🔑 ${escapeHtml(s.keyword)}</span>
+                </div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div style="font-size:0.72rem;font-weight:800;color:var(--accent-red);">🗣️ 店员问：</div>
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(s.hearJp)}</div>
+                    <div class="romaji-text" style="margin-bottom:0.1rem;">${escapeHtml(s.hearRomaji)}</div>
+                    <div class="cn-text" style="font-size:0.84rem;margin:0;">${escapeHtml(s.cn)}</div>
+                  </div>
+                  <div class="vex-btns">
+                    <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(s.hearJp)}">🔊</button>
+                    <button type="button" class="icon-btn v-speak-slow-btn" data-jp="${escapeHtml(s.hearJp)}">🐢</button>
+                  </div>
+                </div>
+                <div class="phrase-replies" style="margin-top:0;">
+                  <div class="reply-label">✅ 我方 1 秒快答：</div>
+                  <div class="reply-item">
+                    <div>
+                      <div class="reply-jp" lang="ja">${formatRuby(s.replyJp)}</div>
+                      <div class="reply-cn">${escapeHtml(s.replyCn)}</div>
+                    </div>
+                    <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(s.replyJp)}">🔊 跟读</button>
+                  </div>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      } else {
+        const traps = (EXTRAS.kanjiTraps || []).filter((t) => !q || `${t.type} ${t.jp} ${t.kana} ${t.realCn} ${t.wrongGuess} ${t.ex}`.toLowerCase().includes(q));
+        const signs = (EXTRAS.streetSigns || []).filter((s) => !q || `${s.cat} ${s.jp} ${s.kana} ${s.cn} ${s.tip}`.toLowerCase().includes(q));
+        libContentHtml = `
+          <h3 class="section-title" style="margin-top:0.2rem;">🚧 中日汉字避坑 & 高频片假名 (${traps.length})</h3>
+          <div class="vocab-grid" style="margin-bottom:1.1rem;">
+            ${traps
+              .map(
+                (t) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <span class="phrase-tag">${escapeHtml(t.type)}</span>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(t.kana)}">🔊 读词</button>
+                </div>
+                <div class="jp-text vocab-jp-title" lang="ja">${formatRuby(t.jp)}</div>
+                <div class="romaji-text">${escapeHtml(t.kana)} · ${escapeHtml(t.romaji)}</div>
+                <div style="font-size:0.78rem;color:var(--accent-red);margin-bottom:0.15rem;">❌ 容易误猜：${escapeHtml(t.wrongGuess)}</div>
+                <div class="cn-text">✅ 真实意思：${escapeHtml(t.realCn)}</div>
+                <div class="verb-example-item">
+                  <div style="flex:1;">
+                    <div class="jp-text vex-jp" lang="ja">${formatRuby(t.ex)}</div>
+                    <div class="cn-text" style="font-size:0.82rem;margin:0;">${escapeHtml(t.exCn)}</div>
+                  </div>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(t.ex)}">🔊</button>
+                </div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+          <h3 class="section-title">🪧 日本街头·餐厅·车站常见标识看板 (${signs.length})</h3>
+          <div class="vocab-grid">
+            ${signs
+              .map(
+                (s) => `
+              <article class="vocab-card">
+                <div class="verb-card-head">
+                  <span class="phrase-tag">${escapeHtml(s.cat)}</span>
+                  <button type="button" class="icon-btn v-speak-btn" data-jp="${escapeHtml(s.kana)}">🔊 听读音</button>
+                </div>
+                <div class="jp-text vocab-jp-title" lang="ja">${formatRuby(s.jp)}</div>
+                <div class="romaji-text">${escapeHtml(s.kana)} · ${escapeHtml(s.romaji)}</div>
+                <div class="cn-text">${escapeHtml(s.cn)}</div>
+                <div class="phrase-tip" style="margin:0;">💡 ${escapeHtml(s.tip)}</div>
+              </article>
+            `
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="learning-hero-card">
+          ${subTabBar}
+          <div class="learning-hero-top" style="margin-top:0.75rem;">
+            <div>
+              <h2 class="itin-section-title">🚀 N4–N3 地道日语实战词库（突破课本，听懂真实日本）</h2>
+              <p class="itin-section-sub">覆盖口语缩略、N3 高频副词、美食与育儿拟态词、服务业敬语动词、店员快语速听力解码、汉字避坑与街头看板。</p>
+            </div>
+            <button type="button" class="action-btn primary-audio" id="btn-jump-staff-quiz">
+              🏪 去测店员听力解码 →
+            </button>
+          </div>
+        </div>
+
+        <div class="learning-filter-card">
+          <div class="lf-row-top">
+            <div class="search-box" style="flex:1 1 240px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="lib-search-input" value="${escapeHtml(vState.libSearch)}" placeholder="在当前词库中搜索日文/中文关键词..." />
+              <button type="button" class="search-clear" id="lib-search-clear" style="display:${vState.libSearch ? "block" : "none"};">✕</button>
+            </div>
+          </div>
+          <div class="lf-range-row" style="border-top:none;padding-top:0;">
+            ${[
+              ["contractions", `💬 口语缩略 (${(EXTRAS.contractions || []).length})`],
+              ["adverbs", `🎯 N3副词 (${(EXTRAS.adverbs || []).length})`],
+              ["onomatopoeia", `🍜 拟声拟态 (${(EXTRAS.onomatopoeia || []).length})`],
+              ["keigo", `🙇 敬语动词 (${(EXTRAS.keigoVerbs || []).length})`],
+              ["staff", `🏪 店员听力 (${(EXTRAS.staffDecoder || []).length})`],
+              ["signs", `🚧 陷阱与看板 (${(EXTRAS.kanjiTraps || []).length + (EXTRAS.streetSigns || []).length})`]
+            ]
+              .map(([k, lbl]) => `<button type="button" class="map-pill ${vState.libTab === k ? "active" : ""}" data-libtab="${k}">${lbl}</button>`)
+              .join("")}
+          </div>
+        </div>
+
+        ${libContentHtml}
+      `;
+
+      const jumpStaff = document.getElementById("btn-jump-staff-quiz");
+      if (jumpStaff) {
+        jumpStaff.onclick = () => {
+          pState.subMode = "quiz";
+          pState.quizKind = "staff";
+          pState.quizQuestion = null;
+          switchAppMode("practice");
+        };
+      }
+      const libSearchEl = document.getElementById("lib-search-input");
+      if (libSearchEl) {
+        libSearchEl.oninput = (e) => {
+          vState.libSearch = e.target.value;
+          const pos = e.target.selectionStart;
+          renderVerbsView();
+          const next = document.getElementById("lib-search-input");
+          if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+        };
+      }
+      const libClr = document.getElementById("lib-search-clear");
+      if (libClr) libClr.onclick = () => { vState.libSearch = ""; renderVerbsView(); };
+      container.querySelectorAll("[data-libtab]").forEach((b) => {
+        b.onclick = () => { vState.libTab = b.dataset.libtab; renderVerbsView(); };
+      });
+    }
+
+    // Shared bindings across all 3 sub-tabs
+    container.querySelectorAll("[data-vhub]").forEach((b) => {
+      b.onclick = () => { vState.subTab = b.dataset.vhub; renderVerbsView(); };
+    });
+    container.querySelectorAll("[data-vstar]").forEach((b) => { b.onclick = () => toggleStar(b.dataset.vstar); });
+    container.querySelectorAll("[data-vmaster]").forEach((b) => { b.onclick = () => toggleMastered(b.dataset.vmaster); });
+    container.querySelectorAll(".v-speak-btn").forEach((b) => { b.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); }; });
+    container.querySelectorAll(".v-speak-slow-btn").forEach((b) => { b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); }; });
+  }
+
+  // =========================================================================
+  // TAB 2: JAPANESE GRAMMAR GUIDE (132 PATTERNS N5 / N4 / N3 + 6 COMPARISONS)
   // =========================================================================
   function renderGrammarCard(g) {
     const { state, formatRuby, escapeHtml } = app();
@@ -601,7 +1193,7 @@
         </div>
 
         <div class="grammar-pattern-row">
-          <div class="grammar-pattern-title">${escapeHtml(g.pattern)}</div>
+          <div class="grammar-pattern-title" lang="ja">${escapeHtml(g.pattern)}</div>
           <div class="romaji-text" style="margin:0;">${escapeHtml(g.reading)}</div>
         </div>
 
@@ -620,7 +1212,7 @@
             ? `
           <div class="inline-gquiz-box">
             <div style="font-size:0.78rem;font-weight:800;color:var(--accent-indigo);margin-bottom:0.35rem;">🧩 随堂即练：请选择正确的填空项</div>
-            <div class="jp-text" style="font-size:1.05rem;margin-bottom:0.2rem;">${formatRuby(g.quiz.promptJp)}</div>
+            <div class="jp-text" lang="ja" style="font-size:1.05rem;margin-bottom:0.2rem;">${formatRuby(g.quiz.promptJp)}</div>
             <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.55rem;">🇨🇳 ${escapeHtml(g.quiz.cn)}</div>
             <div class="inline-gquiz-opts">
               ${g.quiz.options
@@ -646,7 +1238,6 @@
             : ""
         }
 
-        <!-- Daily Use Examples -->
         <div class="grammar-examples">
           <div class="gex-heading">🗣️ 日常高频例句（点击朗读跟读）：</div>
           ${g.dailyExamples
@@ -655,14 +1246,13 @@
             <div class="verb-example-item">
               <div style="flex:1;min-width:0;">
                 <span class="vex-form-badge">${escapeHtml(ex.ctx)}</span>
-                <div class="jp-text vex-jp">${formatRuby(ex.jp)}</div>
+                <div class="jp-text vex-jp" lang="ja">${formatRuby(ex.jp)}</div>
                 <div class="romaji-text" style="margin-bottom:0.15rem;">${escapeHtml(ex.romaji)}</div>
                 <div class="cn-text" style="font-size:0.85rem;margin-bottom:0;">${escapeHtml(ex.cn)}</div>
               </div>
               <div class="vex-btns">
                 <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
                 <button type="button" class="icon-btn g-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
-                <button type="button" class="icon-btn g-staff-btn" data-jp="${escapeHtml(ex.jp)}" data-cn="${escapeHtml(ex.cn)}" data-tag="${g.level} 语法 · ${escapeHtml(g.pattern)}" title="大字出示卡">📱</button>
               </div>
             </div>
           `
@@ -676,7 +1266,7 @@
   function renderGrammarView() {
     const container = document.getElementById("grammar-view-container");
     if (!container) return;
-    const { state, escapeHtml, speakJapanese, toggleStar, toggleMastered, openStaffCard, recordStudyActivity, switchAppMode } = app();
+    const { state, formatRuby, escapeHtml, speakJapanese, toggleStar, toggleMastered, recordStudyActivity, switchAppMode } = app();
 
     const statsByLvl = ["N5", "N4", "N3"].map((lvl) => {
       const list = GRAMMAR.filter((g) => g.level === lvl);
@@ -685,6 +1275,7 @@
     });
     const totalDone = statsByLvl.reduce((s, x) => s + x.done, 0);
     const totalPct = GRAMMAR.length ? Math.round((totalDone / GRAMMAR.length) * 100) : 0;
+    const comparisons = EXTRAS.grammarComparisons || [];
 
     const q = gState.search.trim().toLowerCase();
     const filtered = GRAMMAR.filter((g) => {
@@ -702,9 +1293,9 @@
     });
 
     const levelMeta = {
-      N5: { title: "🟢 JLPT N5 · 基础核心语法（按日常重要度排序）", sub: "涵盖日常交流 70% 骨架句型：请求、许可、时间地点助词、意愿、必须与禁止，建议优先全背熟！", cls: "grp-banner-n5" },
-      N4: { title: "🔵 JLPT N4 · 进阶实用语法（按日常重要度排序）", sub: "让日语立刻从“能沟通”升级为“自然礼貌”：敬语请求、四大条件句、授受表达、尝试与提前准备！", cls: "grp-banner-n4" },
-      N3: { title: "🟣 JLPT N3 · 地道流利语法（按日常重要度排序）", sub: "日本人每天挂在嘴边的高阶细腻表达：おかげで、わけではない、ついでに、うちに、わりに、てよかった！", cls: "grp-banner-n3" }
+      N5: { title: "🟢 JLPT N5 · 基础骨架语法全集 (50 条)", sub: "包含指示代词、四态变形、て形连用、移动目的、もう/まだ、普通形简体转换，夯实根基必背！", cls: "grp-banner-n5" },
+      N4: { title: "🔵 JLPT N4 · 进阶自然语法 (36 条)", sub: "敬语指示(お〜ください)、授受敬语、口语缩略(ちゃう/とく/なきゃ)、条件句与使役被动！", cls: "grp-banner-n4" },
+      N3: { title: "🟣 JLPT N3 · 地道流利语法 (46 条)", sub: "に違いない、わけがない、ことはない、てたまらない、おかげで、うちに、っけ、最中に等高频表达！", cls: "grp-banner-n3" }
     };
 
     let contentHtml = "";
@@ -745,19 +1336,31 @@
     }
 
     container.innerHTML = `
-      <!-- Top Summary & N5/N4/N3 Breakdown -->
       <div class="learning-hero-card">
         <div class="learning-hero-top">
           <div>
-            <h2 class="itin-section-title">📖 日语核心语法精讲 · 按 N5 / N4 / N3 分组 & 重要度排序</h2>
-            <p class="itin-section-sub">精选 ${GRAMMAR.length} 条最高频实用语法与 258 句日常例句（涵盖家庭、餐厅、交通、旅行、职场），每条配接续公式、易错辨析与随堂小测！</p>
+            <h2 class="itin-section-title">📖 日语核心语法精讲 · N5 夯基 + N4/N3 进阶 (${GRAMMAR.length} 条)</h2>
+            <p class="itin-section-sub">点击下方级别卡直接切换筛选；每条语法均配接续公式、避坑贴士、3 句真人例句与随堂小测！</p>
           </div>
-          <button type="button" class="action-btn primary-audio" id="btn-jump-grammar-quiz">
-            🧩 进入语法填空测验 →
-          </button>
+          <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+            <button type="button" class="action-btn ${gState.showComparisons ? "primary-audio" : ""}" id="btn-toggle-gcomp">
+              ⚖️ ${gState.showComparisons ? "收起对比卡" : `易混语法对比 (${comparisons.length}组)`}
+            </button>
+            <button type="button" class="action-btn primary-audio" id="btn-jump-grammar-quiz">
+              🧩 语法填空测验 →
+            </button>
+          </div>
         </div>
 
+        <!-- Unified 4-Card Level Selector (No Duplicate Level Chips!) -->
         <div class="grammar-kpi-row">
+          <button type="button" class="gkpi-card ${gState.level === "all" ? "active" : ""}" data-glevel="all">
+            <span class="verb-rank-pill">ALL</span>
+            <div>
+              <div style="font-weight:800;font-size:0.95rem;">全部 ${totalDone} / ${GRAMMAR.length}</div>
+              <div style="font-size:0.73rem;color:var(--text-muted);">N5–N3 完整总览</div>
+            </div>
+          </button>
           ${statsByLvl
             .map(
               (s) => `
@@ -765,7 +1368,7 @@
               <span class="jlpt-pill jlpt-${s.lvl.toLowerCase()}">${s.lvl}</span>
               <div>
                 <div style="font-weight:800;font-size:0.95rem;">已掌握 ${s.done} / ${s.total}</div>
-                <div style="font-size:0.73rem;color:var(--text-muted);">${s.lvl === "N5" ? "基础核心必背" : s.lvl === "N4" ? "日常流利进阶" : "地道细腻表达"}</div>
+                <div style="font-size:0.73rem;color:var(--text-muted);">${s.lvl === "N5" ? "基础总复习" : s.lvl === "N4" ? "日常流利进阶" : "地道细腻表达"}</div>
               </div>
             </button>
           `
@@ -780,14 +1383,49 @@
           </div>
           <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${totalPct}%;"></div></div>
         </div>
+
+        ${
+          gState.showComparisons
+            ? `
+          <div class="gcomp-grid">
+            ${comparisons
+              .map(
+                (cmp) => `
+              <div class="gcomp-card">
+                <div class="gcomp-title">${escapeHtml(cmp.title)}</div>
+                <div class="gcomp-sub">${escapeHtml(cmp.summary)}</div>
+                <div class="gcomp-rows">
+                  ${cmp.rows
+                    .map(
+                      (r) => `
+                    <div class="gcomp-row">
+                      <div style="flex:1;min-width:0;">
+                        <div class="gcomp-form" lang="ja">${escapeHtml(r.form)}</div>
+                        <div class="gcomp-nuance">${escapeHtml(r.nuance)}</div>
+                        <div class="jp-text" lang="ja" style="font-size:0.92rem;margin:0.15rem 0 0.05rem;">${formatRuby(r.exJp)}</div>
+                        <div style="font-size:0.78rem;color:var(--accent-indigo);font-weight:600;">${escapeHtml(r.exCn)}</div>
+                      </div>
+                      <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(r.exJp)}">🔊</button>
+                    </div>
+                  `
+                    )
+                    .join("")}
+                </div>
+              </div>
+            `
+              )
+              .join("")}
+          </div>
+        `
+            : ""
+        }
       </div>
 
-      <!-- Filter Bar -->
       <div class="learning-filter-card">
         <div class="lf-row-top">
           <div class="search-box" style="flex:1 1 240px;">
             <span class="search-icon">🔍</span>
-            <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或场景（如：てもいい、おかげで、条件、顺便、敬语）..." />
+            <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或例句（如：てもいい、こそあど、おかげで、っけ）..." />
             <button type="button" class="search-clear" id="grammar-search-clear" style="display:${gState.search ? "block" : "none"};">✕</button>
           </div>
           <select id="grammar-order-select" class="lf-select" aria-label="分组与排序方式">
@@ -800,30 +1438,12 @@
         <div class="lf-chips-row">
           <div class="toggle-group">
             ${[
-              ["all", "全部级别 (N5–N3)"],
-              ["N5", "🟢 N5"],
-              ["N4", "🔵 N4"],
-              ["N3", "🟣 N3"]
-            ]
-              .map(
-                ([k, lbl]) => `
-              <button type="button" class="toggle-chip ${gState.level === k ? "active" : ""}" data-glevel="${k}">${lbl}</button>
-            `
-              )
-              .join("")}
-          </div>
-          <div class="toggle-group">
-            ${[
               ["all", "全部重要度"],
               ["5", "🔥 5★每日必用"],
               ["4", "⭐ 4★高频实用"],
               ["3", "💎 3★进阶地道"]
             ]
-              .map(
-                ([k, lbl]) => `
-              <button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>
-            `
-              )
+              .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>`)
               .join("")}
           </div>
           <div class="toggle-group">
@@ -833,11 +1453,7 @@
               ["mastered", "✅ 已掌握"],
               ["starred", "⭐ 收藏"]
             ]
-              .map(
-                ([k, lbl]) => `
-              <button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>
-            `
-              )
+              .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
               .join("")}
           </div>
         </div>
@@ -847,6 +1463,8 @@
     `;
 
     // Bind Grammar Events
+    const toggleComp = document.getElementById("btn-toggle-gcomp");
+    if (toggleComp) toggleComp.onclick = () => { gState.showComparisons = !gState.showComparisons; renderGrammarView(); };
     const jumpQuiz = document.getElementById("btn-jump-grammar-quiz");
     if (jumpQuiz) {
       jumpQuiz.onclick = () => {
@@ -863,10 +1481,7 @@
         const pos = e.target.selectionStart;
         renderGrammarView();
         const next = document.getElementById("grammar-search-input");
-        if (next) {
-          next.focus();
-          next.setSelectionRange(pos, pos);
-        }
+        if (next) { next.focus(); next.setSelectionRange(pos, pos); }
       };
     }
     const searchClr = document.getElementById("grammar-search-clear");
@@ -875,10 +1490,7 @@
     if (orderSel) orderSel.onchange = (e) => { gState.orderMode = e.target.value; renderGrammarView(); };
 
     container.querySelectorAll("[data-glevel]").forEach((b) => {
-      b.onclick = () => {
-        gState.level = gState.level === b.dataset.glevel && b.classList.contains("gkpi-card") ? "all" : b.dataset.glevel;
-        renderGrammarView();
-      };
+      b.onclick = () => { gState.level = b.dataset.glevel; renderGrammarView(); };
     });
     container.querySelectorAll("[data-gimp]").forEach((b) => {
       b.onclick = () => { gState.importance = b.dataset.gimp; renderGrammarView(); };
@@ -886,20 +1498,13 @@
     container.querySelectorAll("[data-gstatus]").forEach((b) => {
       b.onclick = () => { gState.status = b.dataset.gstatus; renderGrammarView(); };
     });
-    container.querySelectorAll("[data-gstar]").forEach((b) => {
-      b.onclick = () => toggleStar(b.dataset.gstar);
-    });
-    container.querySelectorAll("[data-gmaster]").forEach((b) => {
-      b.onclick = () => toggleMastered(b.dataset.gmaster);
-    });
+    container.querySelectorAll("[data-gstar]").forEach((b) => { b.onclick = () => toggleStar(b.dataset.gstar); });
+    container.querySelectorAll("[data-gmaster]").forEach((b) => { b.onclick = () => toggleMastered(b.dataset.gmaster); });
     container.querySelectorAll(".g-speak-btn").forEach((b) => {
       b.onclick = function () { speakJapanese(this.dataset.jp, 1.0, this); };
     });
     container.querySelectorAll(".g-speak-slow-btn").forEach((b) => {
       b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
-    });
-    container.querySelectorAll(".g-staff-btn").forEach((b) => {
-      b.onclick = () => openStaffCard(b.dataset.jp, b.dataset.cn, b.dataset.tag);
     });
     container.querySelectorAll(".g-quiz-toggle-btn").forEach((b) => {
       b.onclick = () => {
@@ -917,8 +1522,7 @@
         gState.openQuizIds[gid] = { picked: opt };
         if (gObj && opt === gObj.quiz.answer) {
           recordStudyActivity(1);
-          const fullSentence = gObj.quiz.promptJp.replace("＿＿", opt);
-          speakJapanese(fullSentence, 1.0);
+          speakJapanese(gObj.quiz.promptJp.replace("＿＿", opt), 1.0);
         }
         renderGrammarView();
       };
@@ -926,36 +1530,66 @@
     const resetBtn = document.getElementById("btn-reset-grammar-filters");
     if (resetBtn) {
       resetBtn.onclick = () => {
-        gState.search = "";
-        gState.level = "all";
-        gState.importance = "all";
-        gState.status = "all";
+        gState.search = ""; gState.level = "all"; gState.importance = "all"; gState.status = "all";
         renderGrammarView();
       };
     }
   }
 
   // =========================================================================
-  // TAB 5: INTERACTIVE PRACTICE & SPACED-REPETITION LAB
+  // TAB 3: INTERACTIVE PRACTICE & SPACED-REPETITION LAB
   // =========================================================================
-
-  // Build unified card list for SRS Flashcards
   function buildSrsPool(deck, jlptFilter) {
     const { state } = app();
+    const n5VocabCards = getN5VocabUnified().map((w) => ({
+      id: w.id,
+      kind: "🟢 N5词汇",
+      badge: w.cat,
+      frontJp: w.jp,
+      frontKana: w.kana,
+      romaji: w.romaji,
+      backCn: w.cn,
+      extraHtml: w.subMeta || "",
+      exampleJp: w.ex || "",
+      exampleCn: w.exCn || "",
+      audioText: w.kana,
+      audioKey: null
+    }));
+
     const verbCards = VERBS.filter((v) => jlptFilter === "all" || v.jlpt === jlptFilter).map((v) => ({
       id: v.id,
       kind: "⚡ 动词",
-      badge: `${v.jlpt} · #${v.rank} · ${GROUP_LABELS[v.group]}`,
+      badge: `${v.jlpt} · #${v.rank} · ${TRANS_LABELS[v.transitivity]}`,
       frontJp: v.jp,
       frontKana: v.kana,
       romaji: v.romaji,
       backCn: v.cn,
-      extraHtml: `ます形: <strong>${v.forms.masu.jp}</strong> ｜ て形: <strong>${v.forms.te.jp}</strong> ｜ ない形: <strong>${v.forms.nai.jp}</strong>`,
+      extraHtml: `ます: <strong>${v.forms.masu.jp}</strong> ｜ て: <strong>${v.forms.te.jp}</strong> ｜ ない: <strong>${v.forms.nai.jp}</strong>${v.particles ? ` ｜ 🔗 ${v.particles}` : ""}`,
       exampleJp: v.examples[0] ? v.examples[0].jp : "",
       exampleCn: v.examples[0] ? v.examples[0].cn : "",
-      audioText: v.dict,
+      audioText: v.kana,
       audioKey: null
     }));
+
+    const byId = {};
+    VERBS.forEach((v) => { byId[v.id] = v; });
+    const pairCards = VERBS.filter((v) => v.pairId && v.transitivity === "vi").map((vi) => {
+      const vt = byId[vi.pairId];
+      return {
+        id: `pair-${vi.id}`,
+        kind: "🔗 自他动词对",
+        badge: `${vi.jlpt} · 成对对照`,
+        frontJp: `${vi.jp}（自） ⇄ ${vt ? vt.jp : ""}（他）`,
+        frontKana: `${vi.kana}、${vt ? vt.kana : ""}`,
+        romaji: `${vi.romaji}  ↔  ${vt ? vt.romaji : ""}`,
+        backCn: `自：${vi.cn} ｜ 他：${vt ? vt.cn : ""}`,
+        extraHtml: `🔵 ${vi.particles} ｜ 🟠 ${vt ? vt.particles : ""}`,
+        exampleJp: (vi.examples[2] || vi.examples[0]).jp,
+        exampleCn: (vi.examples[2] || vi.examples[0]).cn,
+        audioText: vi.kana,
+        audioKey: null
+      };
+    });
 
     const grammarCards = GRAMMAR.filter((g) => jlptFilter === "all" || g.level === jlptFilter).map((g) => ({
       id: g.id,
@@ -974,7 +1608,7 @@
 
     const phraseCards = getAllPhraseItems().map((it) => ({
       id: it.id,
-      kind: "🗣️ 短语",
+      kind: "🗣️ 场景短语",
       badge: it.tag || "场景短语",
       frontJp: it.jp,
       frontKana: it.jp,
@@ -987,10 +1621,12 @@
       audioKey: it.id
     }));
 
+    if (deck === "n5vocab") return n5VocabCards;
     if (deck === "verbs") return verbCards;
+    if (deck === "pairs") return pairCards;
     if (deck === "grammar") return grammarCards;
     if (deck === "phrases") return phraseCards;
-    const all = [...verbCards, ...grammarCards, ...phraseCards];
+    const all = [...n5VocabCards, ...verbCards, ...grammarCards, ...phraseCards];
     if (deck === "starred") return all.filter((c) => state.starred[c.id]);
     if (deck === "due") {
       const now = Date.now();
@@ -1007,11 +1643,9 @@
       return;
     }
     const now = Date.now();
-    // Priority: due cards -> unseen cards -> lowest SRS box
     const due = pool.filter((c) => state.srs[c.id] && state.srs[c.id].nextDue <= now);
     const unseen = pool.filter((c) => !state.srs[c.id] && !state.mastered[c.id]);
     let candidates = due.length ? due : unseen.length ? unseen : pool;
-    // Avoid immediate repeat
     if (pState.srsCurrentCard && candidates.length > 1) {
       candidates = candidates.filter((c) => c.id !== pState.srsCurrentCard.id);
     }
@@ -1055,6 +1689,20 @@
     }
   }
 
+  // Vi/Vt & Particle Blitz Question Generator
+  function generateViVtQuestion() {
+    const rawPool = EXTRAS.viVtQuizzes || [];
+    const pool = rawPool.filter((q) => pState.vivtKind === "all" || q.kind === pState.vivtKind);
+    const list = pool.length ? pool : rawPool;
+    const pick = list[Math.floor(Math.random() * list.length)];
+    if (!pick) return;
+    pState.vivtQuestion = {
+      ...pick,
+      options: shuffle(pick.options)
+    };
+    pState.vivtAnswered = null;
+  }
+
   // Conjugation Drill Question Generator
   const DRILL_FORMS = [
     { key: "te", label: "て形（请求/连接）" },
@@ -1063,7 +1711,11 @@
     { key: "ta", label: "た形（过去简体）" },
     { key: "tai", label: "たい形（想要做）" },
     { key: "potential", label: "可能形（能够做）" },
-    { key: "volitional", label: "意向形（一起做吧）" }
+    { key: "volitional", label: "意向形（一起做吧）" },
+    { key: "ba", label: "ば形（如果……）" },
+    { key: "passive", label: "受身形（被动）" },
+    { key: "causative", label: "使役形（让做）" },
+    { key: "causative_passive", label: "使役被动（被迫做）" }
   ];
 
   function generateConjQuestion() {
@@ -1078,16 +1730,14 @@
     const verb = filtered[Math.floor(Math.random() * filtered.length)];
     const correctObj = verb.forms[targetFormObj.key];
 
-    // Build plausible distractors using other forms of same verb + similar-stem distortions
     const distractors = new Set();
-    const otherKeys = shuffle(["masu", "te", "ta", "nai", "tai", "potential", "volitional", "ba", "passive"]);
+    const otherKeys = shuffle(["masu", "te", "ta", "nai", "tai", "potential", "volitional", "ba", "passive", "causative"]);
     for (const k of otherKeys) {
       if (k !== targetFormObj.key && verb.forms[k] && !verb.forms[k].jp.startsWith("—") && verb.forms[k].jp !== correctObj.jp) {
         distractors.add(verb.forms[k].jp);
       }
       if (distractors.size >= 2) break;
     }
-    // Add one tricky wrong conjugation for the same target form
     const stem = verb.dict.slice(0, -1);
     const trickyGuesses = {
       te: [stem + "て", stem + "って", stem + "いて", stem + "んで", stem + "して"],
@@ -1096,7 +1746,11 @@
       masu: [stem + "ます", stem + "ります", stem + "います", stem + "きます"],
       tai: [stem + "たい", stem + "りたい", stem + "いたい"],
       potential: [stem + "られる", stem + "える", stem + "れる"],
-      volitional: [stem + "よう", stem + "ろう", stem + "おう"]
+      volitional: [stem + "よう", stem + "ろう", stem + "おう"],
+      ba: [stem + "れば", stem + "えば", stem + "け"],
+      passive: [stem + "られる", stem + "れる", stem + "される"],
+      causative: [stem + "させる", stem + "せる", stem + "らせる"],
+      causative_passive: [stem + "させられる", stem + "される", stem + "らされる"]
     };
     for (const g of shuffle(trickyGuesses[targetFormObj.key] || [])) {
       if (g !== correctObj.jp && g.length >= 2) {
@@ -1116,7 +1770,7 @@
     pState.conjAnswered = null;
   }
 
-  // Grammar & Listening Quiz Generator
+  // Grammar, Listening & Staff Decoder Quiz Generator
   function generateQuizQuestion() {
     if (pState.quizKind === "grammar") {
       const pool = GRAMMAR.filter((g) => (pState.quizLevel === "all" || g.level === pState.quizLevel) && g.quiz);
@@ -1131,11 +1785,25 @@
         options: shuffle(pick.quiz.options)
       };
       pState.quizAnswered = null;
+    } else if (pState.quizKind === "staff") {
+      const list = EXTRAS.staffDecoder || [];
+      if (!list.length) return;
+      const target = list[Math.floor(Math.random() * list.length)];
+      const wrong = shuffle(list.filter((x) => x.cn !== target.cn)).slice(0, 3).map((x) => x.cn);
+      pState.quizQuestion = {
+        kind: "staff",
+        staff: target,
+        jp: target.hearJp,
+        cn: target.cn,
+        answer: target.cn,
+        options: shuffle([target.cn, ...wrong])
+      };
+      pState.quizAnswered = null;
     } else {
-      // Listening Comprehension Quiz: mix of phrasebook + verb examples
       const items = [
         ...getAllPhraseItems().map((it) => ({ jp: it.jp, cn: it.cn, tag: it.tag, audioKey: it.id })),
-        ...VERBS.slice(0, 120).map((v) => ({ jp: v.examples[0].jp, cn: v.examples[0].cn, tag: `动词 #${v.rank} ${v.dict}`, audioKey: null }))
+        ...VERBS.slice(0, 200).map((v) => ({ jp: v.examples[0].jp, cn: v.examples[0].cn, tag: `动词 #${v.rank} ${v.dict}`, audioKey: null })),
+        ...(EXTRAS.n5Vocab || []).filter((nv) => nv.ex).map((nv) => ({ jp: nv.ex, cn: nv.exCn, tag: `N5词汇 · ${nv.cat}`, audioKey: null }))
       ];
       const target = items[Math.floor(Math.random() * items.length)];
       const wrong = shuffle(items.filter((x) => x.cn !== target.cn)).slice(0, 3).map((x) => x.cn);
@@ -1171,6 +1839,24 @@
         cn: g.dailyExamples[0].cn,
         audioKey: null
       }));
+    }
+    if (pState.shadowDeck === "n5vocab") {
+      return [
+        ...(EXTRAS.n5Vocab || []).filter((x) => x.ex).map((x) => ({
+          tag: `N5词汇 · ${x.cat}`,
+          jp: x.ex,
+          romaji: x.romaji,
+          cn: x.exCn,
+          audioKey: null
+        })),
+        ...(EXTRAS.contractions || []).map((c) => ({
+          tag: `💬 口语缩略 (${c.formal}→${c.casual})`,
+          jp: c.exCasual,
+          romaji: "",
+          cn: c.exCn,
+          audioKey: null
+        }))
+      ];
     }
     return getAllPhraseItems().map((it) => ({
       tag: it.tag || "场景日语",
@@ -1269,6 +1955,8 @@
     const { state, formatRuby, escapeHtml, speakJapanese, recordStudyActivity } = app();
 
     // Dashboard metrics
+    const n5All = getN5VocabUnified();
+    const n5Done = n5All.filter((x) => state.mastered[x.id]).length;
     const allPhrases = getAllPhraseItems();
     const pDone = allPhrases.filter((x) => state.mastered[x.id]).length;
     const vDone = VERBS.filter((x) => state.mastered[x.id]).length;
@@ -1292,28 +1980,26 @@
           <div class="practice-toolbar-row">
             <div class="toggle-group">
               ${[
-                ["due", `⏰ 今日到期 (${dueCount})`],
-                ["verbs", "⚡ 动词200"],
-                ["grammar", "📖 语法N5–N3"],
-                ["phrases", "🗣️ 场景短语"],
-                ["starred", "⭐ 我的收藏"]
+                ["due", `⏰ 待复习 (${dueCount})`],
+                ["n5vocab", "🟢 N5词汇"],
+                ["verbs", "⚡ 动词300"],
+                ["pairs", "🔗 自他动词对"],
+                ["grammar", "📖 语法132"],
+                ["phrases", "🗣️ 场景"],
+                ["starred", "⭐ 收藏"]
               ]
-                .map(
-                  ([k, lbl]) => `
-                <button type="button" class="toggle-chip ${pState.srsDeck === k ? "active" : ""}" data-srsdeck="${k}">${lbl}</button>
-              `
-                )
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.srsDeck === k ? "active" : ""}" data-srsdeck="${k}">${lbl}</button>`)
                 .join("")}
             </div>
             <div class="toggle-group">
               ${
                 pState.srsDeck === "verbs" || pState.srsDeck === "grammar"
                   ? ["all", "N5", "N4", "N3"]
-                      .map((l) => `<button type="button" class="toggle-chip ${pState.srsJlpt === l ? "active" : ""}" data-srsjlpt="${l}">${l === "all" ? "全部级别" : l}</button>`)
+                      .map((l) => `<button type="button" class="toggle-chip ${pState.srsJlpt === l ? "active" : ""}" data-srsjlpt="${l}">${l === "all" ? "全级别" : l}</button>`)
                       .join("")
                   : ""
               }
-              <button type="button" class="toggle-chip ${pState.srsListenFirst ? "active" : ""}" id="btn-srs-listenfirst" title="隐藏文字，先靠耳朵听辨">👂 听音优先</button>
+              <button type="button" class="toggle-chip ${pState.srsListenFirst ? "active" : ""}" id="btn-srs-listenfirst" title="隐藏文字，先靠耳朵盲听辨意">🎧 盲听模式</button>
               <button type="button" class="toggle-chip ${pState.srsAutoPlay ? "active" : ""}" id="btn-srs-autoplay">🔊 自动发声</button>
             </div>
           </div>
@@ -1325,8 +2011,8 @@
                   <div style="font-weight:800;font-size:1.05rem;margin-bottom:0.35rem;">
                     ${pState.srsDeck === "due" ? "太棒了！今日到期复习卡片已全部清空！" : "当前卡组暂无卡片"}
                   </div>
-                  <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:1rem;">切换到「⚡ 动词200」「📖 语法N5–N3」或「🗣️ 场景短语」继续学习新卡片吧！</p>
-                  <button type="button" class="action-btn primary-audio" id="btn-srs-switch-verbs">开始刷高频动词闪卡</button>
+                  <p style="font-size:0.84rem;color:var(--text-secondary);margin-bottom:1rem;">切换到「🟢 N5词汇」「⚡ 动词300」或「🔗 自他动词对」继续学习吧！</p>
+                  <button type="button" class="action-btn primary-audio" id="btn-srs-switch-n5">开始刷 N5 核心词汇闪卡</button>
                 </div>`
               : `
             <div class="flashcard-meta-strip">
@@ -1344,11 +2030,11 @@
                 ${
                   pState.srsListenFirst && !pState.srsFlipped
                     ? `<div style="padding:1.4rem 0;text-align:center;">
-                        <div style="font-size:2.3rem;margin-bottom:0.4rem;">👂</div>
-                        <div style="font-weight:700;color:var(--text-secondary);margin-bottom:0.8rem;">先听发音，回想日文与中文含义！</div>
+                        <div style="font-size:2.3rem;margin-bottom:0.4rem;">🎧</div>
+                        <div style="font-weight:700;color:var(--text-secondary);margin-bottom:0.8rem;">盲听模式：先听发音，在心里拼出日文和意思再翻面！</div>
                         <button type="button" class="action-btn primary-audio" id="btn-fc-play-front">🔊 播放日语发音</button>
                       </div>`
-                    : `<div class="jp-text fc-jp-main">${formatRuby(card.frontJp)}</div>
+                    : `<div class="jp-text fc-jp-main" lang="ja">${formatRuby(card.frontJp)}</div>
                        <div class="romaji-text" style="text-align:center;">${escapeHtml(card.romaji)}</div>`
                 }
               </div>
@@ -1357,13 +2043,14 @@
                 pState.srsFlipped
                   ? `
                 <div class="fc-back-area">
+                  ${pState.srsListenFirst ? `<div class="jp-text" lang="ja" style="text-align:center;font-size:1.25rem;margin-bottom:0.3rem;">${formatRuby(card.frontJp)}</div>` : ""}
                   <div class="fc-cn-answer">${escapeHtml(card.backCn)}</div>
                   ${card.extraHtml ? `<div class="fc-extra-info">${card.extraHtml}</div>` : ""}
                   ${
                     card.exampleJp
                       ? `<div class="fc-example-box">
                           <div style="flex:1;">
-                            <div class="jp-text" style="font-size:0.96rem;margin:0;">${formatRuby(card.exampleJp)}</div>
+                            <div class="jp-text" lang="ja" style="font-size:0.96rem;margin:0;">${formatRuby(card.exampleJp)}</div>
                             <div style="font-size:0.8rem;color:var(--text-secondary);">${escapeHtml(card.exampleCn)}</div>
                           </div>
                           <button type="button" class="icon-btn" id="btn-fc-play-ex">🔊 听例句</button>
@@ -1372,30 +2059,103 @@
                   }
                 </div>
               `
-                  : `<div class="fc-tap-hint">👆 点击卡片或下方按钮翻看答案</div>`
+                  : `<div class="fc-tap-hint">👆 点击卡片、按 Space 键或点下方按钮翻看答案</div>`
               }
             </div>
 
             <div class="fc-controls-row">
-              <button type="button" class="action-btn" id="btn-fc-speak-1x">🔊 朗读 (1.0x)</button>
-              <button type="button" class="action-btn" id="btn-fc-speak-slow">🐢 慢读 (0.78x)</button>
+              <button type="button" class="action-btn" id="btn-fc-speak-1x">🔊 朗读 (R)</button>
+              <button type="button" class="action-btn" id="btn-fc-speak-slow">🐢 慢读 (S)</button>
               ${
                 !pState.srsFlipped
-                  ? `<button type="button" class="action-btn primary-audio" id="btn-fc-flip" style="flex:1;max-width:260px;">👀 显示答案</button>`
+                  ? `<button type="button" class="action-btn primary-audio" id="btn-fc-flip" style="flex:1;max-width:260px;">👀 显示答案 (Space)</button>`
                   : `
-                  <button type="button" class="action-btn srs-btn-again" id="btn-srs-again">😰 忘记了 (10分钟后再练)</button>
-                  <button type="button" class="action-btn srs-btn-hard" id="btn-srs-hard">🤔 有点模糊 (明天复习)</button>
-                  <button type="button" class="action-btn srs-btn-good" id="btn-srs-good">✅ 记牢了 (间隔翻倍)</button>
+                  <button type="button" class="action-btn srs-btn-again" id="btn-srs-again">😰 忘了 (1)</button>
+                  <button type="button" class="action-btn srs-btn-hard" id="btn-srs-hard">🤔 模糊 (2)</button>
+                  <button type="button" class="action-btn srs-btn-good" id="btn-srs-good">✅ 记牢了 (3)</button>
                 `
               }
             </div>
+            <div class="kbd-shortcut-hint">⌨️ 键盘快捷键：Space 翻面 · R 重听 · S 慢速 · 1/2/3 快速评分</div>
           `
           }
         </div>
       `;
     }
 
-    // --- SUB-MODE 2: VERB CONJUGATION DRILL ---
+    // --- SUB-MODE 2: VI/VT TRANSITIVITY & PARTICLE BLITZ ---
+    else if (pState.subMode === "vivt") {
+      if (!pState.vivtQuestion) generateViVtQuestion();
+      const q = pState.vivtQuestion;
+      const acc = pState.vivtTotal ? Math.round((pState.vivtCorrect / pState.vivtTotal) * 100) : 0;
+
+      stageHtml = `
+        <div class="practice-stage-card">
+          <div class="practice-toolbar-row">
+            <div class="toggle-group">
+              ${[
+                ["all", "🎯 混合专项 (36题)"],
+                ["vivt", "⇄ 自他动词辨析"],
+                ["particle", "🔗 动词格助词搭配"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.vivtKind === k ? "active" : ""}" data-vivtkind="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+          </div>
+
+          <div class="drill-score-strip">
+            <span>🔥 连对：<strong>${pState.vivtStreak}</strong></span>
+            <span>📊 正确率：<strong>${pState.vivtCorrect} / ${pState.vivtTotal}</strong> (${acc}%)</span>
+          </div>
+
+          ${
+            q
+              ? `
+            <div class="drill-question-box">
+              <div style="display:flex;justify-content:center;gap:0.4rem;margin-bottom:0.45rem;">
+                <span class="phrase-tag">${q.kind === "vivt" ? "⇄ 自动词 vs 他动词" : "🔗 核心助词填空"}</span>
+              </div>
+              <div class="jp-text" lang="ja" style="font-size:1.32rem;text-align:center;margin:0.35rem 0;">${formatRuby(q.promptJp)}</div>
+              <div style="text-align:center;font-size:0.9rem;color:var(--accent-indigo);font-weight:700;margin-bottom:0.9rem;">
+                🇨🇳 ${escapeHtml(q.cn)}
+              </div>
+              <div class="quiz-options-grid">
+                ${q.options
+                  .map((opt, idx) => {
+                    let cls = "";
+                    if (pState.vivtAnswered) {
+                      if (opt === q.answer) cls = "opt-correct";
+                      else if (opt === pState.vivtAnswered.picked) cls = "opt-wrong";
+                    }
+                    return `<button type="button" class="quiz-opt-btn vivt-pick-btn ${cls}" data-opt="${escapeHtml(opt)}" ${pState.vivtAnswered ? "disabled" : ""}><span class="opt-key-hint">${idx + 1}.</span> ${escapeHtml(opt)}</button>`;
+                  })
+                  .join("")}
+              </div>
+              ${
+                pState.vivtAnswered
+                  ? `
+                <div class="drill-feedback ${pState.vivtAnswered.ok ? "fb-ok" : "fb-err"}">
+                  <div style="font-weight:800;font-size:0.95rem;margin-bottom:0.25rem;">
+                    ${pState.vivtAnswered.ok ? "🎉 完全正确！" : `❌ 正确答案：${escapeHtml(q.answer)}`}
+                  </div>
+                  <div style="font-size:0.83rem;margin-bottom:0.55rem;">💡 ${escapeHtml(q.ruleTip)}</div>
+                  <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+                    <button type="button" class="action-btn" id="btn-vivt-play-sent">🔊 朗读完整句</button>
+                    <button type="button" class="action-btn primary-audio" id="btn-vivt-next">下一题 (Enter) →</button>
+                  </div>
+                </div>
+              `
+                  : ""
+              }
+            </div>
+          `
+              : ""
+          }
+        </div>
+      `;
+    }
+
+    // --- SUB-MODE 3: VERB CONJUGATION DRILL ---
     else if (pState.subMode === "conj") {
       if (!pState.conjQuestion) generateConjQuestion();
       const q = pState.conjQuestion;
@@ -1406,12 +2166,12 @@
           <div class="practice-toolbar-row">
             <div class="toggle-group">
               ${["all", "N5", "N4", "N3"]
-                .map((l) => `<button type="button" class="toggle-chip ${pState.conjJlpt === l ? "active" : ""}" data-cjjlpt="${l}">${l === "all" ? "全部级别" : l}</button>`)
+                .map((l) => `<button type="button" class="toggle-chip ${pState.conjJlpt === l ? "active" : ""}" data-cjjlpt="${l}">${l === "all" ? "全级别" : l}</button>`)
                 .join("")}
             </div>
             <div class="toggle-group">
               <select id="conj-form-select" class="lf-select" style="padding:0.28rem 0.55rem;font-size:0.78rem;">
-                <option value="mixed" ${pState.conjForm === "mixed" ? "selected" : ""}>🎲 随机混合变形</option>
+                <option value="mixed" ${pState.conjForm === "mixed" ? "selected" : ""}>🎲 随机混合变形 (11种)</option>
                 ${DRILL_FORMS.map((f) => `<option value="${f.key}" ${pState.conjForm === f.key ? "selected" : ""}>${f.label}</option>`).join("")}
               </select>
               <button type="button" class="toggle-chip ${pState.conjInputMode === "choice" ? "active" : ""}" data-cjmode="choice">🔘 四选一</button>
@@ -1430,7 +2190,7 @@
               <span class="verb-group-pill grp-${q.verb.group}">${GROUP_LABELS[q.verb.group]}</span>
               <span class="verb-rank-pill">#${q.verb.rank}</span>
             </div>
-            <div class="jp-text" style="font-size:1.75rem;text-align:center;margin:0.15rem 0;">${formatRuby(q.verb.jp)}</div>
+            <div class="jp-text" lang="ja" style="font-size:1.75rem;text-align:center;margin:0.15rem 0;">${formatRuby(q.verb.jp)}</div>
             <div style="text-align:center;font-size:0.9rem;color:var(--text-secondary);margin-bottom:0.85rem;">
               中文：<strong>${escapeHtml(q.verb.cn)}</strong> (${escapeHtml(q.verb.romaji)})
             </div>
@@ -1443,13 +2203,13 @@
                 ? `
               <div class="quiz-options-grid">
                 ${q.options
-                  .map((opt) => {
+                  .map((opt, idx) => {
                     let cls = "";
                     if (pState.conjAnswered) {
                       if (opt === q.answerJp) cls = "opt-correct";
                       else if (opt === pState.conjAnswered.picked) cls = "opt-wrong";
                     }
-                    return `<button type="button" class="quiz-opt-btn conj-choice-btn ${cls}" data-opt="${escapeHtml(opt)}" ${pState.conjAnswered ? "disabled" : ""}>${escapeHtml(opt)}</button>`;
+                    return `<button type="button" class="quiz-opt-btn conj-choice-btn ${cls}" data-opt="${escapeHtml(opt)}" ${pState.conjAnswered ? "disabled" : ""}><span class="opt-key-hint">${idx + 1}.</span> ${escapeHtml(opt)}</button>`;
                   })
                   .join("")}
               </div>
@@ -1472,7 +2232,7 @@
                 <div style="font-size:0.82rem;margin-bottom:0.5rem;">💡 ${escapeHtml(getConjugationRuleHint(q.verb, q.formKey))}</div>
                 <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
                   <button type="button" class="action-btn" id="btn-conj-play-ans">🔊 听正确发音</button>
-                  <button type="button" class="action-btn primary-audio" id="btn-conj-next">下一题 →</button>
+                  <button type="button" class="action-btn primary-audio" id="btn-conj-next">下一题 (Enter) →</button>
                 </div>
               </div>
             `
@@ -1483,7 +2243,7 @@
       `;
     }
 
-    // --- SUB-MODE 3: GRAMMAR FILL-IN & LISTENING QUIZ ---
+    // --- SUB-MODE 4: GRAMMAR, LISTENING & STAFF DECODER QUIZ ---
     else if (pState.subMode === "quiz") {
       if (!pState.quizQuestion || pState.quizQuestion.kind !== pState.quizKind) generateQuizQuestion();
       const q = pState.quizQuestion;
@@ -1494,13 +2254,14 @@
           <div class="practice-toolbar-row">
             <div class="toggle-group">
               <button type="button" class="toggle-chip ${pState.quizKind === "grammar" ? "active" : ""}" data-qkind="grammar">🧩 N5–N3 语法填空</button>
-              <button type="button" class="toggle-chip ${pState.quizKind === "listening" ? "active" : ""}" data-qkind="listening">👂 听音辨意挑战</button>
+              <button type="button" class="toggle-chip ${pState.quizKind === "listening" ? "active" : ""}" data-qkind="listening">👂 句意盲听挑战</button>
+              <button type="button" class="toggle-chip ${pState.quizKind === "staff" ? "active" : ""}" data-qkind="staff">🏪 店员快语速听解</button>
             </div>
             ${
               pState.quizKind === "grammar"
                 ? `<div class="toggle-group">
                     ${["all", "N5", "N4", "N3"]
-                      .map((l) => `<button type="button" class="toggle-chip ${pState.quizLevel === l ? "active" : ""}" data-qlvl="${l}">${l === "all" ? "全部级别" : l}</button>`)
+                      .map((l) => `<button type="button" class="toggle-chip ${pState.quizLevel === l ? "active" : ""}" data-qlvl="${l}">${l === "all" ? "全级别" : l}</button>`)
                       .join("")}
                   </div>`
                 : ""
@@ -1520,19 +2281,19 @@
                 <span class="jlpt-pill jlpt-${q.grammar.level.toLowerCase()}">${q.grammar.level}</span>
                 <span class="imp-pill imp-${q.grammar.importance}">${escapeHtml(q.grammar.importanceLabel)}</span>
               </div>
-              <div class="jp-text" style="font-size:1.35rem;text-align:center;margin:0.35rem 0;">${formatRuby(q.promptJp)}</div>
+              <div class="jp-text" lang="ja" style="font-size:1.35rem;text-align:center;margin:0.35rem 0;">${formatRuby(q.promptJp)}</div>
               <div style="text-align:center;font-size:0.9rem;color:var(--accent-indigo);font-weight:700;margin-bottom:0.9rem;">
                 🇨🇳 ${escapeHtml(q.cn)}
               </div>
               <div class="quiz-options-grid">
                 ${q.options
-                  .map((opt) => {
+                  .map((opt, idx) => {
                     let cls = "";
                     if (pState.quizAnswered) {
                       if (opt === q.answer) cls = "opt-correct";
                       else if (opt === pState.quizAnswered.picked) cls = "opt-wrong";
                     }
-                    return `<button type="button" class="quiz-opt-btn main-quiz-pick ${cls}" data-opt="${escapeHtml(opt)}" ${pState.quizAnswered ? "disabled" : ""}>${escapeHtml(opt)}</button>`;
+                    return `<button type="button" class="quiz-opt-btn main-quiz-pick ${cls}" data-opt="${escapeHtml(opt)}" ${pState.quizAnswered ? "disabled" : ""}><span class="opt-key-hint">${idx + 1}.</span> ${escapeHtml(opt)}</button>`;
                   })
                   .join("")}
               </div>
@@ -1547,7 +2308,7 @@
                   <div style="font-size:0.8rem;margin-bottom:0.55rem;">📐 ${escapeHtml(q.grammar.formation)} ｜ ${escapeHtml(q.grammar.tip)}</div>
                   <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
                     <button type="button" class="action-btn" id="btn-quiz-play-sent">🔊 朗读完整句</button>
-                    <button type="button" class="action-btn primary-audio" id="btn-quiz-next">下一题 →</button>
+                    <button type="button" class="action-btn primary-audio" id="btn-quiz-next">下一题 (Enter) →</button>
                   </div>
                 </div>
               `
@@ -1555,27 +2316,29 @@
               }
             </div>
           `
-              : q
+              : q && (q.kind === "listening" || q.kind === "staff")
               ? `
             <div class="drill-question-box">
               <div style="text-align:center;margin-bottom:0.75rem;">
-                <span class="phrase-tag">${escapeHtml(q.tag)}</span>
-                <div style="font-size:2.4rem;margin:0.5rem 0 0.35rem;">🎧</div>
-                <div style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:0.7rem;">点击播放日语语音，选出最准确的中文意思！</div>
+                <span class="phrase-tag">${q.kind === "staff" ? escapeHtml(q.staff.scene) + " · 真实店员敬语" : escapeHtml(q.tag)}</span>
+                <div style="font-size:2.3rem;margin:0.45rem 0 0.3rem;">${q.kind === "staff" ? "🏪" : "🎧"}</div>
+                <div style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:0.7rem;">
+                  ${q.kind === "staff" ? "听一遍日本店员说的话，快速选出对方在问什么！" : "点击播放日语语音，选出最准确的中文意思！"}
+                </div>
                 <div style="display:flex;justify-content:center;gap:0.5rem;">
-                  <button type="button" class="action-btn primary-audio" id="btn-listen-play-1x">🔊 常速播放 (1.0x)</button>
-                  <button type="button" class="action-btn" id="btn-listen-play-slow">🐢 慢速播放 (0.78x)</button>
+                  <button type="button" class="action-btn primary-audio" id="btn-listen-play-1x">🔊 常速播放 (R)</button>
+                  <button type="button" class="action-btn" id="btn-listen-play-slow">🐢 慢速播放 (S)</button>
                 </div>
               </div>
               <div class="quiz-options-grid" style="grid-template-columns:1fr;">
                 ${q.options
-                  .map((opt) => {
+                  .map((opt, idx) => {
                     let cls = "";
                     if (pState.quizAnswered) {
                       if (opt === q.answer) cls = "opt-correct";
                       else if (opt === pState.quizAnswered.picked) cls = "opt-wrong";
                     }
-                    return `<button type="button" class="quiz-opt-btn main-quiz-pick ${cls}" data-opt="${escapeHtml(opt)}" ${pState.quizAnswered ? "disabled" : ""} style="text-align:left;">${escapeHtml(opt)}</button>`;
+                    return `<button type="button" class="quiz-opt-btn main-quiz-pick ${cls}" data-opt="${escapeHtml(opt)}" ${pState.quizAnswered ? "disabled" : ""} style="text-align:left;"><span class="opt-key-hint">${idx + 1}.</span> ${escapeHtml(opt)}</button>`;
                   })
                   .join("")}
               </div>
@@ -1583,10 +2346,25 @@
                 pState.quizAnswered
                   ? `
                 <div class="drill-feedback ${pState.quizAnswered.ok ? "fb-ok" : "fb-err"}">
-                  <div style="font-weight:800;margin-bottom:0.25rem;">${pState.quizAnswered.ok ? "🎉 听力满分！" : "❌ 再听一遍记住它！"}</div>
-                  <div class="jp-text" style="font-size:1.05rem;margin:0.2rem 0;">${formatRuby(q.jp)}</div>
-                  <div style="font-size:0.84rem;margin-bottom:0.55rem;">🇨🇳 ${escapeHtml(q.cn)}</div>
-                  <button type="button" class="action-btn primary-audio" id="btn-quiz-next">下一题 →</button>
+                  <div style="font-weight:800;margin-bottom:0.25rem;">${pState.quizAnswered.ok ? "🎉 听力满分！" : "❌ 再听一遍记住关键词！"}</div>
+                  ${q.kind === "staff" ? `<div style="font-size:0.8rem;font-weight:800;color:var(--accent-red);margin-bottom:0.2rem;">🔑 抓关键词：${escapeHtml(q.staff.keyword)}</div>` : ""}
+                  <div class="jp-text" lang="ja" style="font-size:1.05rem;margin:0.2rem 0;">${formatRuby(q.jp)}</div>
+                  <div style="font-size:0.84rem;margin-bottom:0.45rem;">🇨🇳 ${escapeHtml(q.cn)}</div>
+                  ${
+                    q.kind === "staff"
+                      ? `<div class="phrase-replies" style="margin:0.35rem 0 0.6rem;">
+                          <div class="reply-label">✅ 我方 1 秒快答：</div>
+                          <div class="reply-item">
+                            <div>
+                              <div class="reply-jp" lang="ja">${formatRuby(q.staff.replyJp)}</div>
+                              <div class="reply-cn">${escapeHtml(q.staff.replyCn)}</div>
+                            </div>
+                            <button type="button" class="icon-btn" id="btn-staff-play-reply">🔊 听回答</button>
+                          </div>
+                        </div>`
+                      : ""
+                  }
+                  <button type="button" class="action-btn primary-audio" id="btn-quiz-next">下一题 (Enter) →</button>
                 </div>
               `
                   : ""
@@ -1599,7 +2377,7 @@
       `;
     }
 
-    // --- SUB-MODE 4: SHADOWING & SPEECH CHECK ---
+    // --- SUB-MODE 5: SHADOWING & SPEECH CHECK ---
     else if (pState.subMode === "shadow") {
       const items = getShadowItems();
       if (pState.shadowIndex >= items.length) pState.shadowIndex = 0;
@@ -1613,13 +2391,10 @@
               ${[
                 ["phrases", "🗣️ 场景短语"],
                 ["verbs", "⚡ 动词例句"],
-                ["grammar", "📖 语法日常句"]
+                ["grammar", "📖 语法日常句"],
+                ["n5vocab", "🟢 N5 & 口语缩略"]
               ]
-                .map(
-                  ([k, lbl]) => `
-                <button type="button" class="toggle-chip ${pState.shadowDeck === k ? "active" : ""}" data-shdeck="${k}">${lbl}</button>
-              `
-                )
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.shadowDeck === k ? "active" : ""}" data-shdeck="${k}">${lbl}</button>`)
                 .join("")}
             </div>
             <span style="font-size:0.78rem;color:var(--text-muted);font-weight:700;">第 ${pState.shadowIndex + 1} / ${items.length} 句</span>
@@ -1627,7 +2402,7 @@
 
           <div class="drill-question-box">
             <div style="text-align:center;margin-bottom:0.4rem;"><span class="phrase-tag">${escapeHtml(item.tag)}</span></div>
-            <div class="jp-text" style="font-size:1.38rem;text-align:center;margin:0.45rem 0;">${formatRuby(item.jp)}</div>
+            <div class="jp-text" lang="ja" style="font-size:1.38rem;text-align:center;margin:0.45rem 0;">${formatRuby(item.jp)}</div>
             <div class="romaji-text" style="text-align:center;">${escapeHtml(item.romaji)}</div>
             <div class="cn-text" style="text-align:center;margin-bottom:0.85rem;">${escapeHtml(item.cn)}</div>
 
@@ -1635,14 +2410,14 @@
               pState.shadowPhase
                 ? `<div class="shadow-status-banner">${escapeHtml(pState.shadowPhase)}</div>`
                 : `<div style="text-align:center;font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.8rem;">
-                    💡 点击「🔁 三步跟读循环」：先 0.78x 慢速聆听 → 停顿 2.5 秒留给你大声跟读 → 自动 1.0x 常速示范对比！
+                    💡 点击「🔁 三步跟读循环」：0.78x 慢听 → 停顿 2.5 秒留给你跟读 → 自动 1.0x 原速对照！
                   </div>`
             }
 
             ${
               pState.shadowTranscript
                 ? `<div class="shadow-rec-result">
-                    <div>🎙️ 识别到你说的是：<strong>${escapeHtml(pState.shadowTranscript)}</strong></div>
+                    <div>🎙️ 识别到你说的是：<strong lang="ja">${escapeHtml(pState.shadowTranscript)}</strong></div>
                     <div style="margin-top:0.2rem;">匹配度参考：<strong>${pState.shadowScore}%</strong></div>
                   </div>`
                 : ""
@@ -1663,12 +2438,11 @@
     }
 
     container.innerHTML = `
-      <!-- Personal Learning Dashboard & Daily Streak -->
       <div class="learning-hero-card">
         <div class="learning-hero-top">
           <div>
             <h2 class="itin-section-title">🎯 日语实战训练场 & 个人学习仪表盘</h2>
-            <p class="itin-section-sub">结合间隔重复闪卡 (SRS)、动词变形闪电战、N5–N3 语法填空、听音辨意与三步影子跟读，每天 10 分钟快速开口！</p>
+            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、11种动词变形、N5–N3 语法与店员快语速盲听，每天 10 分钟快速提升！</p>
           </div>
           <div class="dash-streak-badge">
             <div style="font-size:1.35rem;font-weight:900;">🔥 ${state.streak.count || 0} 天</div>
@@ -1678,28 +2452,32 @@
 
         <div class="dash-metrics-grid">
           <div class="dash-metric">
+            <div class="dm-top"><span>🟢 N5核心词汇</span><strong>${n5Done} / ${n5All.length}</strong></div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${n5All.length ? Math.round((n5Done / n5All.length) * 100) : 0}%;background:#059669;"></div></div>
+          </div>
+          <div class="dash-metric">
+            <div class="dm-top"><span>⚡ 高频动词300</span><strong>${vDone} / ${VERBS.length}</strong></div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VERBS.length ? Math.round((vDone / VERBS.length) * 100) : 0}%;background:#0284c7;"></div></div>
+          </div>
+          <div class="dash-metric">
+            <div class="dm-top"><span>📖 语法132</span><strong>${gDone} / ${GRAMMAR.length}</strong></div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${GRAMMAR.length ? Math.round((gDone / GRAMMAR.length) * 100) : 0}%;background:#7c3aed;"></div></div>
+          </div>
+          <div class="dash-metric">
             <div class="dm-top"><span>🗣️ 场景短语</span><strong>${pDone} / ${allPhrases.length}</strong></div>
             <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${allPhrases.length ? Math.round((pDone / allPhrases.length) * 100) : 0}%;"></div></div>
           </div>
           <div class="dash-metric">
-            <div class="dm-top"><span>⚡ 高频动词200</span><strong>${vDone} / ${VERBS.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VERBS.length ? Math.round((vDone / VERBS.length) * 100) : 0}%;background:#0284c7;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>📖 语法 N5–N3</span><strong>${gDone} / ${GRAMMAR.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${GRAMMAR.length ? Math.round((gDone / GRAMMAR.length) * 100) : 0}%;background:#7c3aed;"></div></div>
-          </div>
-          <div class="dash-metric">
             <div class="dm-top"><span>⏰ 闪卡待复习</span><strong style="color:${dueCount > 0 ? "var(--accent-red)" : "var(--accent-emerald)"};">${dueCount} 张</strong></div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">已加入 SRS 追踪：${Object.keys(state.srs || {}).length} 项</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">SRS追踪：${Object.keys(state.srs || {}).length} 项</div>
           </div>
         </div>
 
-        <!-- 4 Practice Sub-Mode Switcher -->
-        <div class="practice-subtabs">
+        <div class="practice-subtabs scroll-fade-x">
           <button type="button" class="map-pill ${pState.subMode === "srs" ? "active" : ""}" data-psub="srs">🃏 间隔复习闪卡 (SRS)</button>
+          <button type="button" class="map-pill ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">🔗 自他动词 & 助词战</button>
           <button type="button" class="map-pill ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">⚡ 动词变形闪电战</button>
-          <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">🧩 语法填空 & 听音测验</button>
+          <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">🧩 语法 & 听力测验</button>
           <button type="button" class="map-pill ${pState.subMode === "shadow" ? "active" : ""}" data-psub="shadow">🎙️ 影子跟读实验室</button>
         </div>
       </div>
@@ -1737,8 +2515,8 @@
     if (btnLF) btnLF.onclick = () => { pState.srsListenFirst = !pState.srsListenFirst; renderPracticeView(); };
     const btnAP = document.getElementById("btn-srs-autoplay");
     if (btnAP) btnAP.onclick = () => { pState.srsAutoPlay = !pState.srsAutoPlay; renderPracticeView(); };
-    const btnSwitchVerbs = document.getElementById("btn-srs-switch-verbs");
-    if (btnSwitchVerbs) btnSwitchVerbs.onclick = () => { pState.srsDeck = "verbs"; pickNextSrsCard(); renderPracticeView(); };
+    const btnSwitchN5 = document.getElementById("btn-srs-switch-n5");
+    if (btnSwitchN5) btnSwitchN5.onclick = () => { pState.srsDeck = "n5vocab"; pickNextSrsCard(); renderPracticeView(); };
 
     const cardBox = document.getElementById("srs-flashcard-box");
     if (cardBox && pState.srsCurrentCard) {
@@ -1769,13 +2547,38 @@
     if (btnFcFront && pState.srsCurrentCard) btnFcFront.onclick = function () { speakJapanese(pState.srsCurrentCard.audioText, 1.0, this, null, pState.srsCurrentCard.audioKey); };
     const btnFcEx = document.getElementById("btn-fc-play-ex");
     if (btnFcEx && pState.srsCurrentCard && pState.srsCurrentCard.exampleJp) btnFcEx.onclick = function () { speakJapanese(pState.srsCurrentCard.exampleJp, 1.0, this); };
-
     const btnAgain = document.getElementById("btn-srs-again");
     if (btnAgain) btnAgain.onclick = () => rateSrsCard("again");
     const btnHard = document.getElementById("btn-srs-hard");
     if (btnHard) btnHard.onclick = () => rateSrsCard("hard");
     const btnGood = document.getElementById("btn-srs-good");
     if (btnGood) btnGood.onclick = () => rateSrsCard("good");
+
+    // Bind Vi/Vt & Particle Blitz Events
+    container.querySelectorAll("[data-vivtkind]").forEach((b) => {
+      b.onclick = () => { pState.vivtKind = b.dataset.vivtkind; generateViVtQuestion(); renderPracticeView(); };
+    });
+    container.querySelectorAll(".vivt-pick-btn").forEach((b) => {
+      b.onclick = () => {
+        const q = pState.vivtQuestion;
+        if (!q || pState.vivtAnswered) return;
+        const ok = b.dataset.opt === q.answer;
+        pState.vivtAnswered = { picked: b.dataset.opt, ok };
+        pState.vivtTotal++;
+        if (ok) { pState.vivtCorrect++; pState.vivtStreak++; recordStudyActivity(1); }
+        else { pState.vivtStreak = 0; }
+        speakJapanese(q.promptJp.replace("＿＿", q.answer), 1.0);
+        renderPracticeView();
+      };
+    });
+    const btnVivtPlay = document.getElementById("btn-vivt-play-sent");
+    if (btnVivtPlay && pState.vivtQuestion) {
+      btnVivtPlay.onclick = function () {
+        speakJapanese(pState.vivtQuestion.promptJp.replace("＿＿", pState.vivtQuestion.answer), 1.0, this);
+      };
+    }
+    const btnVivtNext = document.getElementById("btn-vivt-next");
+    if (btnVivtNext) btnVivtNext.onclick = () => { generateViVtQuestion(); renderPracticeView(); };
 
     // Bind Conjugation Drill Events
     container.querySelectorAll("[data-cjjlpt]").forEach((b) => {
@@ -1794,38 +2597,34 @@
       const ok = clean === q.answerJp || clean === q.answerKana;
       pState.conjAnswered = { picked: clean, ok };
       pState.conjTotal++;
-      if (ok) {
-        pState.conjCorrect++;
-        pState.conjStreak++;
-        recordStudyActivity(1);
-      } else {
-        pState.conjStreak = 0;
-      }
+      if (ok) { pState.conjCorrect++; pState.conjStreak++; recordStudyActivity(1); }
+      else { pState.conjStreak = 0; }
       speakJapanese(q.answerJp || q.answerKana, 1.0);
       renderPracticeView();
     }
 
-    container.querySelectorAll(".conj-choice-btn").forEach((b) => {
-      b.onclick = () => checkConjAnswer(b.dataset.opt);
-    });
+    container.querySelectorAll(".conj-choice-btn").forEach((b) => { b.onclick = () => checkConjAnswer(b.dataset.opt); });
     const btnSubmitType = document.getElementById("btn-conj-submit-type");
     const typeInput = document.getElementById("conj-type-input");
     if (btnSubmitType && typeInput) {
-      btnSubmitType.onclick = () => {
-        if (typeInput.value.trim()) checkConjAnswer(typeInput.value);
-      };
-      typeInput.onkeydown = (e) => {
-        if (e.key === "Enter" && typeInput.value.trim()) checkConjAnswer(typeInput.value);
-      };
+      btnSubmitType.onclick = () => { if (typeInput.value.trim()) checkConjAnswer(typeInput.value); };
+      typeInput.onkeydown = (e) => { if (e.key === "Enter" && typeInput.value.trim()) checkConjAnswer(typeInput.value); };
     }
     const btnCjPlay = document.getElementById("btn-conj-play-ans");
     if (btnCjPlay && pState.conjQuestion) btnCjPlay.onclick = function () { speakJapanese(pState.conjQuestion.answerJp || pState.conjQuestion.answerKana, 1.0, this); };
     const btnCjNext = document.getElementById("btn-conj-next");
     if (btnCjNext) btnCjNext.onclick = () => { generateConjQuestion(); renderPracticeView(); };
 
-    // Bind Grammar & Listening Quiz Events
+    // Bind Grammar, Listening & Staff Quiz Events
     container.querySelectorAll("[data-qkind]").forEach((b) => {
-      b.onclick = () => { pState.quizKind = b.dataset.qkind; generateQuizQuestion(); renderPracticeView(); };
+      b.onclick = () => {
+        pState.quizKind = b.dataset.qkind;
+        generateQuizQuestion();
+        renderPracticeView();
+        if ((pState.quizKind === "listening" || pState.quizKind === "staff") && pState.quizQuestion) {
+          setTimeout(() => speakJapanese(pState.quizQuestion.jp, 1.0, null, null, pState.quizQuestion.audioKey), 150);
+        }
+      };
     });
     container.querySelectorAll("[data-qlvl]").forEach((b) => {
       b.onclick = () => { pState.quizLevel = b.dataset.qlvl; generateQuizQuestion(); renderPracticeView(); };
@@ -1837,13 +2636,8 @@
         const ok = b.dataset.opt === q.answer;
         pState.quizAnswered = { picked: b.dataset.opt, ok };
         pState.quizTotal++;
-        if (ok) {
-          pState.quizCorrect++;
-          pState.quizStreak++;
-          recordStudyActivity(1);
-        } else {
-          pState.quizStreak = 0;
-        }
+        if (ok) { pState.quizCorrect++; pState.quizStreak++; recordStudyActivity(1); }
+        else { pState.quizStreak = 0; }
         if (q.kind === "grammar") {
           speakJapanese(q.promptJp.replace("＿＿", q.answer), 1.0);
         }
@@ -1852,20 +2646,22 @@
     });
     const btnQuizSent = document.getElementById("btn-quiz-play-sent");
     if (btnQuizSent && pState.quizQuestion && pState.quizQuestion.kind === "grammar") {
-      btnQuizSent.onclick = function () {
-        speakJapanese(pState.quizQuestion.promptJp.replace("＿＿", pState.quizQuestion.answer), 1.0, this);
-      };
+      btnQuizSent.onclick = function () { speakJapanese(pState.quizQuestion.promptJp.replace("＿＿", pState.quizQuestion.answer), 1.0, this); };
     }
     const btnL1 = document.getElementById("btn-listen-play-1x");
     if (btnL1 && pState.quizQuestion) btnL1.onclick = function () { speakJapanese(pState.quizQuestion.jp, 1.0, this, null, pState.quizQuestion.audioKey); };
     const btnLSlow = document.getElementById("btn-listen-play-slow");
     if (btnLSlow && pState.quizQuestion) btnLSlow.onclick = function () { speakJapanese(pState.quizQuestion.jp, 0.78, this, null, pState.quizQuestion.audioKey); };
+    const btnStaffReply = document.getElementById("btn-staff-play-reply");
+    if (btnStaffReply && pState.quizQuestion && pState.quizQuestion.staff) {
+      btnStaffReply.onclick = function () { speakJapanese(pState.quizQuestion.staff.replyJp, 1.0, this); };
+    }
     const btnQNext = document.getElementById("btn-quiz-next");
     if (btnQNext) {
       btnQNext.onclick = () => {
         generateQuizQuestion();
         renderPracticeView();
-        if (pState.quizKind === "listening" && pState.quizQuestion) {
+        if ((pState.quizKind === "listening" || pState.quizKind === "staff") && pState.quizQuestion) {
           setTimeout(() => speakJapanese(pState.quizQuestion.jp, 1.0, null, null, pState.quizQuestion.audioKey), 150);
         }
       };
@@ -1887,12 +2683,8 @@
     const btnShLoop = document.getElementById("btn-sh-loop");
     if (btnShLoop && curSh) {
       btnShLoop.onclick = () => {
-        if (pState.shadowRunning) {
-          stopShadowingLoop();
-          renderPracticeView();
-        } else {
-          startShadowingLoop(curSh);
-        }
+        if (pState.shadowRunning) { stopShadowingLoop(); renderPracticeView(); }
+        else { startShadowingLoop(curSh); }
       };
     }
     const btnShMic = document.getElementById("btn-sh-mic");
@@ -1904,6 +2696,56 @@
     const btnShRand = document.getElementById("btn-sh-rand");
     if (btnShRand) btnShRand.onclick = () => { stopShadowingLoop(); pState.shadowIndex = Math.floor(Math.random() * shItems.length); pState.shadowTranscript = ""; renderPracticeView(); };
   }
+
+  // Desktop Practice Keyboard Shortcuts (Space flip, R replay, S slow, 1-4 rate/pick, Enter/ArrowRight next)
+  document.addEventListener("keydown", (e) => {
+    const a = app();
+    if (!a || !a.state || a.state.appMode !== "practice") return;
+    const modal = document.getElementById("app-modal");
+    if (modal && modal.classList.contains("open")) return;
+    const tag = (e.target && e.target.tagName) || "";
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (e.target && e.target.isContentEditable)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (pState.subMode === "srs" && pState.srsCurrentCard) {
+      if (e.code === "Space") {
+        e.preventDefault();
+        pState.srsFlipped = !pState.srsFlipped;
+        renderPracticeView();
+        if (pState.srsFlipped && pState.srsAutoPlay && pState.srsCurrentCard) {
+          a.speakJapanese(pState.srsCurrentCard.audioText, 1.0, null, null, pState.srsCurrentCard.audioKey);
+        }
+      } else if (e.key === "r" || e.key === "R") {
+        a.speakJapanese(pState.srsCurrentCard.audioText, 1.0, null, null, pState.srsCurrentCard.audioKey);
+      } else if (e.key === "s" || e.key === "S") {
+        a.speakJapanese(pState.srsCurrentCard.audioText, 0.78, null, null, pState.srsCurrentCard.audioKey);
+      } else if (pState.srsFlipped && e.key === "1") {
+        rateSrsCard("again");
+      } else if (pState.srsFlipped && e.key === "2") {
+        rateSrsCard("hard");
+      } else if (pState.srsFlipped && e.key === "3") {
+        rateSrsCard("good");
+      }
+      return;
+    }
+
+    if (pState.subMode === "vivt" || pState.subMode === "conj" || pState.subMode === "quiz") {
+      if (e.key === "1" || e.key === "2" || e.key === "3" || e.key === "4") {
+        const idx = Number(e.key) - 1;
+        const selector = pState.subMode === "vivt" ? ".vivt-pick-btn" : pState.subMode === "conj" ? ".conj-choice-btn" : ".main-quiz-pick";
+        const btns = document.querySelectorAll(selector);
+        if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+      } else if (e.key === "Enter" || e.key === "ArrowRight") {
+        const nextId = pState.subMode === "vivt" ? "btn-vivt-next" : pState.subMode === "conj" ? "btn-conj-next" : "btn-quiz-next";
+        const nextBtn = document.getElementById(nextId);
+        if (nextBtn) { e.preventDefault(); nextBtn.click(); }
+      } else if ((e.key === "r" || e.key === "R") && pState.subMode === "quiz" && pState.quizQuestion && (pState.quizKind === "listening" || pState.quizKind === "staff")) {
+        a.speakJapanese(pState.quizQuestion.jp, 1.0, null, null, pState.quizQuestion.audioKey);
+      } else if ((e.key === "s" || e.key === "S") && pState.subMode === "quiz" && pState.quizQuestion && (pState.quizKind === "listening" || pState.quizKind === "staff")) {
+        a.speakJapanese(pState.quizQuestion.jp, 0.78, null, null, pState.quizQuestion.audioKey);
+      }
+    }
+  });
 
   // Register global renderer
   window.JP_LEARNING = {

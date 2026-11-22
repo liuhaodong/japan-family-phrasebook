@@ -1,5 +1,5 @@
 // Curated Japanese Grammar Guide Grouped by JLPT N5 / N4 / N3 & Ordered by Daily Importance
-// Includes Formation Formulas, Pitfall Tips, Daily Example Sentences & Interactive Quiz Prompts
+// 132 High-Frequency Patterns (50 N5, 36 N4, 46 N3) with Formation Formulas, Tips, Examples & Quizzes
 window.JP_GRAMMAR_LIST = [
   {
     "id": "g-n5-01",
@@ -1486,6 +1486,710 @@ window.JP_GRAMMAR_LIST = [
     }
   },
   {
+    "id": "g-n5-35",
+    "level": "N5",
+    "order": 35,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "これ・それ・あれ・どれ / この・その・あの・どの",
+    "reading": "kore/sore/are / kono/sono/ano",
+    "meaning": "指示代词「こそあど」体系（这 / 那 / 那个 / 哪个）",
+    "formation": "これ・それ・あれ（独立作名词）｜ この・その・あの ＋ 名词",
+    "explanation": "日文指示词看位置：离说话人近用「こ」，离听话人近用「そ」，离双方都远用「あ」，疑问用「ど」。单独指代“这个”用「これ」，后面接名词“这个东西”必须用「この＋名词」！",
+    "tip": "礼貌指人或方向可用「こちら・そちら・あちら・どちら」（例：お会計はこちらです）。",
+    "dailyExamples": [
+      {
+        "ctx": "购物",
+        "jp": "すみません、このシャツの別（べつ）の色（いろ）はありますか？",
+        "romaji": "Sumimasen, kono shatsu no betsu no iro wa arimasu ka?",
+        "cn": "不好意思，请问这件衬衫有别的颜色吗？"
+      },
+      {
+        "ctx": "餐厅",
+        "jp": "これとそれを一（ひと）つずつお願（ねが）いします。",
+        "romaji": "Kore to sore wo hitotsu zutsu onegai shimasu.",
+        "cn": "请给我这个和那个各一份。"
+      },
+      {
+        "ctx": "问路",
+        "jp": "トイレはあちらの奥（おく）にありますよ。",
+        "romaji": "Toire wa achira no oku ni arimasu yo.",
+        "cn": "洗手间在那边里面哦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "すみません、＿＿メニューを見（み）せてください。",
+      "answer": "その",
+      "options": [
+        "その",
+        "それ",
+        "そこ",
+        "どれ"
+      ],
+      "cn": "不好意思，请给我看一下那份菜单。"
+    }
+  },
+  {
+    "id": "g-n5-36",
+    "level": "N5",
+    "order": 36,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜です / 〜じゃないです / 〜でした / 〜じゃなかった",
+    "reading": "desu / janai / deshita / janakatta",
+    "meaning": "名词与な形容词的四态变化（现在・否定・过去・过去否定）",
+    "formation": "肯定：〜です ｜ 否定：〜じゃありません / 〜じゃないです ｜ 过去：〜でした ｜ 过去否定：〜じゃありませんでした",
+    "explanation": "N5 最核心句尾变化！名词和な形容词变形完全一致。注意：过去时间（昨天/刚才）一定要换成「〜でした」或「〜じゃなかったです」，不能一直说「です」。",
+    "tip": "口语最常用「〜じゃないです / 〜じゃなかったです」；「ではありません」更偏书面正式。",
+    "dailyExamples": [
+      {
+        "ctx": "酒店",
+        "jp": "昨日（きのう）は雨（あめ）でしたが、今日（きょう）はいい天気（てんき）ですね。",
+        "romaji": "Kinou wa ame deshita ga, kyou wa ii tenki desu ne.",
+        "cn": "昨天是雨天，不过今天真是好天气呢。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "去年（きょねん）の冬（ふゆ）はそんなに寒（さむ）いどころか、雪（ゆき）じゃなかったです。",
+        "romaji": "Kyonen no fuyu wa yuki janakatta desu.",
+        "cn": "去年冬天那时不是下雪天。"
+      },
+      {
+        "ctx": "购物",
+        "jp": "このお店（みせ）は現金（げんきん）じゃなくてカードで大丈夫（だいじょうぶ）です。",
+        "romaji": "Kono omise wa genkin janakute kaado de daijoubu desu.",
+        "cn": "这家店不用现金，刷卡就可以。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "昨日（きのう）のランチはとても静（しず）か＿＿。",
+      "answer": "でした",
+      "options": [
+        "でした",
+        "です",
+        "でしたい",
+        "くないです"
+      ],
+      "cn": "昨天的午餐非常安静惬意。"
+    }
+  },
+  {
+    "id": "g-n5-37",
+    "level": "N5",
+    "order": 37,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "い形容词四态变化（〜い / 〜くない / 〜かった / 〜くなかった）",
+    "reading": "i / kunai / katta / kunakatta",
+    "meaning": "い形容词的现在・否定・过去・过去否定全掌握",
+    "formation": "去「い」分别加：くない（否定）/ かった（过去）/ くなかった（过去否定）",
+    "explanation": "い形容词直接自带时态！不要说「おいしいでした」❌，必须去い加かった →「おいしかったです」⭕！特别例外：「いい（好）」必须先变回「よ」再变形：よくない / よかった / よくなかった。",
+    "tip": "高频必背：「おいしかったです（真好吃）」「楽しかったです（太好玩了）」「辛くないです（不辣）」。",
+    "dailyExamples": [
+      {
+        "ctx": "美食",
+        "jp": "お寿司（すし）、本当（ほんとう）においしかったです！",
+        "romaji": "Osushi, hontou ni oishikatta desu!",
+        "cn": "寿司真的太好吃了！"
+      },
+      {
+        "ctx": "点餐",
+        "jp": "あまり辛（から）くない料理（りょうり）はありますか？",
+        "romaji": "Amari karakunai ryouri wa arimasu ka?",
+        "cn": "有不太辣的菜吗？"
+      },
+      {
+        "ctx": "天气",
+        "jp": "心配（しんぱい）しましたが、あまり寒（さむ）くなかったですよ。",
+        "romaji": "Shinpai shimashita ga, amari samukunakatta desu yo.",
+        "cn": "原本还担心冷呢，其实并没有那么冷哦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "昨日（きのう）の温泉（おんせん）は最高（さいこう）に気持（きも）ちが＿＿です！",
+      "answer": "よかった",
+      "options": [
+        "よかった",
+        "いいかった",
+        "よくかった",
+        "いいでした"
+      ],
+      "cn": "昨天的温泉泡得真是太舒服了！"
+    }
+  },
+  {
+    "id": "g-n5-38",
+    "level": "N5",
+    "order": 38,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜の（所属 / 替代名词 / 方位词）",
+    "reading": "no (possession / pronoun / position)",
+    "meaning": "……的（所属修饰）/ 那个……（替代物品）/ 上下左右位置",
+    "formation": "名词1 ＋ の ＋ 名词2 ｜ い形/な形＋な ＋ の（指代前文物品）｜ 名词 ＋ の ＋ 上・下・中・隣",
+    "explanation": "「の」在 N5 有三大神器用法：1) 连接名词（日本のホテル）；2) 代替已提过的名词（もっと大きいのはありますか＝有更大号的吗）；3) 接方位词表达具体位置（駅の前＝车站前面）。",
+    "tip": "买衣服鞋袜选尺寸或颜色时，“那个蓝色的 / 大一点的”直接说「青いの / 大きいのが欲しいです」！",
+    "dailyExamples": [
+      {
+        "ctx": "购物",
+        "jp": "すみません、もう少（すこ）し小（ちい）さいのはありますか？",
+        "romaji": "Sumimasen, mou sukoshi chiisai no wa arimasu ka?",
+        "cn": "不好意思，有再小一号的吗？"
+      },
+      {
+        "ctx": "位置",
+        "jp": "エレベーターはレストランの隣（となり）にあります。",
+        "romaji": "Erebeetaa wa resutoran no tonari ni arimasu.",
+        "cn": "电梯就在餐厅旁边。"
+      },
+      {
+        "ctx": "所属",
+        "jp": "これは日本（にほん）のお土産（みやげ）です。",
+        "romaji": "Kore wa Nihon no omiyage desu.",
+        "cn": "这是日本的伴手礼。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "この靴（くつ）の20センチ＿＿見（み）せていただけますか？",
+      "answer": "の",
+      "options": [
+        "の",
+        "を",
+        "に",
+        "が"
+      ],
+      "cn": "能给我看一下这双鞋20厘米尺码的那双吗？"
+    }
+  },
+  {
+    "id": "g-n5-39",
+    "level": "N5",
+    "order": 39,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "疑问词＋も〜ない vs 疑问词＋か",
+    "reading": "nanimo ~ nai / nanika",
+    "meaning": "“全都……不”（全面否定）vs “某…… / 什么东西吗？”（不定指代）",
+    "formation": "何も・誰も・どこも ＋ 否定形（全くない）｜ 何か・誰か・どこか（肯定或疑问句）",
+    "explanation": "N5 最经典的成对考点！「何も食べません」＝什么都不吃（+も+否定）；「何か食べませんか？」＝要不要吃点什么东西？（+か）。",
+    "tip": "注意「どこにも行きません / 誰にも会いません」中的助词「に」要插在「も」前面！",
+    "dailyExamples": [
+      {
+        "ctx": "点餐",
+        "jp": "みんなお腹（なか）が空（す）いたから、何（なに）か温（あたた）かいものを食（た）べよう！",
+        "romaji": "Minna onaka ga suita kara, nanika atatakai mono wo tabeyou!",
+        "cn": "大家都饿了，咱们吃点什么热乎的东西吧！"
+      },
+      {
+        "ctx": "行程",
+        "jp": "今日（きょう）は疲（つか）れたので、午後（ごご）はどこも（どこへも）行（い）きません。",
+        "romaji": "Kyou wa tsukareta node, gogo wa doko mo ikimasen.",
+        "cn": "今天累了，下午哪儿也不去了。"
+      },
+      {
+        "ctx": "问询",
+        "jp": "すみません、この近（ちか）くにどこかおいしいラーメン屋（や）さんはありますか？",
+        "romaji": "Sumimasen, kono chikaku ni dokoka oishii raamen-ya-san wa arimasu ka?",
+        "cn": "不好意思，这附近哪里有好吃的拉面店吗？"
+      }
+    ],
+    "quiz": {
+      "promptJp": "アレルギーは何（なに）＿＿ありません。",
+      "answer": "も",
+      "options": [
+        "も",
+        "か",
+        "が",
+        "を"
+      ],
+      "cn": "我没有任何食物过敏。"
+    }
+  },
+  {
+    "id": "g-n5-40",
+    "level": "N5",
+    "order": 40,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜から〜まで & 频率副词（いつも / よく / 時々 / あまり〜ない）",
+    "reading": "kara ~ made / frequency adverbs",
+    "meaning": "从……到……（时间·地点区间）及做某事的频率",
+    "formation": "起点 ＋ から ＋ 终点 ＋ まで ｜ あまり / 全然 ＋ 否定形",
+    "explanation": "看营业时间、车程、预约时段必用「AからBまで」。同时牢记 N5 五级频率阶梯：いつも(总是 100%) ＞ よく(经常 70%) ＞ 時々(有时 40%) ＞ あまり〜ない(不太 15%) ＞ 全然〜ない(完全不 0%)。",
+    "tip": "「あまり」和「全然」后面必须配否定形！「あまり好きじゃないです」＝不太喜欢。",
+    "dailyExamples": [
+      {
+        "ctx": "营业",
+        "jp": "このお店（みせ）は何時（なんじ）から何時（なんじ）まで開（あ）いていますか？",
+        "romaji": "Kono omise wa nanji kara nanji made aite imasu ka?",
+        "cn": "这家店从几点营业到几点？"
+      },
+      {
+        "ctx": "交通",
+        "jp": "東京（とうきょう）から軽井沢（かるいざわ）まで新幹線（しんかんせん）で1時間（じかん）くらいです。",
+        "romaji": "Toukyou kara Karuizawa made shinkansen de ichijikan kurai desu.",
+        "cn": "从东京到轻井泽坐新干线大约1小时。"
+      },
+      {
+        "ctx": "习惯",
+        "jp": "私（わたし）は辛い（からい）ものが好き（すき）ですが、妻（つま）はあまり食（た）べません。",
+        "romaji": "Watashi wa karai mono ga suki desu ga, tsuma wa amari tabemasen.",
+        "cn": "我喜欢吃辣的，但我太太不太吃辣。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "朝食（ちょうしょく）は朝（あさ）7時（じ）＿＿10時（じ）までです。",
+      "answer": "から",
+      "options": [
+        "から",
+        "まで",
+        "より",
+        "ほど"
+      ],
+      "cn": "早餐时间是从早上7点到10点。"
+    }
+  },
+  {
+    "id": "g-n5-41",
+    "level": "N5",
+    "order": 41,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜へ／に ＋ 动词ます形去ます ＋ に行く・来る",
+    "reading": "ni iku / ni kuru",
+    "meaning": "去某地做某事 / 来做某事（移动的目的）",
+    "formation": "动词ます形去掉ます（或动作名词）＋ に ＋ 行く / 来る / 帰る",
+    "explanation": "去逛街买东西、去吃拉面、去接孩子，日语用「动词去ます＋に行く」！例如「食べに行く（去吃）」「迎えに行く（去接）」「遊びに来る（来玩）」。",
+    "tip": "接名词（如 買い物・食事・散歩）时直接「買い物に行く」即可，不用加する！",
+    "dailyExamples": [
+      {
+        "ctx": "美食",
+        "jp": "お昼（ひる）は博多（はかた）ラーメンを食（た）べに行（い）きましょう！",
+        "romaji": "Ohiru wa Hakata raamen wo tabe ni ikimashou!",
+        "cn": "中午咱们去吃博多拉面吧！"
+      },
+      {
+        "ctx": "生活",
+        "jp": "ちょっとコンビニへお水（みず）を買（か）いに行（い）ってきます。",
+        "romaji": "Chotto konbini e omizu wo kai ni itte kimasu.",
+        "cn": "我去便利店买点水马上回来。"
+      },
+      {
+        "ctx": "育儿",
+        "jp": "4時（じ）に保育（ほいく）園（えん）へ娘（むすめ）を迎（むか）えに行（い）きます。",
+        "romaji": "Yoji ni hoikuen e musume wo mukae ni ikimasu.",
+        "cn": "4点去保育园接女儿。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "明日（あした）は銀座（ぎんざ）へお寿司（すし）を＿＿行（い）きます。",
+      "answer": "食べに",
+      "options": [
+        "食べに",
+        "食べて",
+        "食べるに",
+        "食べへ"
+      ],
+      "cn": "明天要去银座吃寿司。"
+    }
+  },
+  {
+    "id": "g-n5-42",
+    "level": "N5",
+    "order": 42,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "形容词 & 名词并列连用（〜くて / 〜で）",
+    "reading": "kute / de",
+    "meaning": "既……又……（连接多个形容词或名词特点）",
+    "formation": "い形容词去い＋くて ｜ な形容词词干＋で ｜ 名词＋で（例：いい → よくて）",
+    "explanation": "想用一句话同时夸“既好吃又便宜”“房间既宽敞又干净”“交通方便而且安静”，就靠这个并列接续！",
+    "tip": "「高い」+「おいしい」可以说「高くておいしい」，但一褒一贬冲突时要用转折「高いですが、おいしいです」。",
+    "dailyExamples": [
+      {
+        "ctx": "美食",
+        "jp": "このお店（みせ）のランチは安（やす）くて、おいしくて、ボリュームたっぷりです！",
+        "romaji": "Kono omise no ranchi wa yasukute, oishikute, boryuumu tappuri desu!",
+        "cn": "这家店的午餐又实惠、又美味、分量还超足！"
+      },
+      {
+        "ctx": "酒店",
+        "jp": "お部屋（へや）が広（ひろ）くてとてもきれいですね。",
+        "romaji": "Oheya ga hirokute totemo kirei desu ne.",
+        "cn": "房间又宽敞又干净整洁呢。"
+      },
+      {
+        "ctx": "评价",
+        "jp": "日本（にほん）は安全（あんぜん）で便利（べんり）な国（くに）だと思います。",
+        "romaji": "Nihon wa anzen de benri na kuni da to omoimasu.",
+        "cn": "我觉得日本是一个既安全又方便的国度。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "スタッフの方（かた）がみんな親切（しんせつ）＿＿優（やさ）しいです。",
+      "answer": "で",
+      "options": [
+        "で",
+        "くて",
+        "な",
+        "に"
+      ],
+      "cn": "工作人员们既热心又温柔。"
+    }
+  },
+  {
+    "id": "g-n5-43",
+    "level": "N5",
+    "order": 43,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "动词て形顺接（〜て、〜て）& 不做某事而……（〜ないで）",
+    "reading": "te, te / naide",
+    "meaning": "先做A然后做B / 不做A而直接做B",
+    "formation": "动词1て形 ＋ 动词2 ｜ 动词1ない形 ＋ で ＋ 动词2",
+    "explanation": "按时间顺序串起一连串动作（起床→刷牙→吃早饭），日语全部用「て形」连接，最后由最后一个动词决定整个句子的时态和礼貌度！不做某事直接做另一事则用「〜ないで」。",
+    "tip": "「靴を脱いで入ります（脱了鞋进去）」vs「靴を脱がないで入ります（不脱鞋直接进去）」。",
+    "dailyExamples": [
+      {
+        "ctx": "日常",
+        "jp": "朝（あさ）起（お）きて、温泉（おんせん）に入（はい）って、それから朝（あさ）ごはんを食（た）べました。",
+        "romaji": "Asa okite, onsen ni haitte, sorekara asagohan wo tabemashita.",
+        "cn": "早上起床，泡了温泉，然后吃了早饭。"
+      },
+      {
+        "ctx": "点餐",
+        "jp": "ソースをかけないで、塩（しお）だけで食（た）べてみてください。",
+        "romaji": "Soosu wo kakenaide, shio dake de tabete mite kudasai.",
+        "cn": "请试着不淋酱汁，只蘸盐吃看看。"
+      },
+      {
+        "ctx": "购物",
+        "jp": "レジ袋（ぶくろ）をもらわないで、エコバッグに入（い）れました。",
+        "romaji": "Rejibukuro wo morawanaide, ekobaggu ni iremashita.",
+        "cn": "没要塑料袋，装进了自己的环保袋里。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "荷物（にもつ）をホテルに＿＿、すぐ街（まち）へ出（で）かけましょう。",
+      "answer": "預けて",
+      "options": [
+        "預けて",
+        "預ける",
+        "預けた",
+        "預けながら"
+      ],
+      "cn": "把行李寄存在酒店后，马上去街上逛吧。"
+    }
+  },
+  {
+    "id": "g-n5-44",
+    "level": "N5",
+    "order": 44,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜とき（時）：辞书形＋とき vs た形＋とき",
+    "reading": "suru toki / shita toki",
+    "meaning": "在……的时候（动作发生前 vs 动作完成后）",
+    "formation": "动词辞书形・た形・ない形 / い形 / な形＋な / 名词＋の ＋ とき",
+    "explanation": "N5 最容易写反的黄金区分！「日本へ行くとき」＝还没到日本（在去日本的路上/出发前）；「日本へ行ったとき」＝已经到了日本之后！",
+    "tip": "例：「ホテルを出るとき鍵を閉めます（出酒店前锁门）」vs「部屋に入ったときエアコンをつけました（进屋后开了空调）」。",
+    "dailyExamples": [
+      {
+        "ctx": "出行",
+        "jp": "電車（でんしゃ）に乗（の）るとき、Suicaをタッチします。",
+        "romaji": "Densha ni noru toki, Suica wo tatchi shimasu.",
+        "cn": "进站坐电车的时候，刷一下西瓜卡。"
+      },
+      {
+        "ctx": "回家",
+        "jp": "うちへ帰（かえ）ったとき、「ただいま」と言（い）います。",
+        "romaji": "Uchi e kaetta toki, 'tadaima' to iimasu.",
+        "cn": "回到家的时候说“我回来了”。"
+      },
+      {
+        "ctx": "应急",
+        "jp": "道（みち）が分（わ）からないときは、このアプリで地図（ちず）を見（み）ます。",
+        "romaji": "Michi ga wakaranai toki wa, kono apuri de chizu wo mimasu.",
+        "cn": "不认识路的时候，就用这个应用看地图。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "日本（にほん）へ＿＿とき、空港（くうこう）でお土産（みやげ）を買（か）います（准备离开回美国前）。",
+      "answer": "帰る",
+      "options": [
+        "帰る",
+        "帰った",
+        "帰り",
+        "帰って"
+      ],
+      "cn": "回美国离开日本的时候，在机场买伴手礼。"
+    }
+  },
+  {
+    "id": "g-n5-45",
+    "level": "N5",
+    "order": 45,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜が欲しい（ほしい） vs 〜たい",
+    "reading": "ga hoshii / tai",
+    "meaning": "想要某物（名词＋が欲しい）vs 想做某事（动词＋たい）",
+    "formation": "名词 ＋ が欲しいです ｜ 动词ます形去ます ＋ たいです（〜が/を 〜たい）",
+    "explanation": "表达愿望双核心：想要“物体”（玩具/收据/水）用「名词＋が欲しい」；想“做动作”（吃/去/买）用「动词去ます＋たい」！",
+    "tip": "向店员要东西不说「水が欲しいです」（略显孩子气直白），要礼貌说「お水をいただけますか / ください」！",
+    "dailyExamples": [
+      {
+        "ctx": "家庭",
+        "jp": "娘（むすめ）がピカチュウのぬいぐるみが欲（ほ）しいと言（い）っています。",
+        "romaji": "Musume ga Pikachuu no nuigurumi ga hoshii to itte imasu.",
+        "cn": "女儿说想要皮卡丘的毛绒玩偶。"
+      },
+      {
+        "ctx": "愿望",
+        "jp": "軽井沢（かるいざわ）で思いっきりスキーを滑（すべ）りたいです！",
+        "romaji": "Karuizawa de omoikkiri sukii wo suberitai desu!",
+        "cn": "真想在轻井泽尽情滑雪呀！"
+      },
+      {
+        "ctx": "否定",
+        "jp": "お腹（なか）がいっぱいなので、もう何（なに）も欲（ほ）しくないです。",
+        "romaji": "Onaka ga ippai na node, mou nanimo hoshikunai desu.",
+        "cn": "吃饱了，已经什么都不想要了。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "今年（ことし）の冬（ふゆ）は九州（きゅうしゅう）の温泉（おんせん）に＿＿です。",
+      "answer": "入りたい",
+      "options": [
+        "入りたい",
+        "入る欲しい",
+        "欲しい",
+        "入ったい"
+      ],
+      "cn": "今年冬天想去泡九州的温泉。"
+    }
+  },
+  {
+    "id": "g-n5-46",
+    "level": "N5",
+    "order": 46,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "もう〜ました（已经）vs まだ〜ていません（还没）",
+    "reading": "mou ~ mashita / mada ~ te imasen",
+    "meaning": "已经做完了吗？ / 还没做呢（进度确认经典问答！）",
+    "formation": "もう ＋ 动词た形/ました（已经……）｜ まだ ＋ 动词ていません（还没……）",
+    "explanation": "N5 超高频一问一答！「もう昼ごはんを食べましたか？（吃午饭了吗？）」回答“吃了”→「はい、もう食べました」；“还没吃”→「いいえ、まだ食べていません / まだです」。",
+    "tip": "⚠️千万不要回答「いいえ、食べませんでした ❌」！说“还没”必须用「まだ〜ていません / まだです」⭕！",
+    "dailyExamples": [
+      {
+        "ctx": "日常",
+        "jp": "「荷物（にもつ）の準備（じゅんび）はもう終（お）わりましたか？」「いいえ、まだです。」",
+        "romaji": "'Nimotsu no junbi wa mou owarimashita ka?' 'Iie, mada desu.'",
+        "cn": "“行李收拾完了吗？”“还没有呢。”"
+      },
+      {
+        "ctx": "餐厅",
+        "jp": "あ、注文（ちゅうもん）したお料理（りょうり）はまだ来（き）ていません。",
+        "romaji": "A, chuumon shita oryouri wa mada kite imasen.",
+        "cn": "啊，点的菜还没有上齐。"
+      },
+      {
+        "ctx": "酒店",
+        "jp": "チェックアウトの手続（てつづ）きはもう済（す）みましたよ。",
+        "romaji": "Chekkuauto no tetsuzuki wa mou sumimashita yo.",
+        "cn": "退房手续已经办好了哦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "「もう予約（よやく）はしましたか？」「いいえ、まだ＿＿。」",
+      "answer": "していません",
+      "options": [
+        "していません",
+        "しませんでした",
+        "しません",
+        "しなかった"
+      ],
+      "cn": "“预约好了吗？”“不，还没有。”"
+    }
+  },
+  {
+    "id": "g-n5-47",
+    "level": "N5",
+    "order": 47,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜でしょう / 〜ね / 〜よ（语气终助词）",
+    "reading": "deshou / ne / yo",
+    "meaning": "应该……吧「でしょう」/ 对吧共鸣「ね」/ 提醒告知「よ」",
+    "formation": "简体/名词 ＋ でしょう ｜ 句尾 ＋ ね（共鸣）/ よ（新信息）/ よね（确认）",
+    "explanation": "决定日语是否自然亲切的关键小尾巴！「おいしいですね（真好吃啊，寻求共鸣）」「あ、バスが来ましたよ！（巴士来啦！告知对方不知道的信息）」「今日は寒いでしょう？（今天很冷吧？）」。",
+    "tip": "「ね」用降调表示“确实如此呢”；「よね」用升调表示“是这样的吧？确认一下”。",
+    "dailyExamples": [
+      {
+        "ctx": "赞叹",
+        "jp": "このお刺身（さしみ）、本当（ほんとう）に新鮮（しんせん）ですね！",
+        "romaji": "Kono osashimi, hontou ni shinsen desu ne!",
+        "cn": "这生鱼片真是好新鲜呀！"
+      },
+      {
+        "ctx": "提醒",
+        "jp": "スープが熱（あつ）いですから、気（き）をつけてくださいね。",
+        "romaji": "Suupu ga atsui desu kara, ki wo tsukete kudasai ne.",
+        "cn": "汤很烫，小心一点哦。"
+      },
+      {
+        "ctx": "确认",
+        "jp": "明日（あした）は金曜日（きんようび）でしたよね？",
+        "romaji": "Ashita wa kinyoubi deshita yo ne?",
+        "cn": "明天是周五来着对吧？"
+      }
+    ],
+    "quiz": {
+      "promptJp": "あ、出口（でぐち）はあちらです＿＿！（指给没看到的同伴）",
+      "answer": "よ",
+      "options": [
+        "よ",
+        "ね",
+        "か",
+        "ぞ"
+      ],
+      "cn": "啊，出口在那边哦！"
+    }
+  },
+  {
+    "id": "g-n5-48",
+    "level": "N5",
+    "order": 48,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "动词普通形（简体转换：辞书形 / ない形 / た形 / なかった形）",
+    "reading": "futsuukei (plain form)",
+    "meaning": "动词简体四态总复习（所有 N4/N3 语法的接续底座！）",
+    "formation": "肯定现在＝辞书形 ｜ 否定现在＝ない形 ｜ 肯定过去＝た形 ｜ 否定过去＝なかった形",
+    "explanation": "学完「〜ます」后，N5 下半程最关键的跃迁就是「普通形（简体）」。不仅家人朋友聊天全用它，所有 N4/N3 核心句型（〜と思う / 〜から / 〜んです / 〜ほうがいい / 〜かもしれない）前面全都要接普通形！",
+    "tip": "「行きます→行く」「行きません→行かない」「行きました→行った」「行きませんでした→行かなかった」。",
+    "dailyExamples": [
+      {
+        "ctx": "家庭",
+        "jp": "明日（あした）は早（はや）く起（お）きるから、今日（きょう）はもう寝（ね）よう。",
+        "romaji": "Ashita wa hayaku okiru kara, kyou wa mou neyou.",
+        "cn": "明天要早起，今天早点睡吧（家人简体）。"
+      },
+      {
+        "ctx": "想法",
+        "jp": "ちょっと高（たか）いと思（おも）うけど、纪念（きねん）日（び）だからいいよね。",
+        "romaji": "Chotto takai to omou kedo, kinenbi dakara ii yo ne.",
+        "cn": "虽然觉得有点贵，不过纪念日嘛值啦。"
+      },
+      {
+        "ctx": "回顾",
+        "jp": "昨日（きのう）は夜（よる）遅（おそ）くまで散歩（さんぽ）しなかったよ。",
+        "romaji": "Kinou wa yoru osoku made sanpo shinakatta yo.",
+        "cn": "昨天晚上没有散步到很晚哦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "もう遅（おそ）いから、カフェには寄（よ）ら＿＿と思（おも）います。",
+      "answer": "ない",
+      "options": [
+        "ない",
+        "ません",
+        "なかった",
+        "なくて"
+      ],
+      "cn": "已经很晚了，我想就不顺路去咖啡馆了。"
+    }
+  },
+  {
+    "id": "g-n5-49",
+    "level": "N5",
+    "order": 49,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜方（かた）",
+    "reading": "kata",
+    "meaning": "……的方法 / ……的方式（怎么用・怎么吃・怎么买）",
+    "formation": "动词ます形去掉ます ＋ 方（かた）",
+    "explanation": "去日本旅行每天都会用到的神级词尾！把任何动作动词去ます加「方」立刻变成“……的方法”：使い方（用法）、食べ方（吃法）、買い方（买法）、読み方（读法）、行き方（去法）。",
+    "tip": "问店员怎么用电器或怎么吃特色料理，直接指着说「すみません、これの使い方を教えてください」！",
+    "dailyExamples": [
+      {
+        "ctx": "交通",
+        "jp": "すみません、切符（きっぷ）の買（か）い方（かた）を教（おし）えていただけますか？",
+        "romaji": "Sumimasen, kippu no kaikata wo oshiete itadakemasu ka?",
+        "cn": "不好意思，能教我一下怎么买车票吗？"
+      },
+      {
+        "ctx": "酒店",
+        "jp": "洗濯機（せんたくき）の使（つか）い方（かた）が分（わ）かりません。",
+        "romaji": "Sentakuki no tsukaikata ga wakarimasen.",
+        "cn": "我不太清楚这台洗衣机怎么用。"
+      },
+      {
+        "ctx": "餐厅",
+        "jp": "おいしい食（た）べ方（かた）があれば教（おし）えてください。",
+        "romaji": "Oishii tabekata ga areba oshiete kudasai.",
+        "cn": "如果有什么美味吃法请告诉我。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "この漢字（かんじ）の＿＿方（かた）が分（わ）かりません。",
+      "answer": "読み",
+      "options": [
+        "読み",
+        "読む",
+        "読んで",
+        "読んだ"
+      ],
+      "cn": "我不知道这个汉字的读法。"
+    }
+  },
+  {
+    "id": "g-n5-50",
+    "level": "N5",
+    "order": 50,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜をください & 数量词位置 / 〜か〜（选择）",
+    "reading": "wo kudasai / ka",
+    "meaning": "请给我[数量]个某物 / A还是B（点餐下单最常用结构）",
+    "formation": "名词 ＋ を ＋ 数量词 ＋ ください（不加の！）｜ 名词1 ＋ か ＋ 名词2",
+    "explanation": "点餐时数量词直接放在助词「を」后面、动词前面：「りんごを三つください（请给我3个苹果）」，千万不要说成「三つのりんご」❌！选二选一时用「か」（コーヒーか紅茶）。",
+    "tip": "点两个不同的东西可以说「生ビールを2つと、烏龍茶を1つお願いします」。",
+    "dailyExamples": [
+      {
+        "ctx": "点餐",
+        "jp": "すみません、お水（みず）を二（ふた）つと、オレンジジュースを二（ふた）つください。",
+        "romaji": "Sumimasen, omizu wo futatsu to, orenji juusu wo futatsu kudasai.",
+        "cn": "不好意思，请给我们两杯水和两杯橙汁。"
+      },
+      {
+        "ctx": "早餐",
+        "jp": "飲（の）み物（もの）はコーヒーか紅茶（こうちゃ）、どちらがいいですか？",
+        "romaji": "Nomimono wa koohii ka koucha, dochira ga ii desu ka?",
+        "cn": "饮品您想喝咖啡还是红茶呢？"
+      },
+      {
+        "ctx": "购物",
+        "jp": "お土産（みやげ）にケーキを四（よっ）つ買（か）って帰（かえ）りましょう。",
+        "romaji": "Omiyage ni keeki wo yottsu katte kaerimashou.",
+        "cn": "买四块蛋糕当伴手礼带回去吧。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "すみません、フォークを＿＿ください。",
+      "answer": "三つ",
+      "options": [
+        "三つ",
+        "三つの",
+        "三人",
+        "三本"
+      ],
+      "cn": "不好意思，请给我三把叉子。"
+    }
+  },
+  {
     "id": "g-n4-01",
     "level": "N4",
     "order": 1,
@@ -2858,6 +3562,182 @@ window.JP_GRAMMAR_LIST = [
     }
   },
   {
+    "id": "g-n4-33",
+    "level": "N4",
+    "order": 33,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "お〜ください / ご〜ください",
+    "reading": "o ~ kudasai / go ~ kudasai",
+    "meaning": "请您……（尊他敬语指令：店员/标识最高频！）",
+    "formation": "お ＋ 动词ます形去ます ＋ ください ｜ ご ＋ サ变动词词干 ＋ ください",
+    "explanation": "去日本餐厅、酒店、电车听到或看到的标志90%都是这个句型！「お待ちください（请稍等）」「ご確認ください（请确认）」「お座りください（请坐）」。",
+    "tip": "例外固定词：「ご覧ください（请看）」「お召し上がりください（请享用）」。",
+    "dailyExamples": [
+      {
+        "ctx": "酒店",
+        "jp": "ただいま確認（かくにん）いたしますので、少々（しょうしょう）お待（ま）ちください。",
+        "romaji": "Tadaima kakunin itashimasu node, shoushou omachi kudasai.",
+        "cn": "我现在为您确认，请稍等片刻。"
+      },
+      {
+        "ctx": "餐厅",
+        "jp": "お荷物（にもつ）はこちらのカゴにお入（い）れください。",
+        "romaji": "Onimotsu wa kochira no kago ni oire kudasai.",
+        "cn": "您的随身包请放到这边的篮子里。"
+      },
+      {
+        "ctx": "案内",
+        "jp": "どうぞお気（き）をつけてお帰（かえ）りください。",
+        "romaji": "Douzo oki wo tsukete okaeri kudasai.",
+        "cn": "路上请一定注意安全，慢走。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "チェックインの時間（じかん）をご＿＿ください。",
+      "answer": "確認",
+      "options": [
+        "確認",
+        "待ち",
+        "座り",
+        "食べ"
+      ],
+      "cn": "请您确认一下办理入住的时间。"
+    }
+  },
+  {
+    "id": "g-n4-34",
+    "level": "N4",
+    "order": 34,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜ていただく / 〜てくださる",
+    "reading": "te itadaku / te kudasaru",
+    "meaning": "承蒙您帮我做……（礼貌敬语版授受表达）",
+    "formation": "动词て形 ＋ いただく（我方请别人做）｜ 动词て形 ＋ くださる（对方主动为我做）",
+    "explanation": "「てもらう」的敬语升级版是「ていただく」，「てくれる」的尊他升级版是「てくださる」。在高端银座餐厅、酒店、保育园沟通中极为常用！",
+    "tip": "向服务员提要求：「〜ていただけますか？」比「〜てください」客气一个档次；夸酒店方主动帮忙：「案内してくださいました」。",
+    "dailyExamples": [
+      {
+        "ctx": "餐厅",
+        "jp": "生肉（なまにく）を少（すこ）し焼（や）いていただけますか？",
+        "romaji": "Namaniku wo sukoshi yaite itadakemasu ka?",
+        "cn": "请问能帮我把生肉稍微烤熟一点吗？"
+      },
+      {
+        "ctx": "酒店",
+        "jp": "スタッフの方（かた）がタクシーを呼（よ）んでくださいました。",
+        "romaji": "Sutaffu no kata ga takushii wo yonde kudasaimashita.",
+        "cn": "酒店工作人员特意帮我们叫了出租车。"
+      },
+      {
+        "ctx": "保育园",
+        "jp": "娘（むすめ）に優（やさ）しく教（おし）えていただき、ありがとうございます。",
+        "romaji": "Musume ni yasashiku oshiete itadaki, arigatou gozaimasu.",
+        "cn": "非常感谢您这么温柔地教我女儿。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "すみません、写真（しゃしん）を撮（と）って＿＿ますか？",
+      "answer": "いただけ",
+      "options": [
+        "いただけ",
+        "あげ",
+        "くれ",
+        "もらって"
+      ],
+      "cn": "不好意思，能请您帮我们拍张照吗？"
+    }
+  },
+  {
+    "id": "g-n4-35",
+    "level": "N4",
+    "order": 35,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜ちゃう / 〜とく / 〜なきゃ",
+    "reading": "chau / toku / nakya",
+    "meaning": "日本人口语缩略三巨头（聴解必听：不靠课本完全听得懂！）",
+    "formation": "〜てしまう → 〜ちゃう（〜でしまう → 〜じゃう）｜ 〜ておく → 〜とく ｜ 〜なければならない → 〜なきゃ",
+    "explanation": "真实日剧、咖啡馆和家庭对话里，90%的人都用缩略形：「食べちゃった」「置いとく」「行かなきゃ」。学完这个，听力瞬间清晰一倍！",
+    "tip": "「〜ている」也常省掉「い」变成「〜てる」（例：寝てる＝正在睡、知ってる＝知道）。",
+    "dailyExamples": [
+      {
+        "ctx": "家庭",
+        "jp": "もうすぐバスが来（き）ちゃうから、早（はや）く靴（くつ）を履（は）かなきゃ！",
+        "romaji": "Mou sugu basu ga kichau kara, hayaku kutsu wo hakanakya!",
+        "cn": "巴士马上就要来啦，得赶紧穿鞋才行！"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "切符（きっぷ）は先（さき）に買（か）っといたほうがいいよ。",
+        "romaji": "Kippu wa saki ni kattoita hou ga ii yo.",
+        "cn": "车票还是提前先买好比较好哦。"
+      },
+      {
+        "ctx": "日常",
+        "jp": "あ、コーヒー飲（の）んじゃったの？おいしかった？",
+        "romaji": "A, koohii nonjatta no? Oishikatta?",
+        "cn": "啊，你已经把咖啡喝完啦？好喝吗？"
+      }
+    ],
+    "quiz": {
+      "promptJp": "チェックアウトの前（まえ）に、荷物（にもつ）をまとめ＿＿！（〜ておこう口语）",
+      "answer": "とこう",
+      "options": [
+        "とこう",
+        "ちゃおう",
+        "なきゃ",
+        "てる"
+      ],
+      "cn": "退房前先把行李提前收拾好吧（〜ておく缩略形）。"
+    }
+  },
+  {
+    "id": "g-n4-36",
+    "level": "N4",
+    "order": 36,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "使役被动（〜させられる / 〜される）",
+    "reading": "saserareru / sareru",
+    "meaning": "被迫做…… / 不由得……（情绪自发或无奈接受）",
+    "formation": "五段「あ段＋される」（す结尾必须「さ＋せられる」）｜ 一段「去る＋させられる」｜ する→させられる",
+    "explanation": "表达“本来不想做却被迫做了某事”（排队等了1小时＝待たされた），或“听了故事很受感动”（感動させられた）。",
+    "tip": "五段除了す结尾外都用短缩形：待つ→待たされる、行く→行かされる、飲む→飲まされる；話す→話させられる（不能缩）。",
+    "dailyExamples": [
+      {
+        "ctx": "餐厅",
+        "jp": "人気店（にんきてん）なので、外（そと）で40分（ぷん）も待（ま）たされました。",
+        "romaji": "Ninkiten na node, soto de yonjuppun mo matasaremashita.",
+        "cn": "因为是网红店，我们在外面被迫等了足足40分钟。"
+      },
+      {
+        "ctx": "职场",
+        "jp": "昨日（きのう）は夜遅（よるおそ）くまで残業（ざんぎょう）させられました。",
+        "romaji": "Kinou wa yoru osoku made zangyou saseraremashita.",
+        "cn": "昨天被迫加班到深夜。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "旅館（りょかん）のおもてなしに本当（ほんとう）に感動（かんどう）させられました。",
+        "romaji": "Ryokan no omotenashi ni hontou ni kandou saseraremashita.",
+        "cn": "真的被温泉旅馆的待客之道深深打动了。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "混（こ）んでいて、1時間（じかん）も外（そと）で＿＿。",
+      "answer": "待たされた",
+      "options": [
+        "待たされた",
+        "待ってくれた",
+        "待たせた",
+        "待てた"
+      ],
+      "cn": "太挤了，在外面硬等了一个小时。"
+    }
+  },
+  {
     "id": "g-n3-01",
     "level": "N3",
     "order": 1,
@@ -4043,6 +4923,710 @@ window.JP_GRAMMAR_LIST = [
         "てはいません"
       ],
       "cn": "一看到女儿可爱的睡颜，就忍不住露出笑容。"
+    }
+  },
+  {
+    "id": "g-n3-31",
+    "level": "N3",
+    "order": 31,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜に違いない",
+    "reading": "ni chigainai",
+    "meaning": "肯定……、一定是……没错（自信度 95% 以上的断定推测）",
+    "formation": "动词/い形简体 ＋ に違いない ｜ な形/名词（去だ）＋ に違いない",
+    "explanation": "说话人根据线索或直觉，非常有把握地判断“绝对错不了！”，比「〜だろう / 〜はずだ」语气更强更肯定。",
+    "tip": "注意后面绝不接「だ」：○ 便利に違いない（× 便利だに違いない）。",
+    "dailyExamples": [
+      {
+        "ctx": "美食",
+        "jp": "こんなに並（なら）んでいるんだから、おいしいに違（ちが）いないよ！",
+        "romaji": "Konna ni narande iru nda kara, oishii ni chigainai yo!",
+        "cn": "排这么长的队，肯定超好吃没错！"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "あの建物（たてもの）が今日（きょう）泊（と）まるホテルに違（ちが）いないです。",
+        "romaji": "Ano tatemono ga kyou tomaru hoteru ni chigainai desu.",
+        "cn": "那栋建筑一定是咱们今天住的酒店没错。"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "Jinnyも軽井沢（かるいざわ）の雪（ゆき）を見（み）たら大喜（おおよろこ）びするに違（ちが）いない。",
+        "romaji": "Jinny mo Karuizawa no yuki wo mitara ooyorokobi suru ni chigainai.",
+        "cn": "Jinny 看到轻井泽的雪肯定会乐疯的。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "あんなに評判（ひょうばん）がいいんだから、この寿司屋（すしや）は最高（さいこう）＿＿。",
+      "answer": "に違いない",
+      "options": [
+        "に違いない",
+        "わけがない",
+        "ことはない",
+        "といっても"
+      ],
+      "cn": "口碑这么好，这家寿司店肯定棒极了。"
+    }
+  },
+  {
+    "id": "g-n3-32",
+    "level": "N3",
+    "order": 32,
+    "importance": 5,
+    "importanceLabel": "🔥 每日必用",
+    "pattern": "〜わけがない / 〜わけはない",
+    "reading": "wake ga nai",
+    "meaning": "绝不可能……、哪有……的道理（强烈否定可能性）",
+    "formation": "动词/い形简体 ＋ わけがない ｜ な形＋な / 名词＋の ＋ わけがない",
+    "explanation": "从常识或逻辑出发强烈否定某事：“怎么可能！”要注意和「〜わけではない（并非……）」区分！",
+    "tip": "「高いわけではない」＝倒也不是很贵（部分否定）；「高いわけがない」＝绝不可能贵（100%否定）。",
+    "dailyExamples": [
+      {
+        "ctx": "家庭",
+        "jp": "こんなおいしいケーキ、2歳（さい）の子（こ）どもが嫌（きら）いなわけがないよ！",
+        "romaji": "Konna oishii keeki, nisai no kodomo ga kirai na wake ga nai yo!",
+        "cn": "这么好吃的蛋糕，2岁小孩怎么可能讨厌呢！"
+      },
+      {
+        "ctx": "日常",
+        "jp": "そんな大金（たいきん）、1日（にち）で使（つか）えるわけがないでしょう。",
+        "romaji": "Sonna taikin, ichinichi de tsukaeru wake ga nai deshou.",
+        "cn": "那么多钱一天哪花得完啊。"
+      },
+      {
+        "ctx": "学习",
+        "jp": "勉強（べんきょう）せずに日本語（にほんご）がペラペラになるわけがない。",
+        "romaji": "Benkyou sezu ni Nihongo ga perapera ni naru wake ga nai.",
+        "cn": "不学习日语绝不可能变流利的。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "こんな簡単（かんたん）な道（みち）、間違う（まちがう）＿＿よ。",
+      "answer": "わけがない",
+      "options": [
+        "わけがない",
+        "に違いない",
+        "わけにはいかない",
+        "わけではない"
+      ],
+      "cn": "这么简单的路，绝不可能走错啦。"
+    }
+  },
+  {
+    "id": "g-n3-33",
+    "level": "N3",
+    "order": 33,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜ことはない",
+    "reading": "koto wa nai",
+    "meaning": "没有必要……、用不着……（安慰或省事建议）",
+    "formation": "动词辞书形 ＋ ことはない",
+    "explanation": "告诉别人“不用特地那样做 / 用不着担心”，口语里非常温柔实用。",
+    "tip": "不要和过去式「〜たことがない（从未做过）」混淆！辞书形＋ことはない＝没必要。",
+    "dailyExamples": [
+      {
+        "ctx": "安慰",
+        "jp": "時間はまだ十分（じゅうぶん）あるから、そんなに急（いそ）ぐことはないよ。",
+        "romaji": "Jikan wa mada juubun aru kara, sonna ni isogu koto wa nai yo.",
+        "cn": "时间还很充裕，用不着那么着急哦。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "同じ庭園（ていえん）の中（なか）だから、大（おお）きい荷物（にもつ）を運（はこ）ぶことはないね。",
+        "romaji": "Onaji teien no naka dakara, ookii nimotsu wo hakobu koto wa nai ne.",
+        "cn": "就在同一个庭园里，没必要自己搬大行李嘛。"
+      },
+      {
+        "ctx": "育儿",
+        "jp": "少（すこ）しくらい日本語（にほんご）が間違（まちが）っても、気（き）にする（心配する）ことはないですよ。",
+        "romaji": "Sukoshi kurai Nihongo ga machigattemo, shinpai suru koto wa nai desu yo.",
+        "cn": "日语说错一点点也完全用不着担心的。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "電車（でんしゃ）は5分（ふん）おきに来（く）るから、走（はし）る＿＿よ。",
+      "answer": "ことはない",
+      "options": [
+        "ことはない",
+        "ことがある",
+        "わけがない",
+        "はずだ"
+      ],
+      "cn": "电车每5分钟就有一班，用不着跑啦。"
+    }
+  },
+  {
+    "id": "g-n3-34",
+    "level": "N3",
+    "order": 34,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜てたまらない / 〜てしょうがない",
+    "reading": "te tamaranai / te shou ga nai",
+    "meaning": "……得不得了、……得受不了（情绪/感觉达到顶点）",
+    "formation": "い形去い＋くて / な形＋で / 动词て形 ＋ たまらない（しょうがない）",
+    "explanation": "表达兴奋、开心、想念、困倦、冷热等感受强烈到无法控制。“真想赶紧去！”“开心得不得了！”。",
+    "tip": "主要用于描述说话人自己的生理感觉或强烈情感；形容他人可说「〜がってたまらない」。",
+    "dailyExamples": [
+      {
+        "ctx": "期待",
+        "jp": "由布院（ゆふいん）の温泉（おんせん）に入（はい）るのが楽（たの）しみでたまらない！",
+        "romaji": "Yufuin no onsen ni hairu no ga tanoshimi de tamaranai!",
+        "cn": "期待去泡由布院温泉期待得不得了！"
+      },
+      {
+        "ctx": "疲劳",
+        "jp": "長旅（ながたび）で眠（ねむ）くてたまらないので、今夜（こんや）は早（はや）く寝（ね）ます。",
+        "romaji": "Nagatabi de nemukute tamaranai node, kon'ya wa hayaku nemasu.",
+        "cn": "长途飞行困得要命，今晚早点睡。"
+      },
+      {
+        "ctx": "天气",
+        "jp": "手袋（てぶくろ）を忘（わす）れて、手（て）が冷（つめ）たくてしょうがないよ。",
+        "romaji": "Tebukuro wo wasurete, te ga tsumetakute shou ga nai yo.",
+        "cn": "忘带手套，手冻得受不了啦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "1日中（じゅう）遊（あそ）んでお腹（なか）が空（す）いて＿＿！",
+      "answer": "たまらない",
+      "options": [
+        "たまらない",
+        "ことはない",
+        "わけがない",
+        "おかげだ"
+      ],
+      "cn": "玩了一整天，饿得不得了！"
+    }
+  },
+  {
+    "id": "g-n3-35",
+    "level": "N3",
+    "order": 35,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜ものの",
+    "reading": "mono no",
+    "meaning": "虽然……但是……（承认前者事实，转折出小遗憾或现实情况）",
+    "formation": "动词/い形简体 ＋ ものの ｜ な形＋な / 名词＋である ＋ ものの",
+    "explanation": "比「〜けれど」更书面、更地道，常用于“虽然做好了准备/买了东西，但实际情况有点出乎意料”。",
+    "tip": "「〜ものの」后半句不能接强烈的命令、禁止或意志表达，而是客观陈述后来的状况。",
+    "dailyExamples": [
+      {
+        "ctx": "旅行",
+        "jp": "天気予報（てんきよほう）を見（み）て傘（かさ）を持（も）ってきたものの、まったく降（ふ）らなかった。",
+        "romaji": "Tenki yohou wo mite kasa wo motte kita mono no, mattaku furanakatta.",
+        "cn": "虽然看了天气预报带了伞，但雨完全没下。"
+      },
+      {
+        "ctx": "购物",
+        "jp": "高（たか）いコートを買（か）ったものの、暖（あたた）かくてあまり着（き）る機会（きかい）がない。",
+        "romaji": "Takai kooto wo katta mono no, atatakakute amari kiru kikai ga nai.",
+        "cn": "虽然买了件贵大衣，但天气暖和没怎么有机会穿。"
+      },
+      {
+        "ctx": "学习",
+        "jp": "敬語（けいご）を覚（おぼ）えたものの、とっさのときに口（くち）から出（で）てこない。",
+        "romaji": "Keigo wo oboeta mono no, tossa no toki ni kuchi kara dete konai.",
+        "cn": "敬语虽然背了，但临场一下子说不出口。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "早（はや）く起（お）きた＿＿、まだ眠（ねむ）くて動（うご）けない。",
+      "answer": "ものの",
+      "options": [
+        "ものの",
+        "うちに",
+        "おかげで",
+        "ついでに"
+      ],
+      "cn": "虽然早起了，但还是困得动弹不得。"
+    }
+  },
+  {
+    "id": "g-n3-36",
+    "level": "N3",
+    "order": 36,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜にもかかわらず",
+    "reading": "ni mo kakawarazu",
+    "meaning": "尽管……却……、不顾……仍然……（正式且强转折）",
+    "formation": "动词/い形简体 / な形词干 / 名词 ＋ にもかかわらず",
+    "explanation": "相当于书面或礼貌升级版的「〜のに」，强调“在如此不利或特别的情况下居然还是发生了某事”，常用于礼貌致谢或感慨。",
+    "tip": "礼貌致谢经典句：「お忙しい中にもかかわらず（虽然您很忙，还是……）」。注意名词/な形容词直接接，不加「な」或「の」。",
+    "dailyExamples": [
+      {
+        "ctx": "礼貌",
+        "jp": "お忙（いそが）しいにもかかわらず、丁寧（ていねい）にご対応（たいおう）いただきありがとうございます。",
+        "romaji": "Oisogashii ni mo kakawarazu, teinei ni gotaiou itadaki arigatou gozaimasu.",
+        "cn": "尽管您很忙碌，还承蒙如此细致地接待，非常感谢。"
+      },
+      {
+        "ctx": "天气",
+        "jp": "大雪（おおゆき）にもかかわらず、新幹線（しんかんせん）は定刻（ていこく）通（どお）りに到着（とうちゃく）しました。",
+        "romaji": "Ooyuki ni mo kakawarazu, shinkansen wa teikoku doori ni touchaku shimashita.",
+        "cn": "尽管下大雪，新干线依然准点到达了。"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "朝（あさ）早（はや）いにもかかわらず、娘（むすめ）はニコニコで起（お）きました。",
+        "romaji": "Asa hayai ni mo kakawarazu, musume wa nikoniko de okimashita.",
+        "cn": "尽管起得很早，女儿依然笑眯眯地醒来了。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "雨（あめ）＿＿、たくさんのお客（きゃく）さんが並（なら）んでいました。",
+      "answer": "にもかかわらず",
+      "options": [
+        "にもかかわらず",
+        "のおかげで",
+        "にとって",
+        "だけでなく"
+      ],
+      "cn": "尽管下着雨，还是排着好多客人。"
+    }
+  },
+  {
+    "id": "g-n3-37",
+    "level": "N3",
+    "order": 37,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜一方で",
+    "reading": "ippou de",
+    "meaning": "另一方面……（同时具备两面性或对比两种情况）",
+    "formation": "动词/い形简体 / な形＋な / 名词＋の ＋ 一方で",
+    "explanation": "用来客观对比同一事物的两个侧面（比如东京方便但人多），或同时进行的两种状态。",
+    "tip": "读音是「いっぽうで」。也可以单独放在句首作接续词「一方で、〜」。",
+    "dailyExamples": [
+      {
+        "ctx": "旅行",
+        "jp": "東京（とうきょう）はとても便利（べんり）な一方（いっぽう）で、人混（ひとご）みで疲（つか）れることもあります。",
+        "romaji": "Toukyou wa totemo benri na ippou de, hitogomi de tsukareru koto mo arimasu.",
+        "cn": "东京非常方便，但另一方面人多拥挤有时也会觉得累。"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "昼（ひる）は夫婦（ふうふ）で美食（びしょく）を楽（たの）しむ一方（いっぽう）で、夜（よる）は全力（ぜんりょく）で遊（あそ）んであげます。",
+        "romaji": "Hiru wa fuufu de bishoku wo tanoshimu ippou de, yoru wa zenryoku de asonde agemasu.",
+        "cn": "白天夫妻俩享受美食的同时，晚上全力陪孩子们玩耍。"
+      },
+      {
+        "ctx": "工作",
+        "jp": "仕事（しごと）が忙（いそが）しい一方（いっぽう）で、家族（かぞく）との時間（じかん）も大切（たいせつ）にしたいです。",
+        "romaji": "Shigoto ga isogashii ippou de, kazoku to no jikan mo taisetsu ni shitai desu.",
+        "cn": "工作忙碌的同时，也想珍惜和家人相处的时光。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "このホテルは駅（えき）から近（ちか）い＿＿、とても静（しず）かです。",
+      "answer": "一方で",
+      "options": [
+        "一方で",
+        "せいで",
+        "ばかりに",
+        "たびに"
+      ],
+      "cn": "这家酒店离车站很近，同时又非常安静。"
+    }
+  },
+  {
+    "id": "g-n3-38",
+    "level": "N3",
+    "order": 38,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜をはじめ（として）",
+    "reading": "wo hajime (to shite)",
+    "meaning": "以……为首、以……为代表（列举代表性的例子）",
+    "formation": "名词 ＋ をはじめ（として）",
+    "explanation": "举出最典型、最有代表性的一项作为领头，表示“除了它以外还有其他同类”。在介绍行程、美食、景点时超有高级感！",
+    "tip": "前面必须是名词；「〜をはじめ、いろいろな〜」是经典搭配。",
+    "dailyExamples": [
+      {
+        "ctx": "旅行",
+        "jp": "東京（とうきょう）をはじめ、軽井沢（かるいざわ）や福岡（ふくおか）などたくさんの街（まち）を巡（めぐ）ります。",
+        "romaji": "Toukyou wo hajime, Karuizawa ya Fukuoka nado takusan no machi wo megurimasu.",
+        "cn": "以东京为首，还将游览轻井泽、福冈等多个城市。"
+      },
+      {
+        "ctx": "美食",
+        "jp": "寿司（すし）をはじめ、天（てん）ぷらや鉄板焼（てっぱんや）きまで日本料理（にほんりょうり）を満喫（まんきつ）します。",
+        "romaji": "Sushi wo hajime, tenpura ya teppanyaki made Nihon ryouri wo mankitsu shimasu.",
+        "cn": "从寿司到天妇罗、铁板烧，尽情享受日本料理。"
+      },
+      {
+        "ctx": "职场",
+        "jp": "店長（てんちょう）をはじめ、スタッフ全員（ぜんいん）がとても親切（しんせつ）でした。",
+        "romaji": "Tenchou wo hajime, sutaffu zen'in ga totemo shinsetsu deshita.",
+        "cn": "从店长开始，全体员工都非常亲切。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "富士山（ふじさん）＿＿、日本（にほん）には美（うつく）しい山（やま）がたくさんあります。",
+      "answer": "をはじめ",
+      "options": [
+        "をはじめ",
+        "のせいで",
+        "にかわって",
+        "として"
+      ],
+      "cn": "以富士山为首，日本有很多美丽的山。"
+    }
+  },
+  {
+    "id": "g-n3-39",
+    "level": "N3",
+    "order": 39,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜を中心に（して）",
+    "reading": "wo chuushin ni",
+    "meaning": "以……为中心、围绕……（聚焦重点对象或地区）",
+    "formation": "名词 ＋ を中心に（して） / 〜を中心とした ＋ 名词",
+    "explanation": "表示活动的重心、地理中心或受众核心，比如“以品川站为中心出行”、“以儿童为中心的公园”。",
+    "tip": "后面接名词时用「を中心とした＋名词」或「を中心にし＋た＋名词」。",
+    "dailyExamples": [
+      {
+        "ctx": "行程",
+        "jp": "品川（しながわ）や浜松町（はままつちょう）を中心（ちゅうしん）に、東京（とうきょう）の観光（かんこう）を楽（たの）しみます。",
+        "romaji": "Shinagawa ya Hamamatsuchou wo chuushin ni, Toukyou no kankou wo tanoshimimasu.",
+        "cn": "以品川和浜松町为中心，畅游东京。"
+      },
+      {
+        "ctx": "饮食",
+        "jp": "今週（こんしゅう）は和食（わしょく）を中心（ちゅうしん）にしたランチを予約（よやく）しました。",
+        "romaji": "Konshuu wa washoku wo chuushin ni shita ranchi wo yoyaku shimashita.",
+        "cn": "这周预约了以和食为主的午餐。"
+      },
+      {
+        "ctx": "沟通",
+        "jp": "旅行会話（りょこうかいわ）を中心（ちゅうしん）に毎日（まいにち）練習（れんしゅう）しています。",
+        "romaji": "Ryokou kaiwa wo chuushin ni mainichi renshuu shite imasu.",
+        "cn": "每天以旅行会话为中心进行练习。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "銀座（ぎんざ）＿＿、いろいろなお店（みせ）を見て回（まわ）りました。",
+      "answer": "を中心に",
+      "options": [
+        "を中心に",
+        "に違って",
+        "をかわりに",
+        "のわりに"
+      ],
+      "cn": "以银座为中心，逛了各种各样的店。"
+    }
+  },
+  {
+    "id": "g-n3-40",
+    "level": "N3",
+    "order": 40,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜に限らず",
+    "reading": "ni kagirazu",
+    "meaning": "不仅限于……（连其他方面也一样）",
+    "formation": "名词 ＋ に限らず",
+    "explanation": "比 N4 的「だけでなく」更有格调！常用来夸某物老少皆宜、国内外通用，或菜单不仅限于大人。",
+    "tip": "固定搭配：「老若男女（ろうにゃくなんにょ）に限らず」「日本人に限らず」。",
+    "dailyExamples": [
+      {
+        "ctx": "旅行",
+        "jp": "この旅館（りょかん）は大人（おとな）に限（かぎ）らず、子（こ）どもにもとても優（やさ）しいです。",
+        "romaji": "Kono ryokan wa otona ni kagirazu, kodomo ni mo totemo yasashii desu.",
+        "cn": "这家旅馆不仅对大人，对小朋友也非常贴心。"
+      },
+      {
+        "ctx": "美食",
+        "jp": "福岡（ふくおか）はラーメンに限（かぎ）らず、もつ鍋（なべ）やお刺身（さしみ）も絶品（ぜっぴん）です。",
+        "romaji": "Fukuoka wa raamen ni kagirazu, motsunabe ya osashimi mo zeppin desu.",
+        "cn": "福冈不仅拉面，牛肠锅和刺身也是一绝。"
+      },
+      {
+        "ctx": "语言",
+        "jp": "日本語（にほんご）に限（かぎ）らず、どんな言語（げんご）も毎日（まいにち）の継続（けいぞく）が大切（たいせつ）です。",
+        "romaji": "Nihongo ni kagirazu, donna gengo mo mainichi no keizoku ga taisetsu desu.",
+        "cn": "不仅限于日语，任何语言每天坚持都很重要。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "この動物園（どうぶつえん）は週末（しゅうまつ）＿＿、平日（へいじつ）も人気（にんき）があります。",
+      "answer": "に限らず",
+      "options": [
+        "に限らず",
+        "によって",
+        "のために",
+        "のおかげで"
+      ],
+      "cn": "这家动物园不仅周末，连工作日都很有人气。"
+    }
+  },
+  {
+    "id": "g-n3-41",
+    "level": "N3",
+    "order": 41,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜ばかりでなく〜も",
+    "reading": "bakari de naku ~ mo",
+    "meaning": "不仅……而且……（递进补充亮点或优点）",
+    "formation": "普通形（な形＋な / 名词直接接）＋ ばかりでなく 〜 も",
+    "explanation": "「〜だけでなく〜も」的 N3 升级表达，用来夸食物好吃服务又好、酒店交通方便风景又美。",
+    "tip": "后面常与「〜も / 〜さえ」呼应，口语中也常说「〜ばかりか〜も」。",
+    "dailyExamples": [
+      {
+        "ctx": "酒店",
+        "jp": "この部屋（へや）は広（ひろ）いばかりでなく、窓（まど）からの景色（けしき）も最高（さいこう）です。",
+        "romaji": "Kono heya wa hiroi bakari de naku, mado kara no keshiki mo saikou desu.",
+        "cn": "这间房不仅宽敞，窗外的风景也绝了。"
+      },
+      {
+        "ctx": "餐厅",
+        "jp": "味（あじ）がおいしいばかりでなく、店員（てんいん）さんの笑顔（えがお）も素敵（すてき）でした。",
+        "romaji": "Aji ga oishii bakari de naku, ten'in-san no egao mo suteki deshita.",
+        "cn": "不仅味道美味，店员的笑容也很迷人。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "軽井沢（かるいざわ）はスキーばかりでなく、ショッピングも楽（たの）しめます。",
+        "romaji": "Karuizawa wa sukii bakari de naku, shoppingu mo tanoshimemasu.",
+        "cn": "轻井泽不仅能滑雪，还可以逛街购物。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "彼女（かのじょ）は英語（えいご）＿＿、日本語（にほんご）も上手（じょうず）です。",
+      "answer": "ばかりでなく",
+      "options": [
+        "ばかりでなく",
+        "わけではなく",
+        "かわりに",
+        "せいで"
+      ],
+      "cn": "她不仅英语好，日语也很棒。"
+    }
+  },
+  {
+    "id": "g-n3-42",
+    "level": "N3",
+    "order": 42,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜としたら / 〜とすれば",
+    "reading": "to shitara / to sureba",
+    "meaning": "假设……的话、假如是这样的话",
+    "formation": "动词/い形/な形/名词 普通形 ＋ としたら / とすれば",
+    "explanation": "用来提出一个假设前提，讨论接下来的选择或推论（“假如明天不下雪的话，咱们就去坐缆车”）。",
+    "tip": "句首常搭配「もし」或「仮に（かりに）」，后面接建议「〜ほうがいい」、推测「〜だろう」或愿望「〜たい」。",
+    "dailyExamples": [
+      {
+        "ctx": "计划",
+        "jp": "もし明日（あした）が雨（あめ）だとしたら、美術館（びじゅつかん）に行（い）くのはどう？",
+        "romaji": "Moshi ashita ga ame da to shitara, bijutsukan ni iku no wa dou?",
+        "cn": "假如明天下雨的话，去美术馆怎么样？"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "もう1回（かい）日本（にほん）に来（こ）られるとしたら、どこに泊（と）まりたいですか？",
+        "romaji": "Mou ikkai Nihon ni korareru to shitara, doko ni tomaritai desu ka?",
+        "cn": "假如还能再来一次日本，你想住在哪里？"
+      },
+      {
+        "ctx": "讨论",
+        "jp": "11時（じ）に着（つ）くとすれば、その前（まえ）に荷物（にもつ）を預（あず）けられるね。",
+        "romaji": "Juuichiji ni tsuku to sureba, sono mae ni nimotsu wo azukerareru ne.",
+        "cn": "如果是11点到的话，那之前就能先把行李寄存了。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "100万円（まんえん）当（あ）たった＿＿、何（なに）を買（か）いますか？",
+      "answer": "としたら",
+      "options": [
+        "としたら",
+        "おかげで",
+        "ものの",
+        "うちに"
+      ],
+      "cn": "假如中了100万日元，你会买什么？"
+    }
+  },
+  {
+    "id": "g-n3-43",
+    "level": "N3",
+    "order": 43,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜さえ〜ば",
+    "reading": "sae ~ ba",
+    "meaning": "只要……就……（唯一满足条件，其余都迎刃而解）",
+    "formation": "名词 ＋ さえ ＋ 动词ば形 / い形ければ / な形なら（动词ます形＋さえ＋すれば）",
+    "explanation": "强调只要满足这唯一核心条件，一切都没问题（“只要全家平安健康就好”、“只要有Suica卡坐车就超方便”）。",
+    "tip": "和「〜さえ」单独用（连……都……）区分开；加上后面的「〜ば」就是“只要……就……”。",
+    "dailyExamples": [
+      {
+        "ctx": "家庭",
+        "jp": "家族（かぞく）みんなが元気（げんき）でさえあれば、それだけで十分（じゅうぶん）です。",
+        "romaji": "Kazoku minna ga genki de sae areba, sore dake de juubun desu.",
+        "cn": "只要全家人都健康有活力，这就足够了。"
+      },
+      {
+        "ctx": "旅行",
+        "jp": "スマホの充電（じゅうでん）さえあれば、東京（とうきょう）ではどこでも行（い）けます。",
+        "romaji": "Sumaho no juuden sae areba, Toukyou dewa doko demo ikemasu.",
+        "cn": "只要手机有电，在东京去哪里都没问题。"
+      },
+      {
+        "ctx": "语言",
+        "jp": "「すみません」と「ありがとうございます」さえ言（い）えれば、旅行（りょこう）は楽（たの）しいよ！",
+        "romaji": "'Sumimasen' to 'arigatou gozaimasu' sae iereba, ryokou wa tanoshii yo!",
+        "cn": "只要会说“不好意思”和“谢谢”，旅行就会很开心哦！"
+      }
+    ],
+    "quiz": {
+      "promptJp": "パスポート＿＿持（も）っていれば、免税（めんぜい）で買（か）えます。",
+      "answer": "さえ",
+      "options": [
+        "さえ",
+        "しか",
+        "だけ",
+        "ばかり"
+      ],
+      "cn": "只要带着护照，就能免税购买。"
+    }
+  },
+  {
+    "id": "g-n3-44",
+    "level": "N3",
+    "order": 44,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜っけ",
+    "reading": "kke",
+    "meaning": "……来着？（口语自言自语或向家人确认快忘掉的记忆）",
+    "formation": "动词た形 / 名词＋だ(だった) / い形かった ＋ っけ",
+    "explanation": "夫妻旅行每天都会脱口而出的神级口语助词！“明天几点的电车来着？”“这间房密码是多少来着？”",
+    "tip": "语尾用升调（↗）问自己或问伴侣；只能接在过去式或「だ」后面（例：何時だっけ？ 何て言ったっけ？）。",
+    "dailyExamples": [
+      {
+        "ctx": "夫妻",
+        "jp": "明日（あした）の新幹線（しんかんせん）、何時（なんじ）発（はつ）だったっけ？",
+        "romaji": "Ashita no shinkansen, nanji hatsu datta kke?",
+        "cn": "明天的新干线，是几点出发来着？"
+      },
+      {
+        "ctx": "回忆",
+        "jp": "あれ、Suicaどこに入（い）れたっけ？バッグの中（なか）かな。",
+        "romaji": "Are, Suica doko ni ireta kke? Baggu no naka ka na.",
+        "cn": "咦，西瓜卡我放哪儿来着？是不是在包里呀。"
+      },
+      {
+        "ctx": "对话",
+        "jp": "「おいしかった」って日本語（にほんご）で過去形（かこけい）は何（なん）だっけ？",
+        "romaji": "'Oishikatta' tte Nihongo de kakokei wa nan dakke?",
+        "cn": "“真好吃”的日语过去式是什么来着？"
+      }
+    ],
+    "quiz": {
+      "promptJp": "チェックアウトは11時（じ）でし＿＿？12時だっけ？",
+      "answer": "たっけ",
+      "options": [
+        "たっけ",
+        "るっけ",
+        "てっけ",
+        "ないっけ"
+      ],
+      "cn": "退房时间是11点来着？还是12点来着？"
+    }
+  },
+  {
+    "id": "g-n3-45",
+    "level": "N3",
+    "order": 45,
+    "importance": 4,
+    "importanceLabel": "⭐ 高频实用",
+    "pattern": "〜最中に（さいちゅうに）",
+    "reading": "saichuu ni",
+    "meaning": "正在……的正当中（突然发生某件意料之外的事）",
+    "formation": "动词ている ＋ 最中に ｜ 名词＋の ＋ 最中に",
+    "explanation": "表示“正做着某件事做到兴头上/正中间”，突然发生了别的事（比如正吃饭时、正泡温泉时下起大雪）。",
+    "tip": "经常和突发事件呼应；也可以说「〜最中だ（正忙着/正进行中）」。",
+    "dailyExamples": [
+      {
+        "ctx": "旅行",
+        "jp": "露天風呂（ろてんぶろ）に入（はい）っている最中（さいちゅう）に、きれいな雪（ゆき）が降（ふ）ってきました！",
+        "romaji": "Rotenburo ni haitte iru saichuu ni, kirei na yuki ga futte kimashita!",
+        "cn": "正泡露天温泉泡得舒服呢，居然飘起了美丽的雪花！"
+      },
+      {
+        "ctx": "家庭",
+        "jp": "食事（しょくじ）の最中（さいちゅう）に、下（した）の子（こ）がテーブルで寝（ね）ちゃいました。",
+        "romaji": "Shokuji no saichuu ni, shita no ko ga teeburu de nechaimashita.",
+        "cn": "吃到一半，小女儿直接在餐桌旁睡着了。"
+      },
+      {
+        "ctx": "电话",
+        "jp": "今（いま）運転（うんてん）の最中（さいちゅう）なので、後（あと）でかけ直（なお）しますね。",
+        "romaji": "Ima unten no saichuu na node, ato de kakenaoshimasu ne.",
+        "cn": "现在正在开车呢，待会再回电话哦。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "会議（かいぎ）＿＿、携帯（けいたい）が鳴（な）って焦（あせ）りました。",
+      "answer": "の最中に",
+      "options": [
+        "の最中に",
+        "のたびに",
+        "のかわりに",
+        "のせいで"
+      ],
+      "cn": "正在开会开到一半时手机响了，好慌张。"
+    }
+  },
+  {
+    "id": "g-n3-46",
+    "level": "N3",
+    "order": 46,
+    "importance": 3,
+    "importanceLabel": "💎 进阶地道",
+    "pattern": "〜にわたって / 〜にかけて",
+    "reading": "ni watatte / ni kakete",
+    "meaning": "历时…… / 在……整个期间・范围内",
+    "formation": "时间/地点/范围名词 ＋ にわたって ｜ 起点〜から终点〜にかけて",
+    "explanation": "「にわたって」强调跨越整个时间或空间范围（如“历时35晚的旅行”）；「〜から〜にかけて」常用于天气预报“从今晚到明早”。",
+    "tip": "天气预报听力必会：「今夜から明日の朝にかけて雪が降るでしょう（从今晚到明早预计会下雪）」。",
+    "dailyExamples": [
+      {
+        "ctx": "行程",
+        "jp": "35泊（はく）にわたる家族（かぞく）みんなでの日本旅行（にほんりょこう）が始（はじ）まります！",
+        "romaji": "Sanjuugohaku ni wataru kazoku minna de no Nihon ryokou ga hajimarimasu!",
+        "cn": "历时35晚的全家日本大长假即将开启！"
+      },
+      {
+        "ctx": "天气",
+        "jp": "【天气预报】今夜（こんや）から明日（あした）の朝（あさ）にかけて、軽井沢（かるいざわ）は雪（ゆき）の予報（よほう）です。",
+        "romaji": "Kon'ya kara ashita no asa ni kakete, Karuizawa wa yuki no yohou desu.",
+        "cn": "【必听天气预报】从今晚到明天早上，轻井泽预报有雪。"
+      },
+      {
+        "ctx": "范围",
+        "jp": "東京（とうきょう）から九州（きゅうしゅう）にかけて、おいしいものを食（た）べ歩（ある）きます。",
+        "romaji": "Toukyou kara Kyuushuu ni kakete, oishii mono wo tabearukimasu.",
+        "cn": "从东京一直到九州，一路寻味吃遍美食。"
+      }
+    ],
+    "quiz": {
+      "promptJp": "12月（がつ）から1月（がつ）＿＿、日本（にほん）に滞在（たいざい）します。",
+      "answer": "にかけて",
+      "options": [
+        "にかけて",
+        "にとって",
+        "について",
+        "に対して"
+      ],
+      "cn": "从12月到1月期间一直待在日本。"
     }
   }
 ];
