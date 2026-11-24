@@ -4,13 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
   <title>日本家庭35晚长假 · N5–N3 日语学习手册 & 行程地图</title>
-  <meta name="description" content="JLPT N5核心词汇250+75形容词、高频300自他成对动词、N5–N3核心语法132条、实战SRS闪卡/盲听/自他助词测验、双人情景对话与日本35晚行程地图 Web App" />
+  <meta name="description" content="JLPT N5核心词汇250+75形容词、高频300自他成对动词、N5–N3核心语法132条 + 视频语法N4/N3全集160条、实战SRS闪卡/盲听/口语跟读私教与日本35晚行程地图 Web App" />
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=15" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=15" />
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="manifest" href="manifest.json?v=16" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=16" />
 </head>
 <body>
   <!-- Compact Learning-First Top Header -->
@@ -311,19 +311,20 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="vendor/leaflet/leaflet.js?v=15"></script>
-  <script src="data/itinerary.js?v=15"></script>
-  <script src="data/modules_1_to_6.js?v=15"></script>
-  <script src="data/modules_7_to_12.js?v=15"></script>
-  <script src="data/modules_13_to_18.js?v=15"></script>
-  <script src="data/audio_manifest.js?v=15"></script>
-  <script src="data/audio_learning_manifest.js?v=15"></script>
-  <script src="data/verbs_top200.js?v=15"></script>
-  <script src="data/grammar_n5_n3.js?v=15"></script>
-  <script src="data/learning_extras.js?v=15"></script>
-  <script src="app.js?v=15"></script>
-  <script src="oral_coach.js?v=15"></script>
-  <script src="learning.js?v=15"></script>
+  <script src="vendor/leaflet/leaflet.js?v=16"></script>
+  <script src="data/itinerary.js?v=16"></script>
+  <script src="data/modules_1_to_6.js?v=16"></script>
+  <script src="data/modules_7_to_12.js?v=16"></script>
+  <script src="data/modules_13_to_18.js?v=16"></script>
+  <script src="data/audio_manifest.js?v=16"></script>
+  <script src="data/audio_learning_manifest.js?v=16"></script>
+  <script src="data/verbs_top200.js?v=16"></script>
+  <script src="data/grammar_n5_n3.js?v=16"></script>
+  <script src="data/video_grammar.js?v=16"></script>
+  <script src="data/learning_extras.js?v=16"></script>
+  <script src="app.js?v=16"></script>
+  <script src="oral_coach.js?v=16"></script>
+  <script src="learning.js?v=16"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -332,7 +333,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=15").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=16").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

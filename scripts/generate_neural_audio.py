@@ -14,14 +14,15 @@ AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 LEARN_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def parse_js_data(filepath: Path):
+def parse_js_data(filepath: Path, var_name: str = None):
     """Parse JS window.VAR = ... data files reliably using Node, JavaScriptCore, or JSON/regex fallback."""
+    key_expr = json.dumps(var_name) if var_name else "keys[0]"
     try:
         script = (
             "global.window = {};"
             f"require({json.dumps(str(filepath))});"
             "const keys = Object.keys(global.window);"
-            "process.stdout.write(JSON.stringify(global.window[keys[0]]));"
+            f"process.stdout.write(JSON.stringify(global.window[{key_expr}]));"
         )
         res = subprocess.run(
             ["node", "-e", script],
@@ -41,7 +42,7 @@ def parse_js_data(filepath: Path):
                 "var window = {};"
                 f"load({json.dumps(str(filepath))});"
                 "var keys = Object.keys(window);"
-                "print(JSON.stringify(window[keys[0]]));"
+                f"print(JSON.stringify(window[{key_expr}]));"
             )
             res = subprocess.run(
                 [jsc_bin, "-e", script],
@@ -244,6 +245,20 @@ def build_learning_tasks():
                 ex_voice = "ja-JP-KeitaNeural" if (idx + ex_idx) % 2 == 1 else "ja-JP-NanamiNeural"
                 register([ex["jp"]], ex["jp"], ex_voice)
             q = g.get("quiz")
+            if q and q.get("promptJp") and q.get("answer"):
+                full_q = q["promptJp"].replace("＿＿", q["answer"])
+                q_voice = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"
+                register([full_q], full_q, q_voice)
+
+    # 2b. Video Grammar Companion Pack (Voylin N4 & N3)
+    video_grammar_path = DATA_DIR / "video_grammar.js"
+    if video_grammar_path.exists():
+        video_grammar = parse_js_data(video_grammar_path, "JP_VIDEO_GRAMMAR")
+        for idx, vg in enumerate(video_grammar):
+            for ex_idx, ex in enumerate(vg.get("examples", [])):
+                ex_voice = "ja-JP-KeitaNeural" if (idx + ex_idx) % 2 == 1 else "ja-JP-NanamiNeural"
+                register([ex["jp"]], ex["jp"], ex_voice)
+            q = vg.get("quiz")
             if q and q.get("promptJp") and q.get("answer"):
                 full_q = q["promptJp"].replace("＿＿", q["answer"])
                 q_voice = "ja-JP-NanamiNeural" if idx % 2 == 0 else "ja-JP-KeitaNeural"

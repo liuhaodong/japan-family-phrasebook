@@ -305,7 +305,14 @@
     "qr": "きゅーあーる",
     "visa": "びざ",
     "esim": "いーしむ",
-    "airbnb": "えあびー"
+    "airbnb": "えあびー",
+    "n2": "えぬに",
+    "n3": "えぬさん",
+    "n4": "えぬよん",
+    "n5": "えぬご",
+    "sns": "えすえぬえす",
+    "jlpt": "じぇーえるぴーてぃー",
+    "hello": "はろー"
   };
 
   const COUNTER_COMBO_NUMBERS = [
@@ -493,6 +500,10 @@
 
     (window.JP_GRAMMAR_LIST || []).forEach((g) => {
       (g.dailyExamples || []).forEach((ex) => collectRubyPairsFromText(ex.jp, map));
+    });
+
+    (window.JP_VIDEO_GRAMMAR || []).forEach((vg) => {
+      (vg.examples || []).forEach((ex) => collectRubyPairsFromText(ex.jp, map));
     });
 
     const ex = window.JP_LEARNING_EXTRAS || {};
@@ -1483,7 +1494,7 @@
   // Coach Session State
   // =========================================================================
   const coachState = {
-    deck: "phrases", // 'phrases' | 'roleplay' | 'staff' | 'verbs' | 'grammar' | 'n5vocab' | 'weak'
+    deck: "phrases", // 'phrases' | 'roleplay' | 'staff' | 'verbs' | 'grammar' | 'video_grammar' | 'n5vocab' | 'weak'
     index: 0,
     rate: 1.0,
     handsFree: false,
@@ -1495,6 +1506,8 @@
     muteChime: localStorage.getItem(MUTE_CHIME_STORAGE) === "1",
     showPitchGuide: localStorage.getItem(PITCH_GUIDE_STORAGE) !== "0",
     includeAllExamples: false,
+    videoCourse: "all", // 'all' | 'voylin-n4' | 'voylin-n3'
+    videoOnlyNew: false,
     deckFilter: "all", // 'all' | 'unpracticed' | 'under80'
     issueFocus: null, // null | keyof ISSUE_META
     showPicker: false,
@@ -1695,7 +1708,7 @@
     return list;
   }
 
-  function getDeckItems(deckName = coachState.deck, forceAllExamples = false) {
+  function getDeckItems(deckName = coachState.deck, forceAllExamples = false, ignoreSubFilters = false) {
     const a = app();
     if (!a) return [];
     const mods = a.getEffectiveModules();
@@ -1772,6 +1785,39 @@
       return out;
     }
 
+    if (deckName === "video_grammar") {
+      const out = [];
+      const expandAll = forceAllExamples || coachState.includeAllExamples;
+      (window.JP_VIDEO_GRAMMAR || []).forEach((vg) => {
+        if (!ignoreSubFilters) {
+          if (coachState.videoCourse !== "all" && vg.source !== coachState.videoCourse) return;
+          if (coachState.videoOnlyNew && vg.linkedCoreId) return;
+        }
+        const exList = expandAll ? (vg.examples || []) : (vg.examples || []).slice(0, 1);
+        exList.forEach((ex, exIdx) => {
+          out.push({
+            id: `${vg.id}-ex${exIdx}`,
+            tag: `🎬 ${vg.level} 视频 #${vg.videoOrder} · ${vg.pattern}`,
+            jp: ex.jp,
+            romaji: ex.romaji || "",
+            cn: ex.cn,
+            en: ex.en || "",
+            audioKey: null,
+            grammarMeta: {
+              level: vg.level,
+              pattern: vg.pattern,
+              meaning: vg.meaning,
+              meaningEn: vg.meaningEn || "",
+              videoUrl: `https://youtu.be/${vg.videoId}?t=${vg.timestampSec}`,
+              timestampLabel: vg.timestampLabel || "0:00",
+              isNew: !vg.linkedCoreId
+            }
+          });
+        });
+      });
+      return out;
+    }
+
     if (deckName === "n5vocab") {
       const ex = window.JP_LEARNING_EXTRAS || {};
       return [
@@ -1797,8 +1843,8 @@
     if (deckName === "weak") {
       const oralStats = (a.state && a.state.oralStats) || {};
       const pool = [];
-      ["phrases", "staff", "verbs", "grammar", "n5vocab"].forEach((dn) => {
-        getDeckItems(dn, true).forEach((it) => {
+      ["phrases", "staff", "verbs", "grammar", "video_grammar", "n5vocab"].forEach((dn) => {
+        getDeckItems(dn, true, true).forEach((it) => {
           const st = oralStats[it.id];
           if (st && st.bestScore < 80) {
             pool.push({ ...it, _bestScore: st.bestScore });
@@ -3841,6 +3887,9 @@
     const grammarTotalCount = coachState.includeAllExamples
       ? (window.JP_GRAMMAR_LIST || []).reduce((s, g) => s + ((g.dailyExamples && g.dailyExamples.length) || 0), 0)
       : (window.JP_GRAMMAR_LIST || []).length;
+    const videoGrammarTotalCount = coachState.includeAllExamples
+      ? (window.JP_VIDEO_GRAMMAR || []).reduce((s, vg) => s + ((vg.examples && vg.examples.length) || 0), 0)
+      : (window.JP_VIDEO_GRAMMAR || []).length;
     const aiReady = isGeminiEnabled();
 
     const deckPills = [
@@ -3849,6 +3898,7 @@
       ["staff", `🏪 店员听问回答 (24)`],
       ["verbs", `⚡ 动词例句 (${verbsTotalCount})`],
       ["grammar", `📖 语法例句 (${grammarTotalCount})`],
+      ["video_grammar", `🎬 视频语法 (${videoGrammarTotalCount})`],
       ["n5vocab", `🟢 N5 & 缩略`],
       ["weak", `🔥 薄弱复训 (${weakCount})`]
     ];
@@ -4010,10 +4060,20 @@
                 : ""
             }
             ${
-              coachState.deck === "verbs" || coachState.deck === "grammar"
+              coachState.deck === "verbs" || coachState.deck === "grammar" || coachState.deck === "video_grammar"
                 ? `<button type="button" class="toggle-chip ${coachState.includeAllExamples ? "active" : ""}" id="oc-toggle-allex">
                     ${coachState.includeAllExamples ? "📚 全部例句" : "📌 核心首句"}
                   </button>`
+                : ""
+            }
+            ${
+              coachState.deck === "video_grammar"
+                ? `<div class="oc-subbar-group">
+                    <button type="button" class="toggle-chip ${coachState.videoCourse === "all" ? "active" : ""}" data-ocvcourse="all">全部课程</button>
+                    <button type="button" class="toggle-chip ${coachState.videoCourse === "voylin-n4" ? "active" : ""}" data-ocvcourse="voylin-n4">🔵 N4视频</button>
+                    <button type="button" class="toggle-chip ${coachState.videoCourse === "voylin-n3" ? "active" : ""}" data-ocvcourse="voylin-n3">🟣 N3视频</button>
+                    <button type="button" class="toggle-chip ${coachState.videoOnlyNew ? "active" : ""}" id="oc-toggle-vnew" title="只练核心132之外的新扩展句型">🆕 仅新句型</button>
+                  </div>`
                 : ""
             }
             ${
@@ -4069,10 +4129,24 @@
               : ""
           }
 
+          ${
+            item.grammarMeta
+              ? `<div class="oc-video-grammar-strip">
+                  <div class="oc-vgs-left">
+                    <span class="oc-vgs-pattern" lang="ja">${a.escapeHtml(item.grammarMeta.pattern)}</span>
+                    <span>${a.escapeHtml(item.grammarMeta.meaning)}</span>
+                    ${item.grammarMeta.meaningEn ? `<span style="color:var(--text-muted);font-size:0.74rem;">(${a.escapeHtml(item.grammarMeta.meaningEn)})</span>` : ""}
+                  </div>
+                  <a class="vg-ts-link" href="${a.escapeHtml(item.grammarMeta.videoUrl)}" target="_blank" rel="noopener">▶ ${a.escapeHtml(item.grammarMeta.timestampLabel)} 原片</a>
+                </div>`
+              : ""
+          }
+
           ${renderDiffSentenceHtml(item)}
           ${renderPitchGuideHtml(item, coachState.blindMode && !coachState.result)}
           <div class="romaji-text ${coachState.blindMode && !coachState.result ? "oc-blind-blur" : ""}" style="text-align:center;">${a.escapeHtml(item.romaji)}</div>
           <div class="cn-text" style="text-align:center;margin-bottom:0.75rem;">${a.escapeHtml(item.cn)}</div>
+          ${item.en ? `<div class="oc-en-sub">${a.escapeHtml(item.en)}</div>` : ""}
 
           ${renderCaptureControlsHtml(item, false)}
           ${renderEvaluationHtml(item)}
@@ -4305,7 +4379,34 @@
         coachState.result = null;
         coachState.selectedChunkIdx = null;
         coachState.statusText = "";
-        a.showToast(coachState.includeAllExamples ? "📚 已解锁全部多例句库（动词900句 / 语法366句）" : "📌 已切换回核心首句精练模式");
+        a.showToast(coachState.includeAllExamples ? "📚 已解锁全部多例句库（动词900句 / 精讲396句 / 视频320句）" : "📌 已切换回核心首句精练模式");
+        renderCurrentSurface();
+      };
+    }
+
+    container.querySelectorAll("[data-ocvcourse]").forEach((b) => {
+      b.onclick = () => {
+        stopAll();
+        coachState.videoCourse = b.dataset.ocvcourse;
+        coachState.index = 0;
+        coachState.result = null;
+        coachState.selectedChunkIdx = null;
+        coachState.phase = "idle";
+        coachState.statusText = "";
+        renderCurrentSurface();
+      };
+    });
+
+    const btnToggleVNew = container.querySelector("#oc-toggle-vnew");
+    if (btnToggleVNew) {
+      btnToggleVNew.onclick = () => {
+        stopAll();
+        coachState.videoOnlyNew = !coachState.videoOnlyNew;
+        coachState.index = 0;
+        coachState.result = null;
+        coachState.selectedChunkIdx = null;
+        coachState.phase = "idle";
+        coachState.statusText = "";
         renderCurrentSurface();
       };
     }
@@ -4724,6 +4825,30 @@
     coachState.userBlob = null;
   }
 
+  function openVideoDeck(course = "all", allExamples = true) {
+    stopAll();
+    revokeRoleplayClips();
+    coachState.isModalOpen = false;
+    coachState.modalItem = null;
+    coachState.deck = "video_grammar";
+    coachState.videoCourse = course || "all";
+    coachState.videoOnlyNew = false;
+    coachState.includeAllExamples = !!allExamples;
+    coachState.deckFilter = "all";
+    coachState.issueFocus = null;
+    coachState.index = 0;
+    coachState.ftActive = false;
+    coachState.ftResult = null;
+    coachState.result = null;
+    coachState.selectedChunkIdx = null;
+    coachState.aiResult = null;
+    coachState.aiError = "";
+    coachState.phase = "idle";
+    coachState.statusText = "";
+    revokeUserAudioUrl();
+    coachState.userBlob = null;
+  }
+
   function handleKeydown(e) {
     if (coachState.isModalOpen) return;
     const item = getActiveItem();
@@ -4911,16 +5036,22 @@
     const prevAll = coachState.includeAllExamples;
     const prevFocus = coachState.issueFocus;
     const prevFilter = coachState.deckFilter;
+    const prevCourse = coachState.videoCourse;
+    const prevOnlyNew = coachState.videoOnlyNew;
     try {
       if (typeof opts.includeAllExamples === "boolean") coachState.includeAllExamples = opts.includeAllExamples;
       if ("issueFocus" in opts) coachState.issueFocus = opts.issueFocus;
       if ("deckFilter" in opts) coachState.deckFilter = opts.deckFilter;
+      if ("videoCourse" in opts) coachState.videoCourse = opts.videoCourse;
+      if (typeof opts.videoOnlyNew === "boolean") coachState.videoOnlyNew = opts.videoOnlyNew;
       const items = getFilteredDeckItems(deckName);
       return { count: items.length, firstId: items[0] ? items[0].id : null, sampleJp: items.slice(0, 3).map((x) => x.jp) };
     } finally {
       coachState.includeAllExamples = prevAll;
       coachState.issueFocus = prevFocus;
       coachState.deckFilter = prevFilter;
+      coachState.videoCourse = prevCourse;
+      coachState.videoOnlyNew = prevOnlyNew;
     }
   }
 
@@ -4947,6 +5078,7 @@
     renderStudio,
     openQuickModal,
     openRoleplayDialogue,
+    openVideoDeck,
     handleKeydown,
     stopAll() {
       coachState.isModalOpen = false;

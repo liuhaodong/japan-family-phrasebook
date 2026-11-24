@@ -5,6 +5,8 @@
 (function () {
   const VERBS = window.JP_TOP_VERBS || [];
   const GRAMMAR = window.JP_GRAMMAR_LIST || [];
+  const VIDEO_GRAMMAR = window.JP_VIDEO_GRAMMAR || [];
+  const VIDEO_SOURCES = window.JP_VIDEO_GRAMMAR_SOURCES || {};
   const EXTRAS = window.JP_LEARNING_EXTRAS || {};
 
   const GROUP_LABELS = {
@@ -56,10 +58,13 @@
   };
 
   const gState = {
+    subTab: "core", // 'core' | 'voylin-n4' | 'voylin-n3'
     search: "",
     level: "all", // 'all' | 'N5' | 'N4' | 'N3'
     importance: "all", // 'all' | '5' | '4' | '3'
     status: "all",
+    videoFilter: "all", // 'all' | 'new_only' | 'linked'
+    videoEmbedOpen: false,
     orderMode: "n5_first", // 'n5_first' | 'n3_first' | 'importance_all'
     showComparisons: false,
     openQuizIds: {}
@@ -68,7 +73,7 @@
   const pState = {
     subMode: "srs", // 'srs' | 'vivt' | 'conj' | 'quiz' | 'shadow'
     // SRS Flashcards
-    srsDeck: "verbs", // 'due' | 'n5vocab' | 'verbs' | 'pairs' | 'grammar' | 'phrases' | 'starred'
+    srsDeck: "verbs", // 'due' | 'n5vocab' | 'verbs' | 'pairs' | 'grammar' | 'video_grammar' | 'phrases' | 'starred'
     srsJlpt: "all",
     srsListenFirst: false,
     srsAutoPlay: true,
@@ -92,6 +97,7 @@
     conjTotal: 0,
     // Grammar, Listening & Staff Decoder Quiz
     quizKind: "grammar", // 'grammar' | 'listening' | 'staff'
+    quizSource: "all", // 'all' | 'core' | 'video'
     quizLevel: "all",
     quizQuestion: null,
     quizAnswered: null,
@@ -1180,8 +1186,16 @@
   }
 
   // =========================================================================
-  // TAB 2: JAPANESE GRAMMAR GUIDE (132 PATTERNS N5 / N4 / N3 + 6 COMPARISONS)
+  // TAB 2: JAPANESE GRAMMAR GUIDE (132 CORE + 160 VIDEO COMPANION PATTERNS)
   // =========================================================================
+  const VIDEO_LINKS_BY_CORE = {};
+  VIDEO_GRAMMAR.forEach((vg) => {
+    if (vg.linkedCoreId) {
+      if (!VIDEO_LINKS_BY_CORE[vg.linkedCoreId]) VIDEO_LINKS_BY_CORE[vg.linkedCoreId] = [];
+      VIDEO_LINKS_BY_CORE[vg.linkedCoreId].push(vg);
+    }
+  });
+
   function renderGrammarCard(g) {
     const { state, formatRuby, escapeHtml } = app();
     const isStar = !!state.starred[g.id];
@@ -1189,6 +1203,7 @@
     const starsStr = "★".repeat(g.importance) + "☆".repeat(5 - g.importance);
     const quizOpen = !!gState.openQuizIds[g.id];
     const qState = gState.openQuizIds[g.id];
+    const linkedVideos = VIDEO_LINKS_BY_CORE[g.id] || [];
 
     return `
       <article class="grammar-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}" id="gcard-${g.id}">
@@ -1211,6 +1226,18 @@
         </div>
 
         <div class="grammar-meaning">${escapeHtml(g.meaning)}</div>
+        ${
+          linkedVideos.length
+            ? `<div class="vg-core-links-row">
+                ${linkedVideos
+                  .map(
+                    (v) =>
+                      `<button type="button" class="vg-link-btn" data-jump-vg="${v.id}" data-jump-vsrc="${v.source}">🎬 视频联动 ${v.level} #${v.videoOrder} (${escapeHtml(v.timestampLabel)})</button>`
+                  )
+                  .join("")}
+              </div>`
+            : ""
+        }
 
         <div class="grammar-formation">
           <span class="gf-tag">📐 接续</span>
@@ -1277,237 +1304,590 @@
     `;
   }
 
+  function renderVideoGrammarCard(vg) {
+    const { state, formatRuby, escapeHtml } = app();
+    const isStar = !!state.starred[vg.id];
+    const isMast = !!state.mastered[vg.id];
+    const quizOpen = !!gState.openQuizIds[vg.id];
+    const qState = gState.openQuizIds[vg.id];
+    const tsUrl = `https://youtu.be/${vg.videoId}?t=${vg.timestampSec}`;
+
+    return `
+      <article class="grammar-card ${isMast ? "mastered" : ""} ${isStar ? "starred" : ""}" id="vgcard-${vg.id}">
+        <div class="grammar-card-top">
+          <div class="verb-badges">
+            <span class="jlpt-pill jlpt-${vg.level.toLowerCase()}">${vg.level}</span>
+            <span class="verb-rank-pill">#${vg.videoOrder}</span>
+            <a class="vg-ts-link" href="${escapeHtml(tsUrl)}" target="_blank" rel="noopener" title="跳转至 YouTube 原片对应时间点">▶ ${escapeHtml(vg.timestampLabel)} 看原片</a>
+            ${
+              vg.linkedCoreId
+                ? `<button type="button" class="vg-link-btn" data-jump-core="${vg.linkedCoreId}">🔗 关联精讲</button>`
+                : `<span class="vg-new-pill">🆕 扩展新句型</span>`
+            }
+          </div>
+          <div class="phrase-status-btns">
+            <button type="button" class="icon-btn g-quiz-toggle-btn" data-gid="${vg.id}">🧩 ${quizOpen ? "收起小测" : "随堂小测"}</button>
+            <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-gstar="${vg.id}">${isStar ? "⭐" : "☆"}</button>
+            <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-gmaster="${vg.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
+          </div>
+        </div>
+
+        <div class="grammar-pattern-row">
+          <div class="grammar-pattern-title" lang="ja">${escapeHtml(vg.pattern)}</div>
+          <div class="romaji-text" style="margin:0;">${escapeHtml(vg.reading)}</div>
+        </div>
+
+        <div class="grammar-meaning">${escapeHtml(vg.meaning)}</div>
+        ${vg.meaningEn ? `<div class="vg-en-gloss">EN: ${escapeHtml(vg.meaningEn)}</div>` : ""}
+
+        <div class="grammar-formation">
+          <span class="gf-tag">📐 接续</span>
+          <span>${escapeHtml(vg.formation)}</span>
+        </div>
+
+        ${vg.tip ? `<div class="phrase-tip" style="margin-top:0.45rem;">💡 <strong>笔记/用法贴士：</strong>${escapeHtml(vg.tip)}</div>` : ""}
+
+        ${
+          quizOpen && vg.quiz
+            ? `
+          <div class="inline-gquiz-box">
+            <div style="font-size:0.78rem;font-weight:800;color:var(--accent-indigo);margin-bottom:0.35rem;">🧩 随堂即练：请选择正确的填空项</div>
+            <div class="jp-text" lang="ja" style="font-size:1.05rem;margin-bottom:0.2rem;">${formatRuby(vg.quiz.promptJp)}</div>
+            <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.55rem;">🇨🇳 ${escapeHtml(vg.quiz.cn)}</div>
+            <div class="inline-gquiz-opts">
+              ${vg.quiz.options
+                .map((opt) => {
+                  let cls = "";
+                  if (qState && qState.picked) {
+                    if (opt === vg.quiz.answer) cls = "opt-correct";
+                    else if (opt === qState.picked) cls = "opt-wrong";
+                  }
+                  return `<button type="button" class="quiz-opt-btn inline-gquiz-pick ${cls}" data-gid="${vg.id}" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`;
+                })
+                .join("")}
+            </div>
+            ${
+              qState && qState.picked
+                ? `<div style="margin-top:0.45rem;font-size:0.8rem;font-weight:700;color:${qState.picked === vg.quiz.answer ? "var(--accent-emerald)" : "var(--accent-red)"};">
+                    ${qState.picked === vg.quiz.answer ? "🎉 回答正确！掌握得很扎实！" : `❌ 正确答案是「${escapeHtml(vg.quiz.answer)}」`}
+                  </div>`
+                : ""
+            }
+          </div>
+        `
+            : ""
+        }
+
+        <div class="grammar-examples">
+          <div class="gex-heading">🗣️ 视频原句跟读（点击朗读或开口评测）：</div>
+          ${(vg.examples || [])
+            .map(
+              (ex, exIdx) => `
+            <div class="verb-example-item">
+              <div style="flex:1 1 190px;min-width:0;">
+                <span class="vex-form-badge">${escapeHtml(ex.ctx)}</span>
+                <div class="jp-text vex-jp" lang="ja">${formatRuby(ex.jp)}</div>
+                <div class="romaji-text" style="margin-bottom:0.15rem;">${escapeHtml(ex.romaji)}</div>
+                <div class="cn-text" style="font-size:0.85rem;margin-bottom:0;">${escapeHtml(ex.cn)}</div>
+                ${ex.en ? `<div class="vg-ex-en">${escapeHtml(ex.en)}</div>` : ""}
+              </div>
+              <div class="vex-btns">
+                <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(ex.jp)}" title="常速朗读">🔊</button>
+                <button type="button" class="icon-btn g-speak-slow-btn" data-jp="${escapeHtml(ex.jp)}" title="慢速跟读">🐢</button>
+                <button type="button" class="icon-btn quick-oral-btn" data-oid="${vg.id}-ex${exIdx}" data-ojp="${escapeHtml(ex.jp)}" data-oromaji="${escapeHtml(ex.romaji || "")}" data-ocn="${escapeHtml(ex.cn)}" data-otag="🎬 ${vg.level} 视频 #${vg.videoOrder} · ${escapeHtml(vg.pattern)}" title="开口跟读发音评测">🎙️</button>
+              </div>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+      </article>
+    `;
+  }
+
   function renderGrammarView() {
     const container = document.getElementById("grammar-view-container");
     if (!container) return;
     const { state, formatRuby, escapeHtml, speakJapanese, toggleStar, toggleMastered, recordStudyActivity, switchAppMode } = app();
 
-    const statsByLvl = ["N5", "N4", "N3"].map((lvl) => {
-      const list = GRAMMAR.filter((g) => g.level === lvl);
-      const done = list.filter((g) => state.mastered[g.id]).length;
-      return { lvl, total: list.length, done };
-    });
-    const totalDone = statsByLvl.reduce((s, x) => s + x.done, 0);
-    const totalPct = GRAMMAR.length ? Math.round((totalDone / GRAMMAR.length) * 100) : 0;
-    const comparisons = EXTRAS.grammarComparisons || [];
+    const n4VideoAll = VIDEO_GRAMMAR.filter((v) => v.source === "voylin-n4");
+    const n3VideoAll = VIDEO_GRAMMAR.filter((v) => v.source === "voylin-n3");
+    const coreDoneAll = GRAMMAR.filter((g) => state.mastered[g.id]).length;
+    const n4VideoDone = n4VideoAll.filter((v) => state.mastered[v.id]).length;
+    const n3VideoDone = n3VideoAll.filter((v) => state.mastered[v.id]).length;
 
-    const q = gState.search.trim().toLowerCase();
-    const filtered = GRAMMAR.filter((g) => {
-      if (gState.level !== "all" && g.level !== gState.level) return false;
-      if (gState.importance !== "all" && String(g.importance) !== gState.importance) return false;
-      if (gState.status === "starred" && !state.starred[g.id]) return false;
-      if (gState.status === "mastered" && !state.mastered[g.id]) return false;
-      if (gState.status === "unmastered" && state.mastered[g.id]) return false;
-      if (q) {
-        const exText = g.dailyExamples.map((e) => `${e.jp} ${e.romaji} ${e.cn} ${e.ctx}`).join(" ");
-        const hay = `${g.level} ${g.pattern} ${g.reading} ${g.meaning} ${g.formation} ${g.explanation} ${g.tip} ${exText}`.toLowerCase();
-        return hay.includes(q);
-      }
-      return true;
-    });
+    const subTabBar = `
+      <div class="vocab-hub-switcher scroll-fade-x">
+        <button type="button" class="map-pill ${gState.subTab === "core" ? "active" : ""}" data-ghub="core">
+          📘 精选精讲 ${GRAMMAR.length} (${coreDoneAll}/${GRAMMAR.length})
+        </button>
+        <button type="button" class="map-pill ${gState.subTab === "voylin-n4" ? "active" : ""}" data-ghub="voylin-n4">
+          🎬 视频 N4 ${n4VideoAll.length} (${n4VideoDone}/${n4VideoAll.length})
+        </button>
+        <button type="button" class="map-pill ${gState.subTab === "voylin-n3" ? "active" : ""}" data-ghub="voylin-n3">
+          🎬 视频 N3 ${n3VideoAll.length} (${n3VideoDone}/${n3VideoAll.length})
+        </button>
+      </div>
+    `;
 
-    const levelMeta = {
-      N5: { title: "🟢 JLPT N5 · 基础骨架语法全集 (50 条)", sub: "包含指示代词、四态变形、て形连用、移动目的、もう/まだ、普通形简体转换，夯实根基必背！", cls: "grp-banner-n5" },
-      N4: { title: "🔵 JLPT N4 · 进阶自然语法 (36 条)", sub: "敬语指示(お〜ください)、授受敬语、口语缩略(ちゃう/とく/なきゃ)、条件句与使役被动！", cls: "grp-banner-n4" },
-      N3: { title: "🟣 JLPT N3 · 地道流利语法 (46 条)", sub: "に違いない、わけがない、ことはない、てたまらない、おかげで、うちに、っけ、最中に等高频表达！", cls: "grp-banner-n3" }
-    };
+    const isVideoTab = gState.subTab === "voylin-n4" || gState.subTab === "voylin-n3";
 
-    let contentHtml = "";
-    if (filtered.length === 0) {
-      contentHtml = `
-        <div class="itin-card-block" style="text-align:center;padding:2rem;">
-          <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
-          <div style="font-weight:700;margin-bottom:0.4rem;">没有找到匹配的语法点</div>
-          <button type="button" class="action-btn primary-audio" id="btn-reset-grammar-filters">重置语法筛选</button>
-        </div>
-      `;
-    } else if (gState.orderMode === "importance_all") {
-      const sortedAll = filtered.slice().sort((a, b) => b.importance - a.importance || a.order - b.order);
-      contentHtml = `<div class="grammar-list">${sortedAll.map(renderGrammarCard).join("")}</div>`;
-    } else {
-      const levelOrder = gState.orderMode === "n3_first" ? ["N3", "N4", "N5"] : ["N5", "N4", "N3"];
-      contentHtml = levelOrder
-        .map((lvl) => {
-          const items = filtered.filter((g) => g.level === lvl);
-          if (!items.length) return "";
-          const meta = levelMeta[lvl];
-          return `
-            <div class="grammar-level-section" id="grammar-sec-${lvl.toLowerCase()}">
-              <div class="grammar-level-banner ${meta.cls}">
-                <div>
-                  <h3 class="grammar-level-title">${meta.title}</h3>
-                  <p class="grammar-level-sub">${meta.sub}</p>
-                </div>
-                <span class="grammar-level-count">${items.length} 条语法</span>
-              </div>
-              <div class="grammar-list">
-                ${items.map(renderGrammarCard).join("")}
-              </div>
-            </div>
-          `;
-        })
-        .join("");
-    }
+    if (isVideoTab) {
+      const srcKey = gState.subTab;
+      const srcMeta = VIDEO_SOURCES[srcKey] || {
+        id: srcKey,
+        level: srcKey === "voylin-n4" ? "N4" : "N3",
+        videoId: srcKey === "voylin-n4" ? "lqFAs-RE5AU" : "kQx3gndHZbA",
+        url: srcKey === "voylin-n4" ? "https://youtu.be/lqFAs-RE5AU" : "https://youtu.be/kQx3gndHZbA",
+        title: srcKey === "voylin-n4" ? "All JLPT N4 Grammar - Quick Japanese [UPDATED]" : "[JP only version] All JLPT N3 Grammar - Quick Japanese",
+        author: "Voylin Sensei",
+        durationLabel: srcKey === "voylin-n4" ? "29:06" : "47:31"
+      };
+      const courseItems = VIDEO_GRAMMAR.filter((v) => v.source === srcKey);
+      const courseDone = courseItems.filter((v) => state.mastered[v.id]).length;
+      const coursePct = courseItems.length ? Math.round((courseDone / courseItems.length) * 100) : 0;
+      const newCount = courseItems.filter((v) => !v.linkedCoreId).length;
+      const linkedCount = courseItems.length - newCount;
+      const exampleCount = courseItems.reduce((s, v) => s + ((v.examples && v.examples.length) || 0), 0);
 
-    container.innerHTML = `
-      <div class="learning-hero-card">
-        <div class="learning-hero-top">
-          <div>
-            <h2 class="itin-section-title">📖 日语核心语法精讲 · N5 夯基 + N4/N3 进阶 (${GRAMMAR.length} 条)</h2>
-            <p class="itin-section-sub">点击下方级别卡直接切换筛选；每条语法均配接续公式、避坑贴士、3 句真人例句与随堂小测！</p>
-          </div>
-          <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
-            <button type="button" class="action-btn ${gState.showComparisons ? "primary-audio" : ""}" id="btn-toggle-gcomp">
-              ⚖️ ${gState.showComparisons ? "收起对比卡" : `易混语法对比 (${comparisons.length}组)`}
-            </button>
-            <button type="button" class="action-btn primary-audio" id="btn-jump-grammar-quiz">
-              🧩 语法填空测验 →
-            </button>
-          </div>
-        </div>
+      const q = gState.search.trim().toLowerCase();
+      const filtered = courseItems.filter((vg) => {
+        if (gState.videoFilter === "new_only" && vg.linkedCoreId) return false;
+        if (gState.videoFilter === "linked" && !vg.linkedCoreId) return false;
+        if (gState.status === "starred" && !state.starred[vg.id]) return false;
+        if (gState.status === "mastered" && !state.mastered[vg.id]) return false;
+        if (gState.status === "unmastered" && state.mastered[vg.id]) return false;
+        if (q) {
+          const exText = (vg.examples || []).map((e) => `${e.jp} ${e.romaji} ${e.cn} ${e.en || ""}`).join(" ");
+          const hay = `${vg.level} ${vg.videoOrder} ${vg.pattern} ${vg.reading} ${vg.meaning} ${vg.meaningEn || ""} ${vg.formation} ${vg.tip} ${exText}`.toLowerCase();
+          return hay.includes(q);
+        }
+        return true;
+      });
 
-        <!-- Unified 4-Card Level Selector (No Duplicate Level Chips!) -->
-        <div class="grammar-kpi-row">
-          <button type="button" class="gkpi-card ${gState.level === "all" ? "active" : ""}" data-glevel="all">
-            <span class="verb-rank-pill">ALL</span>
-            <div>
-              <div style="font-weight:800;font-size:0.95rem;">全部 ${totalDone} / ${GRAMMAR.length}</div>
-              <div style="font-size:0.73rem;color:var(--text-muted);">N5–N3 完整总览</div>
-            </div>
-          </button>
-          ${statsByLvl
-            .map(
-              (s) => `
-            <button type="button" class="gkpi-card ${gState.level === s.lvl ? "active" : ""}" data-glevel="${s.lvl}">
-              <span class="jlpt-pill jlpt-${s.lvl.toLowerCase()}">${s.lvl}</span>
+      const listHtml =
+        filtered.length === 0
+          ? `<div class="itin-card-block" style="text-align:center;padding:2rem;">
+              <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
+              <div style="font-weight:700;margin-bottom:0.4rem;">当前筛选下暂无匹配的视频语法</div>
+              <button type="button" class="action-btn primary-audio" id="btn-reset-vg-filters">重置视频筛选</button>
+            </div>`
+          : `<div class="grammar-list">${filtered.map(renderVideoGrammarCard).join("")}</div>`;
+
+      container.innerHTML = `
+        <div class="learning-hero-card">
+          ${subTabBar}
+          <div class="vg-course-banner ${srcKey === "voylin-n3" ? "vg-n3" : ""}">
+            <div class="vg-course-top">
               <div>
-                <div style="font-weight:800;font-size:0.95rem;">已掌握 ${s.done} / ${s.total}</div>
-                <div style="font-size:0.73rem;color:var(--text-muted);">${s.lvl === "N5" ? "基础总复习" : s.lvl === "N4" ? "日常流利进阶" : "地道细腻表达"}</div>
-              </div>
-            </button>
-          `
-            )
-            .join("")}
-        </div>
-
-        <div class="learning-progress-row">
-          <div class="progress-text-meta">
-            <span>🎯 语法总进度：<strong>${totalDone} / ${GRAMMAR.length}</strong> (${totalPct}%)</span>
-            <span>当前显示：<strong>${filtered.length}</strong> 条语法</span>
-          </div>
-          <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${totalPct}%;"></div></div>
-        </div>
-
-        ${
-          gState.showComparisons
-            ? `
-          <div class="gcomp-grid">
-            ${comparisons
-              .map(
-                (cmp) => `
-              <div class="gcomp-card">
-                <div class="gcomp-title">${escapeHtml(cmp.title)}</div>
-                <div class="gcomp-sub">${escapeHtml(cmp.summary)}</div>
-                <div class="gcomp-rows">
-                  ${cmp.rows
-                    .map(
-                      (r) => `
-                    <div class="gcomp-row">
-                      <div style="flex:1;min-width:0;">
-                        <div class="gcomp-form" lang="ja">${escapeHtml(r.form)}</div>
-                        <div class="gcomp-nuance">${escapeHtml(r.nuance)}</div>
-                        <div class="jp-text" lang="ja" style="font-size:0.92rem;margin:0.15rem 0 0.05rem;">${formatRuby(r.exJp)}</div>
-                        <div style="font-size:0.78rem;color:var(--accent-indigo);font-weight:600;">${escapeHtml(r.exCn)}</div>
-                      </div>
-                      <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(r.exJp)}">🔊</button>
-                    </div>
-                  `
-                    )
-                    .join("")}
+                <h2 class="itin-section-title">🎬 ${escapeHtml(srcMeta.title)}</h2>
+                <div class="vg-course-meta">
+                  <span>👤 ${escapeHtml(srcMeta.author || "Voylin Sensei")}</span>
+                  <span>·</span>
+                  <span>⏱️ 时长 ${escapeHtml(srcMeta.durationLabel)}</span>
+                  <span>·</span>
+                  <span>📚 <strong>${courseItems.length}</strong> 条语法 / <strong>${exampleCount}</strong> 句原声例句</span>
+                  <span>·</span>
+                  <span style="color:var(--accent-emerald);font-weight:700;">🆕 扩展新句型 ${newCount} 条</span>
                 </div>
               </div>
+              <div class="vg-course-actions">
+                <button type="button" class="action-btn primary-audio" id="btn-vg-go-oral">🎙️ 去口语跟读本视频 (${exampleCount}句) →</button>
+                <button type="button" class="action-btn ${gState.videoEmbedOpen ? "primary-audio" : ""}" id="btn-vg-toggle-embed">
+                  ${gState.videoEmbedOpen ? "🔼 收起原视频" : "▶️ 页内观看原视频"}
+                </button>
+                <a class="action-btn" href="${escapeHtml(srcMeta.url)}" target="_blank" rel="noopener" style="text-decoration:none;">↗ YouTube</a>
+              </div>
+            </div>
+
+            ${
+              gState.videoEmbedOpen
+                ? `<div class="vg-embed-wrap">
+                    <iframe src="https://www.youtube.com/embed/${escapeHtml(srcMeta.videoId)}" title="${escapeHtml(srcMeta.title)}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe>
+                  </div>`
+                : ""
+            }
+
+            <div class="learning-progress-row" style="margin-top:0.2rem;">
+              <div class="progress-text-meta">
+                <span>🎯 本视频掌握进度：<strong>${courseDone} / ${courseItems.length}</strong> (${coursePct}%)</span>
+                <span>当前显示：<strong>${filtered.length}</strong> 条语法</span>
+              </div>
+              <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${coursePct}%;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="learning-filter-card">
+          <div class="lf-row-top">
+            <div class="search-box" style="flex:1 1 240px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="vg-search-input" value="${escapeHtml(gState.search)}" placeholder="搜索本视频语法、英文/中文意思或日语例句..." />
+              <button type="button" class="search-clear" id="vg-search-clear" style="display:${gState.search ? "block" : "none"};">✕</button>
+            </div>
+          </div>
+          <div class="lf-chips-row">
+            <div class="toggle-group">
+              ${[
+                ["all", `全部 (${courseItems.length})`],
+                ["new_only", `🆕 仅新增扩展 (${newCount})`],
+                ["linked", `🔗 核心联动 (${linkedCount})`]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.videoFilter === k ? "active" : ""}" data-vgfilter="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+            <div class="toggle-group">
+              ${[
+                ["all", "全部"],
+                ["unmastered", "⏳ 未掌握"],
+                ["mastered", "✅ 已掌握"],
+                ["starred", "⭐ 收藏"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+          </div>
+        </div>
+
+        ${listHtml}
+      `;
+
+      const goOralBtn = document.getElementById("btn-vg-go-oral");
+      if (goOralBtn) {
+        goOralBtn.onclick = () => {
+          if (window.JP_ORAL_COACH && window.JP_ORAL_COACH.openVideoDeck) {
+            window.JP_ORAL_COACH.openVideoDeck(srcKey, true);
+          }
+          switchAppMode("oral");
+        };
+      }
+      const toggleEmbedBtn = document.getElementById("btn-vg-toggle-embed");
+      if (toggleEmbedBtn) {
+        toggleEmbedBtn.onclick = () => {
+          gState.videoEmbedOpen = !gState.videoEmbedOpen;
+          renderGrammarView();
+        };
+      }
+      const vgSearchEl = document.getElementById("vg-search-input");
+      if (vgSearchEl) {
+        vgSearchEl.oninput = (e) => {
+          gState.search = e.target.value;
+          const pos = e.target.selectionStart;
+          renderGrammarView();
+          const next = document.getElementById("vg-search-input");
+          if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+        };
+      }
+      const vgClr = document.getElementById("vg-search-clear");
+      if (vgClr) vgClr.onclick = () => { gState.search = ""; renderGrammarView(); };
+      const vgReset = document.getElementById("btn-reset-vg-filters");
+      if (vgReset) {
+        vgReset.onclick = () => {
+          gState.search = "";
+          gState.videoFilter = "all";
+          gState.status = "all";
+          renderGrammarView();
+        };
+      }
+      container.querySelectorAll("[data-vgfilter]").forEach((b) => {
+        b.onclick = () => { gState.videoFilter = b.dataset.vgfilter; renderGrammarView(); };
+      });
+      container.querySelectorAll("[data-jump-core]").forEach((b) => {
+        b.onclick = () => {
+          const cid = b.dataset.jumpCore;
+          gState.subTab = "core";
+          gState.search = "";
+          gState.level = "all";
+          gState.importance = "all";
+          gState.status = "all";
+          renderGrammarView();
+          setTimeout(() => {
+            const el = document.getElementById(`gcard-${cid}`);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 40);
+        };
+      });
+    } else {
+      const statsByLvl = ["N5", "N4", "N3"].map((lvl) => {
+        const list = GRAMMAR.filter((g) => g.level === lvl);
+        const done = list.filter((g) => state.mastered[g.id]).length;
+        return { lvl, total: list.length, done };
+      });
+      const totalDone = statsByLvl.reduce((s, x) => s + x.done, 0);
+      const totalPct = GRAMMAR.length ? Math.round((totalDone / GRAMMAR.length) * 100) : 0;
+      const comparisons = EXTRAS.grammarComparisons || [];
+
+      const q = gState.search.trim().toLowerCase();
+      const filtered = GRAMMAR.filter((g) => {
+        if (gState.level !== "all" && g.level !== gState.level) return false;
+        if (gState.importance !== "all" && String(g.importance) !== gState.importance) return false;
+        if (gState.status === "starred" && !state.starred[g.id]) return false;
+        if (gState.status === "mastered" && !state.mastered[g.id]) return false;
+        if (gState.status === "unmastered" && state.mastered[g.id]) return false;
+        if (q) {
+          const exText = g.dailyExamples.map((e) => `${e.jp} ${e.romaji} ${e.cn} ${e.ctx}`).join(" ");
+          const hay = `${g.level} ${g.pattern} ${g.reading} ${g.meaning} ${g.formation} ${g.explanation} ${g.tip} ${exText}`.toLowerCase();
+          return hay.includes(q);
+        }
+        return true;
+      });
+
+      const videoMatchesN4 = q
+        ? n4VideoAll.filter((vg) => `${vg.pattern} ${vg.reading} ${vg.meaning} ${vg.meaningEn || ""} ${(vg.examples || []).map((e) => `${e.jp} ${e.cn} ${e.en || ""}`).join(" ")}`.toLowerCase().includes(q)).length
+        : 0;
+      const videoMatchesN3 = q
+        ? n3VideoAll.filter((vg) => `${vg.pattern} ${vg.reading} ${vg.meaning} ${vg.meaningEn || ""} ${(vg.examples || []).map((e) => `${e.jp} ${e.cn} ${e.en || ""}`).join(" ")}`.toLowerCase().includes(q)).length
+        : 0;
+
+      const crossSearchBanner =
+        q && (videoMatchesN4 > 0 || videoMatchesN3 > 0)
+          ? `<div class="vg-cross-search-banner">
+              <span>🎬 在<strong>视频语法 companion</strong>中也找到匹配项：${videoMatchesN4 > 0 ? `N4视频 (${videoMatchesN4}条)` : ""}${videoMatchesN4 > 0 && videoMatchesN3 > 0 ? " · " : ""}${videoMatchesN3 > 0 ? `N3视频 (${videoMatchesN3}条)` : ""}</span>
+              <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                ${videoMatchesN4 > 0 ? `<button type="button" class="vg-link-btn" data-cross-vg="voylin-n4">查看视频 N4 (${videoMatchesN4}) →</button>` : ""}
+                ${videoMatchesN3 > 0 ? `<button type="button" class="vg-link-btn" data-cross-vg="voylin-n3">查看视频 N3 (${videoMatchesN3}) →</button>` : ""}
+              </div>
+            </div>`
+          : "";
+
+      const levelMeta = {
+        N5: { title: "🟢 JLPT N5 · 基础骨架语法全集 (50 条)", sub: "包含指示代词、四态变形、て形连用、移动目的、もう/まだ、普通形简体转换，夯实根基必背！", cls: "grp-banner-n5" },
+        N4: { title: "🔵 JLPT N4 · 进阶自然语法 (36 条)", sub: "敬语指示(お〜ください)、授受敬语、口语缩略(ちゃう/とく/なきゃ)、条件句与使役被动！", cls: "grp-banner-n4" },
+        N3: { title: "🟣 JLPT N3 · 地道流利语法 (46 条)", sub: "に違いない、わけがない、ことはない、てたまらない、おかげで、うちに、っけ、最中に等高频表达！", cls: "grp-banner-n3" }
+      };
+
+      let contentHtml = "";
+      if (filtered.length === 0) {
+        contentHtml = `
+          <div class="itin-card-block" style="text-align:center;padding:2rem;">
+            <div style="font-size:2rem;margin-bottom:0.4rem;">🔍</div>
+            <div style="font-weight:700;margin-bottom:0.4rem;">没有找到匹配的语法点</div>
+            <button type="button" class="action-btn primary-audio" id="btn-reset-grammar-filters">重置语法筛选</button>
+          </div>
+        `;
+      } else if (gState.orderMode === "importance_all") {
+        const sortedAll = filtered.slice().sort((a, b) => b.importance - a.importance || a.order - b.order);
+        contentHtml = `<div class="grammar-list">${sortedAll.map(renderGrammarCard).join("")}</div>`;
+      } else {
+        const levelOrder = gState.orderMode === "n3_first" ? ["N3", "N4", "N5"] : ["N5", "N4", "N3"];
+        contentHtml = levelOrder
+          .map((lvl) => {
+            const items = filtered.filter((g) => g.level === lvl);
+            if (!items.length) return "";
+            const meta = levelMeta[lvl];
+            return `
+              <div class="grammar-level-section" id="grammar-sec-${lvl.toLowerCase()}">
+                <div class="grammar-level-banner ${meta.cls}">
+                  <div>
+                    <h3 class="grammar-level-title">${meta.title}</h3>
+                    <p class="grammar-level-sub">${meta.sub}</p>
+                  </div>
+                  <span class="grammar-level-count">${items.length} 条语法</span>
+                </div>
+                <div class="grammar-list">
+                  ${items.map(renderGrammarCard).join("")}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      container.innerHTML = `
+        <div class="learning-hero-card">
+          ${subTabBar}
+          <div class="learning-hero-top" style="margin-top:0.75rem;">
+            <div>
+              <h2 class="itin-section-title">📖 日语核心语法精讲 · N5 夯基 + N4/N3 进阶 (${GRAMMAR.length} 条)</h2>
+              <p class="itin-section-sub">点击下方级别卡直接切换筛选；上方可切换「🎬 视频 N4 / 视频 N3 全集 (160条·320原句)」联动精练！</p>
+            </div>
+            <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
+              <button type="button" class="action-btn ${gState.showComparisons ? "primary-audio" : ""}" id="btn-toggle-gcomp">
+                ⚖️ ${gState.showComparisons ? "收起对比卡" : `易混语法对比 (${comparisons.length}组)`}
+              </button>
+              <button type="button" class="action-btn primary-audio" id="btn-jump-grammar-quiz">
+                🧩 语法填空测验 →
+              </button>
+            </div>
+          </div>
+
+          <div class="grammar-kpi-row">
+            <button type="button" class="gkpi-card ${gState.level === "all" ? "active" : ""}" data-glevel="all">
+              <span class="verb-rank-pill">ALL</span>
+              <div>
+                <div style="font-weight:800;font-size:0.95rem;">全部 ${totalDone} / ${GRAMMAR.length}</div>
+                <div style="font-size:0.73rem;color:var(--text-muted);">N5–N3 完整总览</div>
+              </div>
+            </button>
+            ${statsByLvl
+              .map(
+                (s) => `
+              <button type="button" class="gkpi-card ${gState.level === s.lvl ? "active" : ""}" data-glevel="${s.lvl}">
+                <span class="jlpt-pill jlpt-${s.lvl.toLowerCase()}">${s.lvl}</span>
+                <div>
+                  <div style="font-weight:800;font-size:0.95rem;">已掌握 ${s.done} / ${s.total}</div>
+                  <div style="font-size:0.73rem;color:var(--text-muted);">${s.lvl === "N5" ? "基础总复习" : s.lvl === "N4" ? "日常流利进阶" : "地道细腻表达"}</div>
+                </div>
+              </button>
             `
               )
               .join("")}
           </div>
-        `
-            : ""
-        }
-      </div>
 
-      <div class="learning-filter-card">
-        <div class="lf-row-top">
-          <div class="search-box" style="flex:1 1 240px;">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或例句（如：てもいい、こそあど、おかげで、っけ）..." />
-            <button type="button" class="search-clear" id="grammar-search-clear" style="display:${gState.search ? "block" : "none"};">✕</button>
+          <div class="learning-progress-row">
+            <div class="progress-text-meta">
+              <span>🎯 语法总进度：<strong>${totalDone} / ${GRAMMAR.length}</strong> (${totalPct}%)</span>
+              <span>当前显示：<strong>${filtered.length}</strong> 条语法</span>
+            </div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${totalPct}%;"></div></div>
           </div>
-          <select id="grammar-order-select" class="lf-select" aria-label="分组与排序方式">
-            <option value="n5_first" ${gState.orderMode === "n5_first" ? "selected" : ""}>📚 分组：N5 → N4 → N3 (由浅入深)</option>
-            <option value="n3_first" ${gState.orderMode === "n3_first" ? "selected" : ""}>🚀 分组：N3 → N4 → N5 (高阶优先)</option>
-            <option value="importance_all" ${gState.orderMode === "importance_all" ? "selected" : ""}>🔥 跨级别按重要度排序 (5★优先)</option>
-          </select>
+
+          ${
+            gState.showComparisons
+              ? `
+            <div class="gcomp-grid">
+              ${comparisons
+                .map(
+                  (cmp) => `
+                <div class="gcomp-card">
+                  <div class="gcomp-title">${escapeHtml(cmp.title)}</div>
+                  <div class="gcomp-sub">${escapeHtml(cmp.summary)}</div>
+                  <div class="gcomp-rows">
+                    ${cmp.rows
+                      .map(
+                        (r) => `
+                      <div class="gcomp-row">
+                        <div style="flex:1;min-width:0;">
+                          <div class="gcomp-form" lang="ja">${escapeHtml(r.form)}</div>
+                          <div class="gcomp-nuance">${escapeHtml(r.nuance)}</div>
+                          <div class="jp-text" lang="ja" style="font-size:0.92rem;margin:0.15rem 0 0.05rem;">${formatRuby(r.exJp)}</div>
+                          <div style="font-size:0.78rem;color:var(--accent-indigo);font-weight:600;">${escapeHtml(r.exCn)}</div>
+                        </div>
+                        <button type="button" class="icon-btn g-speak-btn" data-jp="${escapeHtml(r.exJp)}">🔊</button>
+                      </div>
+                    `
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+          `
+              : ""
+          }
         </div>
 
-        <div class="lf-chips-row">
-          <div class="toggle-group">
-            ${[
-              ["all", "全部重要度"],
-              ["5", "🔥 5★每日必用"],
-              ["4", "⭐ 4★高频实用"],
-              ["3", "💎 3★进阶地道"]
-            ]
-              .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>`)
-              .join("")}
+        <div class="learning-filter-card">
+          <div class="lf-row-top">
+            <div class="search-box" style="flex:1 1 240px;">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或例句（如：てもいい、こそあど、おかげで、っけ）..." />
+              <button type="button" class="search-clear" id="grammar-search-clear" style="display:${gState.search ? "block" : "none"};">✕</button>
+            </div>
+            <select id="grammar-order-select" class="lf-select" aria-label="分组与排序方式">
+              <option value="n5_first" ${gState.orderMode === "n5_first" ? "selected" : ""}>📚 分组：N5 → N4 → N3 (由浅入深)</option>
+              <option value="n3_first" ${gState.orderMode === "n3_first" ? "selected" : ""}>🚀 分组：N3 → N4 → N5 (高阶优先)</option>
+              <option value="importance_all" ${gState.orderMode === "importance_all" ? "selected" : ""}>🔥 跨级别按重要度排序 (5★优先)</option>
+            </select>
           </div>
-          <div class="toggle-group">
-            ${[
-              ["all", "全部"],
-              ["unmastered", "⏳ 未掌握"],
-              ["mastered", "✅ 已掌握"],
-              ["starred", "⭐ 收藏"]
-            ]
-              .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
-              .join("")}
+
+          <div class="lf-chips-row">
+            <div class="toggle-group">
+              ${[
+                ["all", "全部重要度"],
+                ["5", "🔥 5★每日必用"],
+                ["4", "⭐ 4★高频实用"],
+                ["3", "💎 3★进阶地道"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
+            <div class="toggle-group">
+              ${[
+                ["all", "全部"],
+                ["unmastered", "⏳ 未掌握"],
+                ["mastered", "✅ 已掌握"],
+                ["starred", "⭐ 收藏"]
+              ]
+                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
+                .join("")}
+            </div>
           </div>
         </div>
-      </div>
 
-      ${contentHtml}
-    `;
+        ${crossSearchBanner}
+        ${contentHtml}
+      `;
 
-    // Bind Grammar Events
-    const toggleComp = document.getElementById("btn-toggle-gcomp");
-    if (toggleComp) toggleComp.onclick = () => { gState.showComparisons = !gState.showComparisons; renderGrammarView(); };
-    const jumpQuiz = document.getElementById("btn-jump-grammar-quiz");
-    if (jumpQuiz) {
-      jumpQuiz.onclick = () => {
-        pState.subMode = "quiz";
-        pState.quizKind = "grammar";
-        pState.quizQuestion = null;
-        switchAppMode("practice");
-      };
+      const toggleComp = document.getElementById("btn-toggle-gcomp");
+      if (toggleComp) toggleComp.onclick = () => { gState.showComparisons = !gState.showComparisons; renderGrammarView(); };
+      const jumpQuiz = document.getElementById("btn-jump-grammar-quiz");
+      if (jumpQuiz) {
+        jumpQuiz.onclick = () => {
+          pState.subMode = "quiz";
+          pState.quizKind = "grammar";
+          pState.quizQuestion = null;
+          switchAppMode("practice");
+        };
+      }
+      const searchEl = document.getElementById("grammar-search-input");
+      if (searchEl) {
+        searchEl.oninput = (e) => {
+          gState.search = e.target.value;
+          const pos = e.target.selectionStart;
+          renderGrammarView();
+          const next = document.getElementById("grammar-search-input");
+          if (next) { next.focus(); next.setSelectionRange(pos, pos); }
+        };
+      }
+      const searchClr = document.getElementById("grammar-search-clear");
+      if (searchClr) searchClr.onclick = () => { gState.search = ""; renderGrammarView(); };
+      const orderSel = document.getElementById("grammar-order-select");
+      if (orderSel) orderSel.onchange = (e) => { gState.orderMode = e.target.value; renderGrammarView(); };
+
+      container.querySelectorAll("[data-glevel]").forEach((b) => {
+        b.onclick = () => { gState.level = b.dataset.glevel; renderGrammarView(); };
+      });
+      container.querySelectorAll("[data-gimp]").forEach((b) => {
+        b.onclick = () => { gState.importance = b.dataset.gimp; renderGrammarView(); };
+      });
+      container.querySelectorAll("[data-jump-vg]").forEach((b) => {
+        b.onclick = () => {
+          const vid = b.dataset.jumpVg;
+          const vsrc = b.dataset.jumpVsrc || "voylin-n4";
+          gState.subTab = vsrc;
+          gState.videoFilter = "all";
+          gState.status = "all";
+          gState.search = "";
+          renderGrammarView();
+          setTimeout(() => {
+            const el = document.getElementById(`vgcard-${vid}`);
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }, 40);
+        };
+      });
+      container.querySelectorAll("[data-cross-vg]").forEach((b) => {
+        b.onclick = () => {
+          gState.subTab = b.dataset.crossVg;
+          gState.videoFilter = "all";
+          gState.status = "all";
+          renderGrammarView();
+        };
+      });
+      const resetBtn = document.getElementById("btn-reset-grammar-filters");
+      if (resetBtn) {
+        resetBtn.onclick = () => {
+          gState.search = ""; gState.level = "all"; gState.importance = "all"; gState.status = "all";
+          renderGrammarView();
+        };
+      }
     }
-    const searchEl = document.getElementById("grammar-search-input");
-    if (searchEl) {
-      searchEl.oninput = (e) => {
-        gState.search = e.target.value;
-        const pos = e.target.selectionStart;
-        renderGrammarView();
-        const next = document.getElementById("grammar-search-input");
-        if (next) { next.focus(); next.setSelectionRange(pos, pos); }
-      };
-    }
-    const searchClr = document.getElementById("grammar-search-clear");
-    if (searchClr) searchClr.onclick = () => { gState.search = ""; renderGrammarView(); };
-    const orderSel = document.getElementById("grammar-order-select");
-    if (orderSel) orderSel.onchange = (e) => { gState.orderMode = e.target.value; renderGrammarView(); };
 
-    container.querySelectorAll("[data-glevel]").forEach((b) => {
-      b.onclick = () => { gState.level = b.dataset.glevel; renderGrammarView(); };
-    });
-    container.querySelectorAll("[data-gimp]").forEach((b) => {
-      b.onclick = () => { gState.importance = b.dataset.gimp; renderGrammarView(); };
+    // Shared bindings across core & video grammar sub-tabs
+    container.querySelectorAll("[data-ghub]").forEach((b) => {
+      b.onclick = () => { gState.subTab = b.dataset.ghub; renderGrammarView(); };
     });
     container.querySelectorAll("[data-gstatus]").forEach((b) => {
       b.onclick = () => { gState.status = b.dataset.gstatus; renderGrammarView(); };
@@ -1533,22 +1913,15 @@
       b.onclick = () => {
         const gid = b.dataset.gid;
         const opt = b.dataset.opt;
-        const gObj = GRAMMAR.find((x) => x.id === gid);
+        const gObj = GRAMMAR.find((x) => x.id === gid) || VIDEO_GRAMMAR.find((x) => x.id === gid);
         gState.openQuizIds[gid] = { picked: opt };
-        if (gObj && opt === gObj.quiz.answer) {
+        if (gObj && gObj.quiz && opt === gObj.quiz.answer) {
           recordStudyActivity(1);
           speakJapanese(gObj.quiz.promptJp.replace("＿＿", opt), 1.0);
         }
         renderGrammarView();
       };
     });
-    const resetBtn = document.getElementById("btn-reset-grammar-filters");
-    if (resetBtn) {
-      resetBtn.onclick = () => {
-        gState.search = ""; gState.level = "all"; gState.importance = "all"; gState.status = "all";
-        renderGrammarView();
-      };
-    }
   }
 
   // =========================================================================
@@ -1621,6 +1994,21 @@
       audioKey: null
     }));
 
+    const videoGrammarCards = VIDEO_GRAMMAR.filter((vg) => jlptFilter === "all" || vg.level === jlptFilter).map((vg) => ({
+      id: vg.id,
+      kind: "🎬 视频语法",
+      badge: `${vg.level} · #${vg.videoOrder} (${vg.timestampLabel})`,
+      frontJp: vg.pattern,
+      frontKana: vg.examples && vg.examples[0] ? vg.examples[0].jp : vg.pattern,
+      romaji: vg.reading,
+      backCn: vg.meaning + (vg.meaningEn ? ` (${vg.meaningEn})` : ""),
+      extraHtml: `📐 ${vg.formation}`,
+      exampleJp: vg.examples && vg.examples[0] ? vg.examples[0].jp : "",
+      exampleCn: vg.examples && vg.examples[0] ? vg.examples[0].cn : "",
+      audioText: vg.examples && vg.examples[0] ? vg.examples[0].jp : vg.pattern,
+      audioKey: null
+    }));
+
     const phraseCards = getAllPhraseItems().map((it) => ({
       id: it.id,
       kind: "🗣️ 场景短语",
@@ -1640,8 +2028,9 @@
     if (deck === "verbs") return verbCards;
     if (deck === "pairs") return pairCards;
     if (deck === "grammar") return grammarCards;
+    if (deck === "video_grammar") return videoGrammarCards;
     if (deck === "phrases") return phraseCards;
-    const all = [...n5VocabCards, ...verbCards, ...grammarCards, ...phraseCards];
+    const all = [...n5VocabCards, ...verbCards, ...grammarCards, ...videoGrammarCards, ...phraseCards];
     if (deck === "starred") return all.filter((c) => state.starred[c.id]);
     if (deck === "due") {
       const now = Date.now();
@@ -1788,8 +2177,15 @@
   // Grammar, Listening & Staff Decoder Quiz Generator
   function generateQuizQuestion() {
     if (pState.quizKind === "grammar") {
-      const pool = GRAMMAR.filter((g) => (pState.quizLevel === "all" || g.level === pState.quizLevel) && g.quiz);
-      const pick = pool[Math.floor(Math.random() * pool.length)];
+      const srcPool =
+        pState.quizSource === "core"
+          ? GRAMMAR
+          : pState.quizSource === "video"
+          ? VIDEO_GRAMMAR
+          : [...GRAMMAR, ...VIDEO_GRAMMAR];
+      const pool = srcPool.filter((g) => (pState.quizLevel === "all" || g.level === pState.quizLevel) && g.quiz);
+      const list = pool.length ? pool : srcPool.filter((g) => g.quiz);
+      const pick = list[Math.floor(Math.random() * list.length)];
       if (!pick) return;
       pState.quizQuestion = {
         kind: "grammar",
@@ -1853,6 +2249,7 @@
     const pDone = allPhrases.filter((x) => state.mastered[x.id]).length;
     const vDone = VERBS.filter((x) => state.mastered[x.id]).length;
     const gDone = GRAMMAR.filter((x) => state.mastered[x.id]).length;
+    const vgDone = VIDEO_GRAMMAR.filter((x) => state.mastered[x.id]).length;
     const now = Date.now();
     const dueCount = Object.values(state.srs || {}).filter((s) => s && s.nextDue <= now).length;
     const oralEntries = Object.values(state.oralStats || {});
@@ -1879,7 +2276,8 @@
                 ["n5vocab", "🟢 N5词汇"],
                 ["verbs", "⚡ 动词300"],
                 ["pairs", "🔗 自他动词对"],
-                ["grammar", "📖 语法132"],
+                ["grammar", `📖 语法${GRAMMAR.length}`],
+                ["video_grammar", `🎬 视频语法${VIDEO_GRAMMAR.length}`],
                 ["phrases", "🗣️ 场景"],
                 ["starred", "⭐ 收藏"]
               ]
@@ -1888,8 +2286,8 @@
             </div>
             <div class="toggle-group">
               ${
-                pState.srsDeck === "verbs" || pState.srsDeck === "grammar"
-                  ? ["all", "N5", "N4", "N3"]
+                pState.srsDeck === "verbs" || pState.srsDeck === "grammar" || pState.srsDeck === "video_grammar"
+                  ? (pState.srsDeck === "video_grammar" ? ["all", "N4", "N3"] : ["all", "N5", "N4", "N3"])
                       .map((l) => `<button type="button" class="toggle-chip ${pState.srsJlpt === l ? "active" : ""}" data-srsjlpt="${l}">${l === "all" ? "全级别" : l}</button>`)
                       .join("")
                   : ""
@@ -2155,7 +2553,16 @@
             ${
               pState.quizKind === "grammar"
                 ? `<div class="toggle-group">
-                    ${["all", "N5", "N4", "N3"]
+                    ${[
+                      ["all", "全部题库"],
+                      ["core", `📘 精讲${GRAMMAR.length}`],
+                      ["video", `🎬 视频${VIDEO_GRAMMAR.length}`]
+                    ]
+                      .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.quizSource === k ? "active" : ""}" data-qsrc="${k}">${lbl}</button>`)
+                      .join("")}
+                  </div>
+                  <div class="toggle-group">
+                    ${(pState.quizSource === "video" ? ["all", "N4", "N3"] : ["all", "N5", "N4", "N3"])
                       .map((l) => `<button type="button" class="toggle-chip ${pState.quizLevel === l ? "active" : ""}" data-qlvl="${l}">${l === "all" ? "全级别" : l}</button>`)
                       .join("")}
                   </div>`
@@ -2172,9 +2579,13 @@
             q && q.kind === "grammar"
               ? `
             <div class="drill-question-box">
-              <div style="display:flex;justify-content:center;gap:0.4rem;margin-bottom:0.45rem;">
+              <div style="display:flex;justify-content:center;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.45rem;">
                 <span class="jlpt-pill jlpt-${q.grammar.level.toLowerCase()}">${q.grammar.level}</span>
-                <span class="imp-pill imp-${q.grammar.importance}">${escapeHtml(q.grammar.importanceLabel)}</span>
+                ${
+                  q.grammar.importanceLabel
+                    ? `<span class="imp-pill imp-${q.grammar.importance}">${escapeHtml(q.grammar.importanceLabel)}</span>`
+                    : `<span class="verb-rank-pill">🎬 视频 #${q.grammar.videoOrder} (${escapeHtml(q.grammar.timestampLabel || "")})</span>`
+                }
               </div>
               <div class="jp-text" lang="ja" style="font-size:1.35rem;text-align:center;margin:0.35rem 0;">${formatRuby(q.promptJp)}</div>
               <div style="text-align:center;font-size:0.9rem;color:var(--accent-indigo);font-weight:700;margin-bottom:0.9rem;">
@@ -2295,8 +2706,12 @@
             <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VERBS.length ? Math.round((vDone / VERBS.length) * 100) : 0}%;background:#0284c7;"></div></div>
           </div>
           <div class="dash-metric">
-            <div class="dm-top"><span>📖 语法132</span><strong>${gDone} / ${GRAMMAR.length}</strong></div>
+            <div class="dm-top"><span>📖 语法${GRAMMAR.length}</span><strong>${gDone} / ${GRAMMAR.length}</strong></div>
             <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${GRAMMAR.length ? Math.round((gDone / GRAMMAR.length) * 100) : 0}%;background:#7c3aed;"></div></div>
+          </div>
+          <div class="dash-metric">
+            <div class="dm-top"><span>🎬 视频语法${VIDEO_GRAMMAR.length}</span><strong>${vgDone} / ${VIDEO_GRAMMAR.length}</strong></div>
+            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VIDEO_GRAMMAR.length ? Math.round((vgDone / VIDEO_GRAMMAR.length) * 100) : 0}%;background:#2563eb;"></div></div>
           </div>
           <div class="dash-metric">
             <div class="dm-top"><span>🗣️ 场景短语</span><strong>${pDone} / ${allPhrases.length}</strong></div>
@@ -2336,6 +2751,7 @@
     container.querySelectorAll("[data-srsdeck]").forEach((b) => {
       b.onclick = () => {
         pState.srsDeck = b.dataset.srsdeck;
+        if (pState.srsDeck === "video_grammar" && pState.srsJlpt === "N5") pState.srsJlpt = "all";
         pState.srsCurrentCard = null;
         pickNextSrsCard();
         renderPracticeView();
@@ -2462,6 +2878,14 @@
         if ((pState.quizKind === "listening" || pState.quizKind === "staff") && pState.quizQuestion) {
           setTimeout(() => speakJapanese(pState.quizQuestion.jp, 1.0, null, null, pState.quizQuestion.audioKey), 150);
         }
+      };
+    });
+    container.querySelectorAll("[data-qsrc]").forEach((b) => {
+      b.onclick = () => {
+        pState.quizSource = b.dataset.qsrc;
+        if (pState.quizSource === "video" && pState.quizLevel === "N5") pState.quizLevel = "all";
+        generateQuizQuestion();
+        renderPracticeView();
       };
     });
     container.querySelectorAll("[data-qlvl]").forEach((b) => {
