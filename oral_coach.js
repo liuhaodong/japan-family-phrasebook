@@ -3,10 +3,18 @@
 //   1. Built-in Zero-Config Local Engine: Corpus Kanji->Kana + Japanese Mora DP Alignment
 //      + Web Audio Live Waveform & VAD Pace + Sokuon/Long-Vowel/Voicing/Ending Coaching
 //      + Pitch Accent Mora Strip + Weakness Radar + Clickable Chunk Micro-Drill + Free-Talk
-//   2. Optional Gemini AI Audio Coach (BYOK, gemini-3.8-flash Interactions API over 16kHz WAV)
+//   2. Optional Gemini AI Audio Coach (BYOK, Gemini 4 Neon / Hydrogen / 3.8 Flash generateContent over 16kHz WAV)
 (function () {
   const GEMINI_KEY_STORAGE = "jp_phrasebook_gemini_key_v1";
   const GEMINI_ENABLED_STORAGE = "jp_phrasebook_gemini_enabled_v1";
+  const GEMINI_MODEL_STORAGE = "jp_phrasebook_gemini_model_v1";
+  const DEFAULT_GEMINI_MODEL = "gemini-4-neon";
+  const GEMINI_MODEL_OPTIONS = [
+    { id: "gemini-4-neon", label: "Gemini 4 Neon（推荐 · 高精度音调分析）" },
+    { id: "gemini-4-hydrogen", label: "Gemini 4 Hydrogen（深度口语解析）" },
+    { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash（快速轻量）" },
+    { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview（兼容备选）" }
+  ];
   const MANUAL_STOP_STORAGE = "jp_phrasebook_oral_manual_stop_v1";
   const MUTE_CHIME_STORAGE = "jp_phrasebook_oral_mute_chime_v1";
   const PITCH_GUIDE_STORAGE = "jp_phrasebook_oral_pitch_guide_v1";
@@ -1590,6 +1598,17 @@
     return (localStorage.getItem(GEMINI_KEY_STORAGE) || "").trim();
   }
 
+  function getGeminiModel() {
+    const saved = (localStorage.getItem(GEMINI_MODEL_STORAGE) || "").trim();
+    if (saved && GEMINI_MODEL_OPTIONS.some((m) => m.id === saved)) return saved;
+    return DEFAULT_GEMINI_MODEL;
+  }
+
+  function getGeminiModelLabel(modelId = getGeminiModel()) {
+    const found = GEMINI_MODEL_OPTIONS.find((m) => m.id === modelId);
+    return found ? found.label.split("（")[0] : modelId;
+  }
+
   function isGeminiEnabled() {
     return localStorage.getItem(GEMINI_ENABLED_STORAGE) === "1" && !!getGeminiKey();
   }
@@ -2766,9 +2785,87 @@
     a.recordStudyActivity(1);
   }
 
+  async function callGeminiGenerateContentJson({ apiKey, model, prompt, base64, mimeType, responseSchema }) {
+    const fallbackChain = Array.from(
+      new Set([model || DEFAULT_GEMINI_MODEL, "gemini-4-neon", "gemini-3.8-flash", "gemini-3-flash-preview", "gemini-flash-latest"])
+    );
+    const parts = [{ text: prompt }];
+    if (base64 && mimeType) {
+      parts.push({ inline_data: { mime_type: mimeType, data: base64 } });
+    }
+
+    let lastErr = null;
+    for (let i = 0; i < fallbackChain.length; i++) {
+      const mId = fallbackChain[i];
+      const useLowThinking = mId.startsWith("gemini-4-") || mId.startsWith("gemini-3");
+      const genCfg = {
+        responseMimeType: "application/json",
+        responseSchema
+      };
+      if (useLowThinking) {
+        genCfg.thinkingConfig = { thinkingLevel: "LOW" };
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(mId)}:generateContent`;
+      let resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "x-goog-api-key": apiKey,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts }],
+          generationConfig: genCfg
+        })
+      });
+
+      // Retry without thinkingConfig if a model rejects thinkingLevel
+      if (resp.status === 400 && genCfg.thinkingConfig) {
+        const errPreview = await resp.text().catch(() => "");
+        if (/thinking/i.test(errPreview)) {
+          delete genCfg.thinkingConfig;
+          resp = await fetch(url, {
+            method: "POST",
+            headers: {
+              "x-goog-api-key": apiKey,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts }],
+              generationConfig: genCfg
+            })
+          });
+        } else {
+          lastErr = new Error(`HTTP 400 (${mId}): ${errPreview.slice(0, 140)}`);
+          throw lastErr;
+        }
+      }
+
+      if (resp.status === 404 && i < fallbackChain.length - 1) {
+        lastErr = new Error(`模型 ${mId} 暂不可用 (404)`);
+        continue;
+      }
+
+      if (!resp.ok) {
+        const errTxt = await resp.text().catch(() => "");
+        throw new Error(`HTTP ${resp.status} (${mId}): ${errTxt.slice(0, 140)}`);
+      }
+
+      const resJson = await resp.json();
+      const candParts = (resJson.candidates && resJson.candidates[0] && resJson.candidates[0].content && resJson.candidates[0].content.parts) || [];
+      const textPart = candParts.find((p) => p && typeof p.text === "string" && !p.thought) || candParts.find((p) => p && typeof p.text === "string");
+      let rawText = (textPart && textPart.text) || "";
+      rawText = rawText.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+      if (!rawText) throw new Error(`模型 ${mId} 未返回有效文本`);
+      return { data: JSON.parse(rawText), usedModel: mId };
+    }
+    throw lastErr || new Error("未找到可用的 Gemini 模型");
+  }
+
   async function runGeminiAudioCoach(item, blob) {
     const apiKey = getGeminiKey();
     if (!apiKey || !blob) return;
+    const selectedModel = getGeminiModel();
     coachState.aiLoading = true;
     coachState.aiError = "";
     coachState.aiResult = null;
@@ -2786,64 +2883,41 @@
         "3) 元音口型、清浊音、促音「っ」与长音拍数等发音细节。"
       ].join("\n");
 
-      const body = {
-        model: "gemini-3.8-flash",
-        input: [
-          { type: "text", text: prompt },
-          { type: "audio", data: base64, mime_type: mimeType }
-        ],
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema: {
-            type: "object",
-            properties: {
-              heardJp: { type: "string", description: "你在录音中实际听到的日语内容" },
-              pitchScore: { type: "integer", description: "高低音调自然度 0-100" },
-              naturalnessScore: { type: "integer", description: "口型送气与整体自然度 0-100" },
-              overallCoachScore: { type: "integer", description: "综合 AI 评分 0-100" },
-              pitchNotes: { type: "string", description: "高低音调调型对比建议（指出哪个词调高/降调与疑问升调应怎么走）" },
-              politenessNotes: { type: "string", description: "日本真实场景下的礼貌体(です/ます)与表达得体度建议" },
-              articulationTips: { type: "string", description: "具体的舌位、口型、送气或促音长音改进方法" },
-              praise: { type: "string", description: "做得好的亮点鼓励" },
-              nextDrillFocus: { type: "string", description: "下一遍最值得专注修正的1个小点" }
-            },
-            required: [
-              "heardJp",
-              "pitchScore",
-              "naturalnessScore",
-              "overallCoachScore",
-              "pitchNotes",
-              "politenessNotes",
-              "articulationTips",
-              "praise",
-              "nextDrillFocus"
-            ]
-          }
-        }
+      const responseSchema = {
+        type: "OBJECT",
+        properties: {
+          heardJp: { type: "STRING", description: "你在录音中实际听到的日语内容" },
+          pitchScore: { type: "INTEGER", description: "高低音调自然度 0-100" },
+          naturalnessScore: { type: "INTEGER", description: "口型送气与整体自然度 0-100" },
+          overallCoachScore: { type: "INTEGER", description: "综合 AI 评分 0-100" },
+          pitchNotes: { type: "STRING", description: "高低音调调型对比建议（指出哪个词调高/降调与疑问升调应怎么走）" },
+          politenessNotes: { type: "STRING", description: "日本真实场景下的礼貌体(です/ます)与表达得体度建议" },
+          articulationTips: { type: "STRING", description: "具体的舌位、口型、送气或促音长音改进方法" },
+          praise: { type: "STRING", description: "做得好的亮点鼓励" },
+          nextDrillFocus: { type: "STRING", description: "下一遍最值得专注修正的1个小点" }
+        },
+        required: [
+          "heardJp",
+          "pitchScore",
+          "naturalnessScore",
+          "overallCoachScore",
+          "pitchNotes",
+          "politenessNotes",
+          "articulationTips",
+          "praise",
+          "nextDrillFocus"
+        ]
       };
 
-      const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": apiKey,
-          "Content-Type": "application/json",
-          "Api-Revision": "2026-05-20"
-        },
-        body: JSON.stringify(body)
+      const { data: parsedAi, usedModel } = await callGeminiGenerateContentJson({
+        apiKey,
+        model: selectedModel,
+        prompt,
+        base64,
+        mimeType,
+        responseSchema
       });
-
-      if (!resp.ok) {
-        const errTxt = await resp.text().catch(() => "");
-        throw new Error(`HTTP ${resp.status}: ${errTxt.slice(0, 140)}`);
-      }
-      const resJson = await resp.json();
-      let rawText = resJson.output_text || "";
-      if (!rawText && Array.isArray(resJson.outputs)) {
-        const textOut = resJson.outputs.find((o) => o && o.type === "text" && o.text);
-        if (textOut) rawText = textOut.text;
-      }
-      const parsedAi = JSON.parse(rawText);
+      parsedAi._model = usedModel;
       coachState.aiResult = parsedAi;
       coachState.aiLoading = false;
     } catch (err) {
@@ -3032,6 +3106,7 @@
   async function runGeminiFreeTalkCoach(question, blob, dlgContext = "") {
     const apiKey = getGeminiKey();
     if (!apiKey || !blob || !question) return;
+    const selectedModel = getGeminiModel();
     coachState.ftAiLoading = true;
     coachState.ftAiError = "";
     coachState.ftAiResult = null;
@@ -3047,51 +3122,29 @@
         "请聆听客人的语音回答，判断是否沟通成功，以日本店员身份自然回一句话，并给出简体中文礼貌得体度反馈与1句更地道的N4/N3自然表达。"
       ].filter(Boolean).join("\n");
 
-      const body = {
-        model: "gemini-3.8-flash",
-        input: [
-          { type: "text", text: prompt },
-          { type: "audio", data: base64, mime_type: mimeType }
-        ],
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema: {
-            type: "object",
-            properties: {
-              heardJp: { type: "string", description: "听到的学习者日语回答" },
-              understood: { type: "boolean", description: "日本人店员是否能听懂并完成沟通" },
-              staffReplyJp: { type: "string", description: "店员接着这句话的自然日语回应" },
-              staffReplyCn: { type: "string", description: "店员回应的中文翻译" },
-              politenessFeedback: { type: "string", description: "礼貌度与发音自然度反馈（简体中文）" },
-              betterN4N3Expression: { type: "string", description: "更地道的1句N4/N3替代说法（含中文解释）" }
-            },
-            required: ["heardJp", "understood", "staffReplyJp", "staffReplyCn", "politenessFeedback", "betterN4N3Expression"]
-          }
-        }
+      const responseSchema = {
+        type: "OBJECT",
+        properties: {
+          heardJp: { type: "STRING", description: "听到的学习者日语回答" },
+          understood: { type: "BOOLEAN", description: "日本人店员是否能听懂并完成沟通" },
+          staffReplyJp: { type: "STRING", description: "店员接着这句话的自然日语回应" },
+          staffReplyCn: { type: "STRING", description: "店员回应的中文翻译" },
+          politenessFeedback: { type: "STRING", description: "礼貌度与发音自然度反馈（简体中文）" },
+          betterN4N3Expression: { type: "STRING", description: "更地道的1句N4/N3替代说法（含中文解释）" }
+        },
+        required: ["heardJp", "understood", "staffReplyJp", "staffReplyCn", "politenessFeedback", "betterN4N3Expression"]
       };
 
-      const resp = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
-        method: "POST",
-        headers: {
-          "x-goog-api-key": apiKey,
-          "Content-Type": "application/json",
-          "Api-Revision": "2026-05-20"
-        },
-        body: JSON.stringify(body)
+      const { data: parsedFt, usedModel } = await callGeminiGenerateContentJson({
+        apiKey,
+        model: selectedModel,
+        prompt,
+        base64,
+        mimeType,
+        responseSchema
       });
-
-      if (!resp.ok) {
-        const errTxt = await resp.text().catch(() => "");
-        throw new Error(`HTTP ${resp.status}: ${errTxt.slice(0, 120)}`);
-      }
-      const resJson = await resp.json();
-      let rawText = resJson.output_text || "";
-      if (!rawText && Array.isArray(resJson.outputs)) {
-        const textOut = resJson.outputs.find((o) => o && o.type === "text" && o.text);
-        if (textOut) rawText = textOut.text;
-      }
-      coachState.ftAiResult = JSON.parse(rawText);
+      parsedFt._model = usedModel;
+      coachState.ftAiResult = parsedFt;
       coachState.ftAiLoading = false;
     } catch (err) {
       coachState.ftAiLoading = false;
@@ -3599,12 +3652,12 @@
 
     const aiCardHtml = isGeminiEnabled()
       ? coachState.aiLoading
-        ? `<div class="oc-ai-card"><div class="oc-ai-hdr">✨ Gemini 3.8 Flash 深度听音分析中...</div><div style="font-size:0.8rem;color:var(--text-secondary);">正在评估高低音调 (Pitch Accent)、礼貌得体度与元音口型，请稍候 1–2 秒。</div></div>`
+        ? `<div class="oc-ai-card"><div class="oc-ai-hdr">✨ ${a.escapeHtml(getGeminiModelLabel())} 深度听音分析中...</div><div style="font-size:0.8rem;color:var(--text-secondary);">正在评估高低音调 (Pitch Accent)、礼貌得体度与元音口型，请稍候数秒。</div></div>`
         : coachState.aiError
         ? `<div class="oc-ai-card oc-ai-err">${a.escapeHtml(coachState.aiError)}</div>`
         : coachState.aiResult
         ? `<div class="oc-ai-card">
-            <div class="oc-ai-hdr">✨ Gemini AI 私教深度点评 <strong>综合 ${coachState.aiResult.overallCoachScore} 分</strong></div>
+            <div class="oc-ai-hdr">✨ ${a.escapeHtml(getGeminiModelLabel(coachState.aiResult._model))} 私教深度点评 <strong>综合 ${coachState.aiResult.overallCoachScore} 分</strong></div>
             <div class="oc-ai-grid">
               <div><span>听写识别：</span><strong lang="ja">${a.escapeHtml(coachState.aiResult.heardJp)}</strong></div>
               <div><span>高低音调：</span><strong>${coachState.aiResult.pitchScore}/100</strong> · <span>自然度：</span><strong>${coachState.aiResult.naturalnessScore}/100</strong></div>
@@ -4201,17 +4254,22 @@
             ? `<div class="oc-ai-settings">
                 <div style="font-weight:800;font-size:0.86rem;margin-bottom:0.35rem;">✨ 可选：Gemini AI 深度听音私教（默认关闭，免配也可完整使用本地即时纠音）</div>
                 <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:0.55rem;">
-                  填入你自己的 Gemini API Key 后，每次跟读都会同步调用官方 <code>gemini-3.8-flash</code> 模型听音分析<strong>高低音调 (Pitch Accent)</strong>、<strong>礼貌体得体度</strong>与<strong>舌位口型自然度</strong>。<br/>
+                  填入你自己的 Gemini API Key 后，每次跟读都会同步调用官方 <code>${a.escapeHtml(getGeminiModel())}</code> 模型听音分析<strong>高低音调 (Pitch Accent)</strong>、<strong>礼貌体得体度</strong>与<strong>舌位口型自然度</strong>。<br/>
                   🔒 Key 仅保存在当前浏览器 <code>localStorage</code>，音频仅直连 Google 官方 API，不经过任何第三方服务器。
                 </div>
                 <div style="display:flex;gap:0.45rem;flex-wrap:wrap;align-items:center;">
-                  <input type="password" id="oc-gemini-key-input" class="tb-input" style="flex:1 1 200px;min-width:0;max-width:100%;" placeholder="粘贴你的 Gemini API Key (AIza...)" value="${a.escapeHtml(getGeminiKey())}" />
+                  <input type="password" id="oc-gemini-key-input" class="tb-input" style="flex:1 1 200px;min-width:0;max-width:100%;" placeholder="粘贴你的 Gemini API Key (AIza... 或 AQ....)" value="${a.escapeHtml(getGeminiKey())}" />
+                  <select id="oc-gemini-model-select" class="lf-select" style="flex:0 1 220px;max-width:100%;" aria-label="选择 Gemini 模型">
+                    ${GEMINI_MODEL_OPTIONS.map((m) => `<option value="${m.id}" ${getGeminiModel() === m.id ? "selected" : ""}>${a.escapeHtml(m.label)}</option>`).join("")}
+                  </select>
                   <label style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.8rem;font-weight:700;cursor:pointer;">
                     <input type="checkbox" id="oc-gemini-enabled-chk" ${localStorage.getItem(GEMINI_ENABLED_STORAGE) === "1" ? "checked" : ""} /> 启用 AI 私教
                   </label>
                   <button type="button" class="action-btn primary-audio" id="oc-gemini-save-btn">💾 保存</button>
+                  <button type="button" class="action-btn" id="oc-gemini-test-btn">🧪 测试连接</button>
                   <button type="button" class="action-btn" id="oc-gemini-clear-btn">清除</button>
                 </div>
+                <div id="oc-gemini-test-status" style="margin-top:0.4rem;font-size:0.78rem;color:var(--text-secondary);"></div>
               </div>`
             : ""
         }
@@ -4578,14 +4636,57 @@
     if (btnAiSave) {
       btnAiSave.onclick = () => {
         const keyInput = container.querySelector("#oc-gemini-key-input");
+        const modelSel = container.querySelector("#oc-gemini-model-select");
         const chk = container.querySelector("#oc-gemini-enabled-chk");
         const val = keyInput ? keyInput.value.trim() : "";
+        const mVal = modelSel ? modelSel.value : DEFAULT_GEMINI_MODEL;
         if (val) localStorage.setItem(GEMINI_KEY_STORAGE, val);
         else localStorage.removeItem(GEMINI_KEY_STORAGE);
+        localStorage.setItem(GEMINI_MODEL_STORAGE, mVal);
         localStorage.setItem(GEMINI_ENABLED_STORAGE, chk && chk.checked && val ? "1" : "0");
         coachState.showAiSettings = false;
-        a.showToast(val && chk && chk.checked ? "✨ Gemini AI 听音私教已就绪！" : "✅ 设置已保存");
+        a.showToast(val && chk && chk.checked ? `✨ ${getGeminiModelLabel(mVal)} 听音私教已就绪！` : "✅ 设置已保存");
         renderCurrentSurface();
+      };
+    }
+
+    const btnAiTest = container.querySelector("#oc-gemini-test-btn");
+    if (btnAiTest) {
+      btnAiTest.onclick = async () => {
+        const keyInput = container.querySelector("#oc-gemini-key-input");
+        const modelSel = container.querySelector("#oc-gemini-model-select");
+        const statusEl = container.querySelector("#oc-gemini-test-status");
+        const testKey = keyInput ? keyInput.value.trim() : getGeminiKey();
+        const testModel = modelSel ? modelSel.value : getGeminiModel();
+        if (!testKey) {
+          if (statusEl) statusEl.textContent = "⚠️ 请先粘贴 Gemini API Key";
+          return;
+        }
+        btnAiTest.disabled = true;
+        if (statusEl) statusEl.textContent = `⏳ 正在连接 ${getGeminiModelLabel(testModel)}...`;
+        try {
+          const { usedModel } = await callGeminiGenerateContentJson({
+            apiKey: testKey,
+            model: testModel,
+            prompt: "请返回JSON，ok为true，msg为'连接成功'。",
+            responseSchema: {
+              type: "OBJECT",
+              properties: { ok: { type: "BOOLEAN" }, msg: { type: "STRING" } },
+              required: ["ok", "msg"]
+            }
+          });
+          if (statusEl) {
+            statusEl.style.color = "var(--accent-emerald)";
+            statusEl.textContent = `✅ 连接成功！${getGeminiModelLabel(usedModel)} (${usedModel}) 工作正常，记得点击「💾 保存」。`;
+          }
+        } catch (err) {
+          if (statusEl) {
+            statusEl.style.color = "var(--accent-red)";
+            statusEl.textContent = `❌ 连接失败：${err.message || "请检查 API Key 或网络"}`;
+          }
+        } finally {
+          btnAiTest.disabled = false;
+        }
       };
     }
 
@@ -4594,6 +4695,7 @@
       btnAiClear.onclick = () => {
         localStorage.removeItem(GEMINI_KEY_STORAGE);
         localStorage.removeItem(GEMINI_ENABLED_STORAGE);
+        localStorage.removeItem(GEMINI_MODEL_STORAGE);
         coachState.aiResult = null;
         coachState.aiError = "";
         a.showToast("🗑️ 已清除本地 API Key");
