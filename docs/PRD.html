@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nihongo Sensei AI — High-Level PRD &amp; System Architecture</title>
+  <style>
+    :root {
+      --bg-page: #f8f6f2;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1ede6;
+      --bg-indigo-soft: #eef2f8;
+      --bg-emerald-soft: #eaf5f0;
+      --bg-amber-soft: #fef8e8;
+      --bg-rose-soft: #fdf2f0;
+      --text-primary: #1c222b;
+      --text-secondary: #4a5568;
+      --text-muted: #718096;
+      --indigo: #1b2c52;
+      --indigo-mid: #2c4780;
+      --vermilion: #c83e37;
+      --emerald: #059669;
+      --amber: #b45309;
+      --border: #e4dfd7;
+      --shadow-sm: 0 2px 8px rgba(27, 44, 82, 0.06);
+      --shadow-md: 0 10px 28px rgba(27, 44, 82, 0.09);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 18px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", "PingFang SC", "Microsoft YaHei", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    }
+
+    body.dark {
+      --bg-page: #11151d;
+      --bg-surface: #1a202c;
+      --bg-subtle: #232b3a;
+      --bg-indigo-soft: #1e293b;
+      --bg-emerald-soft: #132a23;
+      --bg-amber-soft: #2b2314;
+      --bg-rose-soft: #2f1b1d;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --indigo: #60a5fa;
+      --indigo-mid: #93c5fd;
+      --vermilion: #f87171;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --border: #2d3748;
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 15.5px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.68;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Top Header */
+    .prd-hero {
+      background: linear-gradient(135deg, #1b2c52 0%, #273e73 58%, #7a2e38 100%);
+      color: #ffffff;
+      padding: 2rem 1.5rem 1.75rem;
+      border-bottom: 3px solid #d4af37;
+    }
+
+    .prd-hero-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .prd-hero-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .prd-kicker {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fde68a;
+      margin-bottom: 0.35rem;
+    }
+
+    .prd-title {
+      font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+      font-weight: 900;
+      line-height: 1.22;
+      letter-spacing: -0.015em;
+    }
+
+    .prd-subtitle {
+      margin-top: 0.45rem;
+      font-size: 0.96rem;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 920px;
+    }
+
+    .hero-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-btn {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #ffffff;
+      padding: 0.45rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .hero-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .meta-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.05rem;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+      padding: 0.24rem 0.72rem;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #ffffff;
+    }
+
+    .meta-badge strong {
+      color: #fde68a;
+    }
+
+    /* Main Two-Column Layout */
+    .prd-shell {
+      max-width: 1320px;
+      margin: 1.5rem auto 4rem;
+      padding: 0 1.25rem;
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 1.65rem;
+      align-items: start;
+    }
+
+    /* Sticky TOC Sidebar */
+    .prd-toc {
+      position: sticky;
+      top: 1.1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1rem 1.1rem;
+      box-shadow: var(--shadow-sm);
+      max-height: calc(100vh - 2.2rem);
+      overflow-y: auto;
+    }
+
+    .toc-heading {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding-bottom: 0.55rem;
+      margin-bottom: 0.6rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .toc-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .toc-link {
+      display: block;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.38rem 0.55rem;
+      border-radius: 7px;
+      border-left: 3px solid transparent;
+      transition: all 0.14s ease;
+    }
+
+    .toc-link:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    .toc-link.active {
+      background: var(--bg-indigo-soft);
+      color: var(--indigo);
+      border-left-color: var(--vermilion);
+      font-weight: 800;
+    }
+
+    .toc-sub {
+      padding-left: 1.2rem;
+      font-size: 0.77rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    /* Main Content Sections */
+    .prd-main {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .prd-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.55rem 1.75rem;
+      box-shadow: var(--shadow-sm);
+      scroll-margin-top: 1.25rem;
+    }
+
+    .sec-header {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 2px solid var(--bg-subtle);
+    }
+
+    .sec-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: #1b2c52;
+      color: #ffffff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    body.dark .sec-num {
+      background: #2563eb;
+    }
+
+    .sec-title {
+      font-size: 1.28rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    h3 {
+      font-size: 1.03rem;
+      font-weight: 800;
+      color: var(--indigo);
+      margin: 1.25rem 0 0.55rem;
+    }
+
+    p {
+      margin-bottom: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    strong {
+      color: var(--text-primary);
+    }
+
+    ul, ol {
+      margin: 0.45rem 0 0.85rem 1.35rem;
+      color: var(--text-secondary);
+    }
+
+    li {
+      margin-bottom: 0.35rem;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.83em;
+      background: var(--bg-subtle);
+      color: var(--vermilion);
+      padding: 0.1rem 0.38rem;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+
+    pre {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.52;
+      background: #151b26;
+      color: #e2e8f0;
+      padding: 1rem 1.15rem;
+      border-radius: var(--radius-sm);
+      overflow-x: auto;
+      margin: 0.7rem 0 1rem;
+      border: 1px solid #2d3748;
+    }
+
+    /* Callouts */
+    .callout {
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      margin: 0.85rem 0;
+      border-left: 4px solid var(--indigo);
+      background: var(--bg-indigo-soft);
+      font-size: 0.9rem;
+    }
+
+    .callout.warn {
+      border-left-color: var(--vermilion);
+      background: var(--bg-rose-soft);
+    }
+
+    .callout.tip {
+      border-left-color: var(--emerald);
+      background: var(--bg-emerald-soft);
+    }
+
+    .callout.amber {
+      border-left-color: var(--amber);
+      background: var(--bg-amber-soft);
+    }
+
+    .callout-title {
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* Grid Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+      margin: 0.75rem 0;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.8rem;
+      margin: 0.85rem 0;
+    }
+
+    .card-box {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 0.95rem 1rem;
+    }
+
+    .card-box-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.35rem;
+    }
+
+    .card-box-sub {
+      font-size: 0.83rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .step-badge {
+      display: inline-block;
+      font-size: 0.71rem;
+      font-weight: 800;
+      padding: 0.14rem 0.5rem;
+      border-radius: 999px;
+      background: var(--bg-indigo-soft);
+      color: var(--indigo);
+      margin-bottom: 0.4rem;
+    }
+
+    /* Tables */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 0.75rem 0 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      font-weight: 800;
+      padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 0.12rem 0.48rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pill-green { background: #d1fae5; color: #065f46; }
+    .pill-blue { background: #dbeafe; color: #1d4ed8; }
+    .pill-red { background: #fee2e2; color: #b91c1c; }
+    .pill-amber { background: #fef3c7; color: #92400e; }
+
+    body.dark .pill-green { background: #064e3b; color: #6ee7b7; }
+    body.dark .pill-blue { background: #1e3a8a; color: #93c5fd; }
+    body.dark .pill-red { background: #7f1d1d; color: #fca5a5; }
+    body.dark .pill-amber { background: #78350f; color: #fde68a; }
+
+    /* SVG Diagram Containers */
+    .diagram-card {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      margin: 0.9rem 0 1.1rem;
+      overflow-x: auto;
+    }
+
+    .diagram-caption {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 0.45rem;
+    }
+
+    svg.arch-svg {
+      display: block;
+      width: 100%;
+      min-width: 720px;
+      height: auto;
+    }
+
+    /* Script Example Dialogue */
+    .script-sim {
+      background: var(--bg-page);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.15rem;
+      margin: 0.8rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+
+    .sim-turn {
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      font-size: 0.87rem;
+    }
+
+    .sim-who {
+      min-width: 96px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      padding: 0.18rem 0.5rem;
+      border-radius: 6px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .who-student { background: var(--bg-indigo-soft); color: var(--indigo); }
+    .who-mirror { background: var(--bg-amber-soft); color: var(--amber); }
+    .who-sensei { background: var(--bg-emerald-soft); color: var(--emerald); }
+
+    /* Phase Timeline */
+    .phase-card {
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--indigo);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.15rem;
+      margin-bottom: 0.85rem;
+      background: var(--bg-page);
+    }
+
+    .phase-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.45rem;
+    }
+
+    .phase-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 960px) {
+      .prd-shell {
+        grid-template-columns: 1fr;
+      }
+      .prd-toc {
+        position: static;
+        max-height: none;
+      }
+      .grid-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .prd-section {
+        padding: 1.1rem 1rem;
+      }
+      .grid-2, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+      .sim-turn {
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+    }
+
+    /* Print / Export to PDF */
+    @media print {
+      body {
+        background: #ffffff;
+        color: #111827;
+        font-size: 10.5pt;
+      }
+      .prd-toc, .hero-controls {
+        display: none !important;
+      }
+      .prd-shell {
+        display: block;
+        margin: 0.5rem auto;
+        padding: 0;
+      }
+      .prd-section {
+        box-shadow: none;
+        break-inside: avoid-page;
+        margin-bottom: 1rem;
+        border-color: #cbd5e1;
+      }
+      .prd-hero {
+        background: #1b2c52 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="prd-hero">
+    <div class="prd-hero-inner">
+      <div class="prd-hero-top">
+        <div>
+          <span class="prd-kicker">Product Requirements Document &amp; Technical Architecture</span>
+          <h1 class="prd-title">Nihongo Sensei AI — LanguaTalk-Style Japanese Voice Tutor</h1>
+          <p class="prd-subtitle">
+            将现有「日本家庭35晚长假日语手册」升级为支持<strong>实时语音通话、原声回放纠音、老师引导式造句操练、词典级点词查释义、FSRS 记忆本与分级故事复述</strong>的个人 AI 日语私教平台（Web / 手机 PWA / Desktop + FastAPI Cloud Run 后端）。
+          </p>
+        </div>
+        <div class="hero-controls">
+          <button type="button" class="hero-btn" id="btn-theme">🌙 夜间模式</button>
+          <button type="button" class="hero-btn" onclick="window.print()">🖨️ 导出 PDF / 打印</button>
+        </div>
+      </div>
+
+      <div class="meta-badges">
+        <span class="meta-badge"><strong>Version</strong> 1.0</span>
+        <span class="meta-badge"><strong>Date</strong> 2026-11-24</span>
+        <span class="meta-badge"><strong>Owner</strong> Haodong Liu</span>
+        <span class="meta-badge"><strong>Status</strong> Architecture Approved · Ready for Phase 1</span>
+        <span class="meta-badge"><strong>Stack</strong> FastAPI + Gemini Live/4-Argon/3.8-TTS + SudachiPy + Cloud Run</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="prd-shell">
+    <!-- Sticky Sidebar Table of Contents -->
+    <aside class="prd-toc" aria-label="PRD 目录">
+      <div class="toc-heading">📑 Document Outline</div>
+      <ul class="toc-list">
+        <li><a class="toc-link active" href="#sec-summary">1. 产品愿景与痛点突破</a></li>
+        <li><a class="toc-link" href="#sec-personas">2. 用户画像与现有资产复用</a></li>
+        <li><a class="toc-link" href="#sec-pedagogy">3. 核心教学法：大师级日语私教</a></li>
+        <li><a class="toc-link toc-sub" href="#sec-daily-arc">3.1 10分钟结构化私教课</a></li>
+        <li><a class="toc-link toc-sub" href="#sec-mirror-loop">3.2 纠音闭环 (Mirror Loop)</a></li>
+        <li><a class="toc-link toc-sub" href="#sec-muscles">3.3 五维语言肌肉训练</a></li>
+        <li><a class="toc-link" href="#sec-architecture">4. 系统架构与 Gemini 模型矩阵</a></li>
+        <li><a class="toc-link toc-sub" href="#sec-benchmarks">4.1 模型分工与实测基准</a></li>
+        <li><a class="toc-link toc-sub" href="#sec-mobile-web">4.2 移动端与桌面端兼容策略</a></li>
+        <li><a class="toc-link" href="#sec-api-data">5. 后端 API 契约与数据模型</a></li>
+        <li><a class="toc-link" href="#sec-roadmap">6. 分阶段开发路线与验收标准</a></li>
+        <li><a class="toc-link" href="#sec-nfr">7. 非功能指标、避坑清单与测试</a></li>
+      </ul>
+    </aside>
+
+    <!-- Main PRD Content -->
+    <main class="prd-main">
+
+      <!-- SECTION 1 -->
+      <section class="prd-section" id="sec-summary">
+        <div class="sec-header">
+          <span class="sec-num">1</span>
+          <h2 class="sec-title">产品愿景与痛点突破 (Executive Summary)</h2>
+        </div>
+        <p>
+          当前的静态网页应用（<code>index.html</code> + <code>oral_coach.js</code> + <code>learning.js</code>）已经具备丰富的旅行场景、Top 200 动词、N5–N3 语法与本地语音识别对齐。但由于受限于纯前端无后端的静态部署形态，目前的 AI 教练仍停留在<strong>「单轮录音 → 静态文字打分」</strong>阶段，与 <a href="https://languatalk.com/" target="_blank" rel="noopener">LanguaTalk (Langua AI)</a> 或真实真人日语外教相比，存在四大结构性差距：
+        </p>
+        <div class="grid-2">
+          <div class="card-box">
+            <div class="card-box-title">❌ 当前瓶颈（单轮文字反馈）</div>
+            <div class="card-box-sub">
+              <ul>
+                <li>老师不会「开口说话」，只能看文字点评，无法听见错误与正确发音的直观对比。</li>
+                <li>缺少连续引导：读错一个促音或助词后没有自动追问、拆词慢读、要求重读直到达标。</li>
+                <li>自由对话缺少双语救场、实时纠错与口头造句替换训练（パターンドリル）。</li>
+                <li>长文本无法点击任意单词查看假名/辞书形/音调并一键存入长期记忆。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="card-box" style="border-color: var(--emerald); background: var(--bg-emerald-soft);">
+            <div class="card-box-title">✅ 目标体验（Nihongo Sensei AI 私教平台）</div>
+            <div class="card-box-sub">
+              <ul>
+                <li><strong>会开口的中日双语真人私教：</strong>用自然亲切的中文讲解「为什么错」、用标准东京音示范正确读法，并播放你自己的录音作对比。</li>
+                <li><strong>零决策疲劳的 10 分钟私教课：</strong>老师主动带节奏（复习热身 → 句型替换 → 情景对话 → 故事复述）。</li>
+                <li><strong>LanguaTalk 级实时语音通话：</strong><code>&lt;600ms</code> 低延迟自然对话 + 随时插话打断（Barge-in）+ 异步后台逐句纠错。</li>
+                <li><strong>全平台与持久记忆：</strong>引入 FastAPI 后端（本地开发 / Google Cloud Run 部署），跨设备同步学习进度、易错习惯账本与 FSRS 闪卡。</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section class="prd-section" id="sec-personas">
+        <div class="sec-header">
+          <span class="sec-num">2</span>
+          <h2 class="sec-title">目标用户画像与现有语料资产复用</h2>
+        </div>
+        <p>
+          产品首先深度服务于 <strong>Haodong &amp; Sherry</strong>（中文母语、英语流利，目标是从 JLPT N5/N4 稳步跃升至 N3 日常流利对话，并实战覆盖带 Jinny 6.5岁、Jaycie 2.5岁赴日 35 晚旅行全场景）。系统直接复用仓库内已沉淀的高质量结构化语料作为私教的「专属教案库」：
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>现有数据文件</th>
+                <th>语料规模与特色</th>
+                <th>在 AI 私教中的新角色</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>data/modules_1_to_6.js</code><br/><code>modules_7_to_12.js</code><br/><code>modules_13_to_18.js</code></td>
+                <td>18 大真实家庭旅行场景、175 句核心句型 + 多轮分角色对话 + 对方常见回答预判</td>
+                <td>转化为 <strong>18 个实时语音 Roleplay 剧本</strong>（如银座山科包厢、轻井泽滑雪租赁、魔法保育园接送、福冈拉面、由布院旅馆），并作为敬语听力解码库。</td>
+              </tr>
+              <tr>
+                <td><code>data/verbs_top200.js</code></td>
+                <td>按使用频率排序的 Top 200+ 动词（11 种活用变形 + 400 句日常例句）</td>
+                <td>驱动 <strong>口头动词活用替换操练（パターンドリル）</strong>，强制在 1 秒内口头完成 <code>辞書形 → て形 / ない形 / たい形</code> 转换。</td>
+              </tr>
+              <tr>
+                <td><code>data/grammar_n5_n3.js</code><br/><code>data/video_grammar.js</code></td>
+                <td>N5–N3 核心语法 132 条 + Voylin 视频语法全集 160 条</td>
+                <td>作为 Sensei 每日微课（Micro-Teach）的知识点队列、错题归因依据与填空/口头造句考核标准。</td>
+              </tr>
+              <tr>
+                <td><code>data/learning_extras.js</code><br/><code>data/itinerary.js</code></td>
+                <td>高频形容词、量词时间、店员敬语解码、35 晚行程与家庭人物设定</td>
+                <td>注入系统提示词（System Context），让 AI 老师认识你的家庭成员与真实旅行背景，对话如老友般贴切。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section class="prd-section" id="sec-pedagogy">
+        <div class="sec-header">
+          <span class="sec-num">3</span>
+          <h2 class="sec-title">核心教学法设计：像顶级真人日语老师一样教学</h2>
+        </div>
+        <p>
+          顶级 1 对 1 日语老师与普通聊天机器人的本质区别在于：<strong>老师主导课堂节奏、拒绝无效夸奖（不会在你发音错误时盲目说「上手ですね！」）、逼出主动口语产出，并在错误发生时当场示范并陪你练到过关为止。</strong>
+        </p>
+
+        <h3 id="sec-daily-arc">3.1 零决策疲劳：10 分钟结构化每日私教课 (Guided Daily Lesson)</h3>
+        <div class="grid-4">
+          <div class="card-box">
+            <span class="step-badge">Stage 1 · 1–2 min</span>
+            <div class="card-box-title">🔁 记忆热身唤醒</div>
+            <div class="card-box-sub">
+              老师根据 <strong>Sensei's Notebook</strong> 自动抽查 2–3 个昨天卡壳的句子或今日到期的 FSRS 词汇，通过中文提问逼你开口回忆日语表达，答对立即进入新课。
+            </div>
+          </div>
+          <div class="card-box">
+            <span class="step-badge">Stage 2 · 3 min</span>
+            <div class="card-box-title">⚡ 微讲解 + 替换操练</div>
+            <div class="card-box-sub">
+              双语讲解 1 个今日语法点（如 <code>〜ていただけますか</code>），先跟读过关，随后进行<strong>口头槽位替换（パターンドリル）</strong>：不看屏幕，现场把「拍照」换成「放行李」并变形说出。
+            </div>
+          </div>
+          <div class="card-box">
+            <span class="step-badge">Stage 3 · 4 min</span>
+            <div class="card-box-title">🎭 实战情景 + 敬语抗压</div>
+            <div class="card-box-sub">
+              老师切入真实日本店员/朋友角色（使用地道高速口语与敬语），中途加入突发小状况；卡壳时允许说中文/英文触发<strong>双语安全网</strong>，学会后再继续演练。
+            </div>
+          </div>
+          <div class="card-box">
+            <span class="step-badge">Stage 4 · 1–2 min</span>
+            <div class="card-box-title">🎧 复盘与故事巩固</div>
+            <div class="card-box-sub">
+              老师口头总结今日 1 个发音习惯与 1 个高频收获；课后一键生成包含今日生词的 90 秒多角色分级音频故事，支持「听完用日语复述给老师听」。
+            </div>
+          </div>
+        </div>
+
+        <h3 id="sec-mirror-loop">3.2 「原声对比 → 拆解纠因 → 标准示范 → 练到过关」闭环 (Audio Mirror Loop)</h3>
+        <p>
+          实时语音模型（<code>gemini-3.8-live</code>）自身为了对话流畅往往过于宽容，且 AI 难以用嘴巴精确模仿你的错误腔调。本系统通过后端音频缓存实现比真人更精准的<strong>「声学镜子（Audio Mirror）」</strong>机制：
+        </p>
+
+        <div class="diagram-card">
+          <svg class="arch-svg" viewBox="0 0 920 265" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Repeat-Until-Good Coaching Loop Diagram">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+              </marker>
+              <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#c83e37" />
+              </marker>
+              <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669" />
+              </marker>
+            </defs>
+
+            <!-- Node 1 -->
+            <rect x="18" y="34" width="165" height="72" rx="12" fill="#eef2f8" stroke="#1b2c52" stroke-width="2" />
+            <text x="100" y="62" text-anchor="middle" font-size="13" font-weight="800" fill="#1b2c52">1. 老师讲解示范</text>
+            <text x="100" y="83" text-anchor="middle" font-size="11" fill="#475569">gemini-3.8-flash-lite-tts</text>
+            <text x="100" y="98" text-anchor="middle" font-size="10.5" fill="#475569">标准东京音朗读目标句</text>
+
+            <!-- Arrow 1->2 -->
+            <line x1="183" y1="70" x2="225" y2="70" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
+
+            <!-- Node 2 -->
+            <rect x="228" y="34" width="165" height="72" rx="12" fill="#ffffff" stroke="#2563eb" stroke-width="2" />
+            <text x="310" y="62" text-anchor="middle" font-size="13" font-weight="800" fill="#1d4ed8">2. 学生跟读录音</text>
+            <text x="310" y="83" text-anchor="middle" font-size="11" fill="#475569">16kHz PCM 实时采集</text>
+            <text x="310" y="98" text-anchor="middle" font-size="10.5" fill="#475569">保留本轮 WAV 切片用于回放</text>
+
+            <!-- Arrow 2->3 -->
+            <line x1="393" y1="70" x2="435" y2="70" stroke="#475569" stroke-width="2" marker-end="url(#arrow)" />
+
+            <!-- Node 3 -->
+            <rect x="438" y="34" width="175" height="72" rx="12" fill="#fef8e8" stroke="#b45309" stroke-width="2" />
+            <text x="525" y="62" text-anchor="middle" font-size="13" font-weight="800" fill="#92400e">3. 严格听音裁判</text>
+            <text x="525" y="83" text-anchor="middle" font-size="11" fill="#78350f">gemini-4-argon (6.7s)</text>
+            <text x="525" y="98" text-anchor="middle" font-size="10.5" fill="#78350f">音调/促音/长音/助词/礼貌度</text>
+
+            <!-- Pass Branch (Top Right) -->
+            <line x1="613" y1="70" x2="695" y2="70" stroke="#059669" stroke-width="2.2" marker-end="url(#arrow-green)" />
+            <text x="654" y="61" text-anchor="middle" font-size="11" font-weight="800" fill="#059669">达标 (≥88)</text>
+
+            <rect x="698" y="34" width="202" height="72" rx="12" fill="#eaf5f0" stroke="#059669" stroke-width="2" />
+            <text x="799" y="60" text-anchor="middle" font-size="13" font-weight="800" fill="#065f46">✅ 精准表扬 &amp; 推进</text>
+            <text x="799" y="80" text-anchor="middle" font-size="11" fill="#047857">指出具体亮点并进入下一轮</text>
+            <text x="799" y="96" text-anchor="middle" font-size="10.5" fill="#047857">（或升级为口头替换操练）</text>
+
+            <!-- Retry Branch (Down) -->
+            <line x1="525" y1="106" x2="525" y2="150" stroke="#c83e37" stroke-width="2.2" marker-end="url(#arrow-red)" />
+            <text x="598" y="133" text-anchor="middle" font-size="11" font-weight="800" fill="#c83e37">存在具体瑕疵 (最多循环3-4次)</text>
+
+            <!-- Node 4 (Mirror & Coach) -->
+            <rect x="228" y="154" width="468" height="90" rx="12" fill="#fdf2f0" stroke="#c83e37" stroke-width="2" />
+            <text x="462" y="179" text-anchor="middle" font-size="13.5" font-weight="800" fill="#991b1b">4. 声学镜子对比 + 双语语音拆解 (Audio Mirror)</text>
+            <text x="462" y="200" text-anchor="middle" font-size="11.5" fill="#475569">① 回放你刚才自己的原声切片：「先听听你刚才读的——[User WAV]」</text>
+            <text x="462" y="218" text-anchor="middle" font-size="11.5" fill="#475569">② 老师语音解释原因 + 慢速示范正确短语块：「应该在 か 后面降调：ちか＼く」</text>
+            <text x="462" y="236" text-anchor="middle" font-size="11" font-weight="700" fill="#c83e37">③ 自动重开麦克风：「来，把出错的这一小块单独跟我读一遍！」</text>
+
+            <!-- Loop Back Arrow 4 -> 2 -->
+            <path d="M 228 199 L 155 199 L 155 130 L 310 130 L 310 109" fill="none" stroke="#c83e37" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#arrow-red)" />
+            <text x="115" y="166" text-anchor="middle" font-size="10.5" font-weight="800" fill="#c83e37">自动重录复检</text>
+          </svg>
+          <div class="diagram-caption">图 1：Audio Mirror + Repeat-Until-Good 闭环（仅在局部词块真听出提升后才放行下一句）</div>
+        </div>
+
+        <div class="script-sim">
+          <div style="font-size:0.8rem;font-weight:800;color:var(--indigo);margin-bottom:0.2rem;">🎙️ 实战课堂音频脚本示例（酒店行李寄存场景）：</div>
+          <div class="sim-turn">
+            <span class="sim-who who-student">学生试读 #1</span>
+            <div>「すみません、大きいスーツケースを預けたいです」（语调偏平，且「預けたいです」略显生硬）</div>
+          </div>
+          <div class="sim-turn">
+            <span class="sim-who who-mirror">🔊 声学回放</span>
+            <div>老师先说：「先听一下你刚才后半句的录音——」→ <strong>播放学生自己刚才录下的 1.8 秒切片</strong></div>
+          </div>
+          <div class="sim-turn">
+            <span class="sim-who who-sensei">老师双语纠偏</span>
+            <div>「听出来了吗？有两个小地方可以更好：①『預けたい』重音在 た 前，要在『た＼い』往下降：あずけた＼い；② 对酒店前台提请求，句尾加上『〜のですが』会礼貌柔和很多：預けたいのですが。来，先把『預けたいのですが』慢速跟我读一遍！」</div>
+          </div>
+          <div class="sim-turn">
+            <span class="sim-who who-student">学生跟读 #2</span>
+            <div>「預けたいのですが」（麦克风自动重开，<code>gemini-4-argon</code> 专项复检音调与句尾柔和度）</div>
+          </div>
+          <div class="sim-turn">
+            <span class="sim-who who-sensei">老师验收过关</span>
+            <div>「太棒了！这次『た＼い』的降调和委婉语气非常地道！那现在挑战一下完整句，顺便把箱子换成『婴儿车（ベビーカー）』试试看怎么说？」</div>
+          </div>
+        </div>
+
+        <h3 id="sec-muscles">3.3 五维语言肌肉协同训练体系 (Beyond Pronunciation)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>训练维度</th>
+                <th>教学互动方式</th>
+                <th>核心练习内容与目标</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. 发音与东京音调</strong></td>
+                <td>Audio Mirror 对比 + 局部词块微操练</td>
+                <td>高低音调（平板型/中高型/头高型）、促音 <code>っ</code> 停顿、长音两拍时长、清浊音、<code>ら/つ/ん</code> 舌位。</td>
+              </tr>
+              <tr>
+                <td><strong>2. 口头反射变形</strong></td>
+                <td>口头槽位替换操练（パターンドリル）</td>
+                <td>不看文字选择题，听老师提示在 1 秒内口头完成 <code>ます / て / た / ない / たい / ば</code> 动词变形与助词切换。</td>
+              </tr>
+              <tr>
+                <td><strong>3. 语法与敬语分寸</strong></td>
+                <td>Flow 静默气泡 vs Tutor 口头打断纠错</td>
+                <td>区分 <code>は/が</code>、<code>に/で</code>、<code>から/ので</code>、以及面向家人（タメ口）vs 店员/保育园（丁寧語/謙譲語）的得体切换。</td>
+              </tr>
+              <tr>
+                <td><strong>4. 真实听力抗压</strong></td>
+                <td>店员真语速敬语解码 + 听不清救场训练</td>
+                <td>训练听懂日本高频店员词（<code>お召し上がり・温めますか・お預かり</code>），并习惯脱口而出「もう少しゆっくりお願いします」。</td>
+              </tr>
+              <tr>
+                <td><strong>5. 叙事与开放表达</strong></td>
+                <td>自由对话 + 分级故事听后复述（Retell）</td>
+                <td>听完 60–90 秒包含自己生词的日语故事后，用自己的话向老师复述梗概，培养 <code>〜てから / 〜おかげで / 〜のに</code> 长句串联力。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section class="prd-section" id="sec-architecture">
+        <div class="sec-header">
+          <span class="sec-num">4</span>
+          <h2 class="sec-title">系统架构与实测 Gemini 模型矩阵</h2>
+        </div>
+        <p>
+          打造 LanguaTalk 级通话体验的最大技术陷阱，是让<strong>同一个模型在同一次请求里既保持实时角色扮演、又输出结构化纠错 JSON</strong>——这会导致每轮对话冷场 8–15 秒，彻底破坏沉浸感。本架构采用<strong>双轨并行（Dual-Track）FastAPI 后端中继架构</strong>：
+        </p>
+
+        <div class="diagram-card">
+          <svg class="arch-svg" viewBox="0 0 940 410" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Dual-Track Voice Tutor System Architecture">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569" />
+              </marker>
+              <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
+              </marker>
+              <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 1 L 10 5 L 0 9 z" fill="#7c3aed" />
+              </marker>
+            </defs>
+
+            <!-- Client Box -->
+            <rect x="16" y="24" width="235" height="360" rx="14" fill="#eef2f8" stroke="#1b2c52" stroke-width="2" />
+            <text x="133" y="48" text-anchor="middle" font-size="13.5" font-weight="800" fill="#1b2c52">Client App (Web / iOS PWA / Tauri)</text>
+
+            <rect x="34" y="66" width="199" height="58" rx="9" fill="#ffffff" stroke="#2563eb" stroke-width="1.6" />
+            <text x="133" y="90" text-anchor="middle" font-size="12" font-weight="800" fill="#1d4ed8">🎙️ AudioWorklet Capture</text>
+            <text x="133" y="109" text-anchor="middle" font-size="10.5" fill="#475569">16kHz PCM + 浏览器/原生 AEC</text>
+
+            <rect x="34" y="138" width="199" height="58" rx="9" fill="#ffffff" stroke="#059669" stroke-width="1.6" />
+            <text x="133" y="162" text-anchor="middle" font-size="12" font-weight="800" fill="#065f46">🔊 24kHz PCM Ring Buffer</text>
+            <text x="133" y="181" text-anchor="middle" font-size="10.5" fill="#475569">零卡顿播放 + &lt;10ms 插话清空</text>
+
+            <rect x="34" y="210" width="199" height="72" rx="9" fill="#ffffff" stroke="#7c3aed" stroke-width="1.6" />
+            <text x="133" y="233" text-anchor="middle" font-size="12" font-weight="800" fill="#5b21b6">💬 Live Transcript &amp; Mirror</text>
+            <text x="133" y="251" text-anchor="middle" font-size="10.5" fill="#475569">可点击假名分词弹窗 · 纠错气泡</text>
+            <text x="133" y="268" text-anchor="middle" font-size="10.5" fill="#475569">自录切片 vs 老师发音一键对比</text>
+
+            <rect x="34" y="296" width="199" height="70" rx="9" fill="#ffffff" stroke="#b45309" stroke-width="1.6" />
+            <text x="133" y="319" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">📚 Curriculum &amp; FSRS Cache</text>
+            <text x="133" y="337" text-anchor="middle" font-size="10.5" fill="#475569">复用 18 场景 / 200动词 / N5–N3</text>
+            <text x="133" y="354" text-anchor="middle" font-size="10.5" fill="#475569">离线旅行手册与地图保留可用</text>
+
+            <!-- Backend Box -->
+            <rect x="320" y="24" width="315" height="360" rx="14" fill="#ffffff" stroke="#1b2c52" stroke-width="2" />
+            <text x="477" y="48" text-anchor="middle" font-size="13.5" font-weight="800" fill="#1b2c52">FastAPI Backend (Local / Cloud Run)</text>
+
+            <rect x="340" y="66" width="275" height="62" rx="9" fill="#eef2f8" stroke="#2563eb" stroke-width="1.8" />
+            <text x="477" y="88" text-anchor="middle" font-size="12" font-weight="800" fill="#1d4ed8">Track 1: WS /ws/live 双向中继</text>
+            <text x="477" y="106" text-anchor="middle" font-size="10.5" fill="#334155">透传实时音频流 + 内存缓存本轮用户 PCM</text>
+            <text x="477" y="121" text-anchor="middle" font-size="10" fill="#475569">彻底隔离 GEMINI_API_KEY，无需手机二次上传</text>
+
+            <rect x="340" y="142" width="275" height="58" rx="9" fill="#fef8e8" stroke="#b45309" stroke-width="1.6" />
+            <text x="477" y="164" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">Track 2: 异步旁路私教 &amp; 课堂状态机</text>
+            <text x="477" y="183" text-anchor="middle" font-size="10.5" fill="#78350f">/api/sensei/turn + 挂断后战报生成</text>
+
+            <rect x="340" y="212" width="132" height="58" rx="9" fill="#eaf5f0" stroke="#059669" stroke-width="1.5" />
+            <text x="406" y="234" text-anchor="middle" font-size="11.5" font-weight="800" fill="#065f46">🔊 /api/tts</text>
+            <text x="406" y="253" text-anchor="middle" font-size="10" fill="#047857">SHA-256 音频缓存</text>
+
+            <rect x="483" y="212" width="132" height="58" rx="9" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="549" y="234" text-anchor="middle" font-size="11.5" font-weight="800" fill="#5b21b6">🔤 /api/dict</text>
+            <text x="549" y="253" text-anchor="middle" font-size="10" fill="#6d28d9">SudachiPy + JMdict</text>
+
+            <rect x="340" y="284" width="275" height="82" rx="9" fill="#f8fafc" stroke="#475569" stroke-width="1.6" />
+            <text x="477" y="306" text-anchor="middle" font-size="12" font-weight="800" fill="#1e293b">🗄️ 持久化记忆库 (SQLite → Postgres)</text>
+            <text x="477" y="325" text-anchor="middle" font-size="10.5" fill="#475569">sessions · turns · vocab_cards (py-fsrs)</text>
+            <text x="477" y="343" text-anchor="middle" font-size="10.5" fill="#475569">weakness_memory (促音/助词习惯自动带入下节课)</text>
+
+            <!-- Google Gemini Box -->
+            <rect x="700" y="24" width="224" height="360" rx="14" fill="#1b2c52" stroke="#d4af37" stroke-width="2" />
+            <text x="812" y="48" text-anchor="middle" font-size="13.5" font-weight="800" fill="#fde68a">Google Gemini APIs</text>
+
+            <rect x="716" y="66" width="192" height="66" rx="9" fill="#243b6b" stroke="#60a5fa" stroke-width="1.5" />
+            <text x="812" y="88" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">gemini-3.8-live</text>
+            <text x="812" y="106" text-anchor="middle" font-size="10.5" fill="#cbd5e1">Live Bidi Audio (&lt;600ms)</text>
+            <text x="812" y="121" text-anchor="middle" font-size="10" fill="#93c5fd">VAD · Barge-in · 双语救场</text>
+
+            <rect x="716" y="146" width="192" height="66" rx="9" fill="#243b6b" stroke="#fbbf24" stroke-width="1.5" />
+            <text x="812" y="168" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">gemini-4-argon</text>
+            <text x="812" y="186" text-anchor="middle" font-size="10.5" fill="#cbd5e1">严格听音裁判 (6.76s)</text>
+            <text x="812" y="201" text-anchor="middle" font-size="10" fill="#fde68a">音调型番号 + 语法礼貌纠正</text>
+
+            <rect x="716" y="226" width="192" height="66" rx="9" fill="#243b6b" stroke="#34d399" stroke-width="1.5" />
+            <text x="812" y="248" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">gemini-3.8-flash-tts</text>
+            <text x="812" y="266" text-anchor="middle" font-size="10.5" fill="#cbd5e1">lite-tts (3.11s) / 多角色故事</text>
+            <text x="812" y="281" text-anchor="middle" font-size="10" fill="#6ee7b7">自然中日双语老师语音</text>
+
+            <rect x="716" y="306" width="192" height="62" rx="9" fill="#243b6b" stroke="#c084fc" stroke-width="1.5" />
+            <text x="812" y="328" text-anchor="middle" font-size="12" font-weight="800" fill="#ffffff">gemini-4-neon</text>
+            <text x="812" y="347" text-anchor="middle" font-size="10.5" fill="#cbd5e1">课后战报 + 分级故事编剧</text>
+
+            <!-- Connectors -->
+            <line x1="251" y1="97" x2="338" y2="97" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arr-blue)" marker-start="url(#arr-blue)" />
+            <text x="294" y="88" text-anchor="middle" font-size="10" font-weight="800" fill="#1d4ed8">单条 WSS</text>
+
+            <line x1="251" y1="246" x2="338" y2="246" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arr-purple)" marker-start="url(#arr-purple)" />
+            <text x="294" y="238" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">REST + Push</text>
+
+            <line x1="615" y1="97" x2="714" y2="97" stroke="#2563eb" stroke-width="2.2" marker-end="url(#arr-blue)" marker-start="url(#arr-blue)" />
+            <text x="664" y="88" text-anchor="middle" font-size="10" font-weight="800" fill="#1d4ed8">Bidi WSS</text>
+
+            <line x1="615" y1="175" x2="714" y2="175" stroke="#b45309" stroke-width="1.8" marker-end="url(#arr)" />
+            <line x1="615" y1="255" x2="714" y2="255" stroke="#059669" stroke-width="1.8" marker-end="url(#arr)" />
+            <line x1="615" y1="335" x2="714" y2="335" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arr)" />
+          </svg>
+          <div class="diagram-caption">图 2：FastAPI 双轨中继架构 — Track 1 保障通话零延迟，Track 2 异步深度分析 + 词典/SRS/TTS 闭环</div>
+        </div>
+
+        <h3 id="sec-benchmarks">4.1 模型分工与实测基准 (2026-11-24 API Key 实测)</h3>
+        <p>以下延迟与效果均已在真实日语录音（<code>audio/m1-s1-1.mp3</code> 及双语教师指令）上实测验证：</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>系统角色</th>
+                <th>首选模型</th>
+                <th>备选 / 降级模型</th>
+                <th>实测指标与选择依据</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Track 1 实时通话伙伴</strong></td>
+                <td><code>gemini-3.8-live</code></td>
+                <td><code>gemini-3.1-flash-live-preview</code></td>
+                <td>支持 <code>bidiGenerateContent</code>（131k 上下文），原生 VAD 与打断。<span class="pill pill-amber">注：勿选 extended-thinking</span> 以免增加说话停顿。</td>
+              </tr>
+              <tr>
+                <td><strong>Track 2 严格听音裁判 &amp; 操练评估</strong></td>
+                <td><code>gemini-4-argon</code><br/><small>(<code>thinkingLevel: LOW</code>)</small></td>
+                <td><code>gemini-4-carbon</code><br/><code>gemini-3.8-flash</code></td>
+                <td>实测 <strong>6.76s</strong> 返回（比 Neon 快 2 倍），准确识别东京音调番号（如 <code>アメリカ 平板型0</code>、<code>サンフランシスコ 中高型5</code>），评分 <strong>97</strong>。</td>
+              </tr>
+              <tr>
+                <td><strong>双语私教口语合成 (快速反馈)</strong></td>
+                <td><code>gemini-3.8-flash-lite-tts</code></td>
+                <td><code>gemini-3.8-flash-tts</code></td>
+                <td>实测 <strong>3.11s</strong> 生成自然中文讲解 + 地道东京音日语混读 <code>audio/wav</code>，极大缩短「听错误解释」等待时间。</td>
+              </tr>
+              <tr>
+                <td><strong>分级音频故事 &amp; 多角色播客</strong></td>
+                <td><code>gemini-3.8-flash-tts</code></td>
+                <td><code>gemini-2.5-pro-preview-tts</code></td>
+                <td>实测 <strong>3.72s</strong>，擅长长段落情感起伏与双人对话表现；配合 SHA-256 磁盘缓存实现二次秒开。</td>
+              </tr>
+              <tr>
+                <td><strong>课后深度战报 &amp; 故事编剧</strong></td>
+                <td><code>gemini-4-neon</code></td>
+                <td><code>gemini-4-hydrogen</code></td>
+                <td>挂断后异步运行（13.5s–14.5s），具备强推理能力汇总跨轮次顽固语法习惯并创作自然分级日语故事。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="sec-mobile-web">4.2 移动端、Web PWA 与未来桌面/原生 App 兼容策略</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>运行端形态</th>
+                <th>实时通话与回音消除</th>
+                <th>步行熄屏通话</th>
+                <th>适配要点（前端同一套代码复用）</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Desktop Web</strong><br/>(Chrome / Edge / Safari)</td>
+                <td><span class="pill pill-green">全双工 + Barge-in</span></td>
+                <td>常亮可用</td>
+                <td><code>AudioWorklet</code> + 浏览器原生 <code>echoCancellation: true</code> 表现稳定。</td>
+              </tr>
+              <tr>
+                <td><strong>Mobile Web / iOS PWA</strong><br/>(iPhone Safari / Android)</td>
+                <td><span class="pill pill-blue">双模式自适应</span></td>
+                <td><span class="pill pill-amber">熄屏 ~30s 暂停</span></td>
+                <td>
+                  1) 在「📞 开始通话」点击事件中同步解锁 <code>AudioContext</code>；<br/>
+                  2) 提供 <code>🎧 耳机全双工 (AirPods)</code> 与 <code>📢 外放防回音</code>（AI 说话时暂闭麦 + 点击插话）一键切换。
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Phase 4 原生外壳</strong><br/>(Capacitor iOS + Tauri 桌面)</td>
+                <td><span class="pill pill-green">硬件级通话 AEC</span></td>
+                <td><span class="pill pill-green">后台常驻通话</span></td>
+                <td>iOS 启用 <code>AVAudioSession</code> (<code>.playAndRecord</code> + <code>.voiceChat</code> + <code>.allowBluetooth</code>)；桌面支持全局快捷键呼出私教。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section class="prd-section" id="sec-api-data">
+        <div class="sec-header">
+          <span class="sec-num">5</span>
+          <h2 class="sec-title">后端 API 契约与数据库设计 (<code>server/</code>)</h2>
+        </div>
+        <h3>5.1 核心 REST &amp; WebSocket 接口规范</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th>方法 / 协议</th>
+                <th>职责与输入输出契约</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/ws/live</code></td>
+                <td>WebSocket</td>
+                <td>
+                  客户端发送：<code>16kHz Int16 PCM</code> 二进制帧 + JSON 控制消息（<code>start_session</code>, <code>barge_in</code>, <code>hint_request</code>, <code>slow_down</code>, <code>correction_mode</code>）。<br/>
+                  服务端返回：<code>24kHz PCM</code> 二进制音频帧 + JSON 事件（<code>transcript_user</code>, <code>transcript_ai</code>, <code>tokens</code>, <code>turn_correction</code>, <code>interrupted</code>）。
+                </td>
+              </tr>
+              <tr>
+                <td><code>/api/sensei/turn</code></td>
+                <td>POST (Multipart / JSON)</td>
+                <td>
+                  用于「10 分钟私教课」与「练到过关纠音模式」：接收目标句、课前状态机阶段（<code>WARMUP | TEACH | SHADOW_DRILL | SUBSTITUTION_DRILL | WRAPUP</code>）、尝试次数与 16kHz WAV，返回 <code>gemini-4-argon</code> 严格评分、<code>decision: pass | retry_chunk | retry_full | advance</code>、错词片段及对应私教语音 URL（由 <code>3.8-flash-lite-tts</code> 生成）。
+                </td>
+              </tr>
+              <tr>
+                <td><code>/api/tts</code></td>
+                <td>POST / GET</td>
+                <td>
+                  入参：<code>text</code>, <code>style</code> (<code>teacher_bilingual | slow_clear | native_normal | casual</code>), <code>voice</code>, <code>model</code>。<br/>
+                  通过 SHA-256 查本地磁盘或 GCS 缓存；未命中调用 <code>gemini-3.8-flash-lite-tts</code> 或 <code>3.8-flash-tts</code>，返回可 Range 播放的音频 URL。
+                </td>
+              </tr>
+              <tr>
+                <td><code>/api/dict/tokenize</code></td>
+                <td>POST</td>
+                <td>
+                  使用 <code>SudachiPy</code>（<code>sudachidict_core</code>）将任意日语句子切分为词素列表，匹配 <strong>JMdict 中/英释义 + JLPT 等级 + Kanjium 音调番号</strong>，支撑全站任意气泡「点词查意 + 存入闪卡」。
+                </td>
+              </tr>
+              <tr>
+                <td><code>/api/sessions/{id}/report</code></td>
+                <td>POST</td>
+                <td>调用 <code>gemini-4-neon</code> 汇总整场对话，生成流利度/音调/敬语评分、Top 3 反复错误总结与待复习词单，并写入 <code>weakness_memory</code>。</td>
+              </tr>
+              <tr>
+                <td><code>/api/stories/generate</code></td>
+                <td>POST</td>
+                <td>抽取 5–8 个到期或收藏的 FSRS 词汇 + 目标级别（N5/N4/N3），<code>gemini-4-neon</code> 创作双人或旁白故事，<code>gemini-3.8-flash-tts</code> 合成音频并返回分段时间戳 + 分词。</td>
+              </tr>
+              <tr>
+                <td><code>/api/srs/cards</code><br/><code>/api/srs/review</code></td>
+                <td>GET / POST</td>
+                <td>基于 <code>py-fsrs</code> 的跨设备统一记忆本 CRUD 与调度接口，支持翻卡回忆、听音辨意、完形填空、口头产出四种考法，并兼容导入现有 <code>localStorage</code> 数据。</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>5.2 持久化数据模型 (SQLite 本地 → Supabase Postgres 云端)</h3>
+        <pre>-- 1. 用户与学习偏好
+users (id, display_name, jlpt_target, preferred_voice, correction_mode, created_at)
+
+-- 2. 课堂与通话会话
+call_sessions (id, user_id, mode, scenario_id, persona, started_at, ended_at, duration_sec, report_json)
+
+-- 3. 逐轮对话与声学镜子留存
+call_turns (id, session_id, turn_index, speaker, transcript_jp, tokens_json, correction_json, audio_path, created_at)
+
+-- 4. 统一 FSRS 词卡库 (同时承载生词、动词活用、语法例句)
+vocab_cards (id, user_id, surface, lemma, reading, pitch_accent, meaning_cn, jlpt, context_jp, source_type, fsrs_state_json, next_due)
+
+-- 5. 长期薄弱点档案 (老师记忆核心：自动影响下节课热身与提示词)
+weakness_memory (id, user_id, issue_type, pattern_key, example_jp, note_cn, occurrences, last_seen_at)
+
+-- 6. 个性化分级故事库
+stories (id, user_id, title_jp, jlpt_level, target_vocab_json, script_json, audio_path, created_at)</pre>
+      </section>
+
+      <!-- SECTION 6 -->
+      <section class="prd-section" id="sec-roadmap">
+        <div class="sec-header">
+          <span class="sec-num">6</span>
+          <h2 class="sec-title">分阶段开发路线与验收标准 (Phased Roadmap)</h2>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-head">
+            <span class="phase-title">Phase 1 · FastAPI 核心后端 + 「练到过关」双语口语私教与替换操练</span>
+            <span class="pill pill-green">MVP 优先落地</span>
+          </div>
+          <ul>
+            <li><strong>交付模块：</strong><code>server/main.py</code>, <code>server/config.py</code>, <code>server/db.py</code>, <code>server/services/sensei_engine.py</code>, <code>server/services/tts_service.py</code>, <code>sensei_ui.js</code>，接入现有 Web 前端新增「🧑‍🏫 AI 私教课」标签页。</li>
+            <li><strong>核心功能：</strong>实现图 1 完整「用户原声镜子回放 → <code>gemini-4-argon</code> 严格纠音 → <code>gemini-3.8-flash-lite-tts</code> 双语讲解与示范 → 自动重录复检直到达标」闭环，以及面向 Top 200 动词的<strong>口头槽位替换操练</strong>。</li>
+            <li><strong>验收标准：</strong>故意漏读促音 <code>っ</code> 或错用助词时，老师必须播放原声、讲清原因、拆出错误词块带读，且至少在重读达标后才放行下一句。</li>
+          </ul>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-head">
+            <span class="phase-title">Phase 2 · 实时语音通话模式 (<code>gemini-3.8-live</code>) + 双轨纠错 + 手机端防回音</span>
+            <span class="pill pill-blue">LanguaTalk 核心体验</span>
+          </div>
+          <ul>
+            <li><strong>交付模块：</strong><code>server/services/live_relay.py</code>, <code>live_audio_worklet.js</code>，升级 Call Mode UI。</li>
+            <li><strong>核心功能：</strong>16kHz/24kHz 实时 WebSocket 语音通话（含 18 个旅行场景人设 + 日常闲聊）、随时打断插话（<code>&lt;200ms</code> 截断播音）、中文/英文卡壳救场、异步 <code>gemini-4-argon</code> 气泡纠错卡片、Flow vs Tutor 模式切换、iPhone Safari 外放防回音开关与「💡 帮我接话 / 🐢 慢点说」快捷按钮。</li>
+            <li><strong>验收标准：</strong>连续对话 5 轮以上，AI 语音首字响应延迟 <code>&lt;800ms</code>；对话中说中文求助能被自然纠正后接续角色扮演；每轮 7 秒内气泡自动浮现精细修改建议。</li>
+          </ul>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-head">
+            <span class="phase-title">Phase 3 · 词典级点词查释义 + Sensei 记忆本 (FSRS) + 10分钟引导课程 &amp; 战报</span>
+            <span class="pill pill-amber">体系化沉淀</span>
+          </div>
+          <ul>
+            <li><strong>交付模块：</strong><code>server/services/jp_tokenizer.py</code> (SudachiPy + JMdict), <code>server/services/lesson_planner.py</code>。</li>
+            <li><strong>核心功能：</strong>所有对话气泡与课程文本支持点击任意单词弹出释义/音调/一键存卡；<code>py-fsrs</code> 四模式复习；完整 4 阶段 10 分钟引导课状态机与挂断后战报生成，并将高频薄弱点自动注入下次课程提示词。</li>
+            <li><strong>验收标准：</strong>点击复杂活用词（如「預けておきました」）能准确还原辞书形「預ける」并一键加入 FSRS；下一次开课时老师在热身环节主动抽查上节课保存的新词。</li>
+          </ul>
+        </div>
+
+        <div class="phase-card">
+          <div class="phase-head">
+            <span class="phase-title">Phase 4 · 个性化分级故事复述 + Cloud Run 上线 + 移动端/桌面端打包</span>
+            <span class="pill pill-red">全端发布</span>
+          </div>
+          <ul>
+            <li><strong>交付模块：</strong><code>server/services/story_service.py</code>, <code>server/Dockerfile</code>, <code>deploy_cloudrun.sh</code>，以及可选的 <code>capacitor.config.ts</code> (iOS/Android) 与 <code>src-tauri/</code> (Mac/Win)。</li>
+            <li><strong>核心功能：</strong>利用 <code>gemini-4-neon</code> + <code>gemini-3.8-flash-tts</code> 生成包含本周生词的多角色分级故事（支持听后口头复述打分）；家庭专属口令/OAuth 鉴权部署至 Cloud Run（<code>--timeout=3600</code> 支持长时 WebSocket）。</li>
+            <li><strong>验收标准：</strong>Haodong 与 Sherry 可分别在手机与电脑端登录同步各自记忆本与通话记录，外网 HTTPS 下手机 Safari / Capacitor 通话稳定不掉线。</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section class="prd-section" id="sec-nfr">
+        <div class="sec-header">
+          <span class="sec-num">7</span>
+          <h2 class="sec-title">非功能指标、关键工程避坑清单与验证方案</h2>
+        </div>
+
+        <h3>7.1 性能、安全与成本指标</h3>
+        <ul>
+          <li><strong>延迟目标：</strong>Live 通话端到端响应 <code>&lt;800ms</code>；Barge-in 本地播音打断 <code>&lt;50ms</code>；TTS 命中缓存 <code>&lt;40ms</code>，未命中 <code>&lt;3.5s</code>（<code>3.8-flash-lite-tts</code>）；异步纠错气泡 <code>&lt;7s</code>（<code>gemini-4-argon</code>）。</li>
+          <li><strong>安全性：</strong><code>GEMINI_API_KEY</code> 仅存于后端环境变量 / Cloud Secret Manager，前端通过 HttpOnly Cookie 或家庭口令 Bearer Token 鉴权，彻底杜绝前端密钥泄露。</li>
+          <li><strong>成本控制：</strong>所有系统高频示范音与故事音频均按 <code>SHA-256(model, voice, style, text)</code> 落盘缓存；裁判模型固定开启 <code>thinkingLevel: "LOW"</code>；保留现有本地 <code>audio/*.mp3</code> 作为 18 个旅行场景的零成本离线保底。</li>
+        </ul>
+
+        <div class="callout warn">
+          <div class="callout-title">⚠️ 实测已踩过的 4 个关键技术避坑清单 (Verified Pitfalls)</div>
+          <ol style="margin-bottom:0;">
+            <li><strong>TTS 模型严禁传 <code>systemInstruction</code> 或在正文拼英文提示词：</strong>实测 <code>gemini-3.8-flash-lite-tts</code> 若传入 <code>systemInstruction</code> 会直接报错 <code>HTTP 400 (Developer instruction is not enabled for this model)</code>；若把 <code>"Speak like a warm Japanese teacher..."</code> 拼在 <code>contents</code> 文本开头，模型会把英文提示词也朗读出来！<strong>正确做法：</strong>不传 <code>systemInstruction</code>，仅在 <code>contents</code> 中传入纯净的自然中文+日语口语台词（实测已验证发音完全自然，2.62s 返回完整 <code>audio/wav</code>）。</li>
+            <li><strong>浏览器不可发送 <code>Api-Revision</code> 请求头：</strong>实测 Google CORS 预检对 <code>/v1beta/interactions</code> 带 <code>Api-Revision</code> 会直接返回 <code>HTTP 403</code>；统一由 FastAPI 后端调用标准 <code>generateContent</code>（REST）与 <code>bidiGenerateContent</code>（WSS）。</li>
+            <li><strong>Live 长通话防断连配置：</strong>必须启用 <code>ContextWindowCompressionConfig(sliding_window=...)</code> 与 <code>SessionResumptionConfig</code>，并在 Cloud Run 设置 <code>--timeout=3600</code>（WebSocket 默认仅 5 分钟超时）。</li>
+            <li><strong>打断瞬间清空环形缓冲：</strong>收到 Gemini Live 的 <code>serverContent.interrupted</code> 或用户主动按插话键时，必须立即对所有已排队的 <code>AudioBufferSourceNode</code> 调用 <code>.stop()</code> 并重置播放游标，否则 AI 仍会多念 1–2 秒旧音频。</li>
+          </ol>
+        </div>
+
+        <h3>7.2 验证与测试计划 (Verification Plan)</h3>
+        <ul>
+          <li><strong>后端单元测试 (<code>pytest server/tests/</code>)：</strong>验证 <code>tts_service</code> 缓存命中及音频头部合法性（确保无英文提示词误读）、<code>sensei_engine</code> 对不同错误类型的分级判定（<code>pass</code> vs <code>retry_chunk</code>）、<code>jp_tokenizer</code> 对复杂活用词还原准确度。</li>
+          <li><strong>实时音频端到端实测：</strong>本地启动 <code>uvicorn server.main:app</code>，验证桌面 Chrome 与 iPhone Safari 真机（AirPods 耳机模式 + 外放防回音模式）完成 5 轮连贯通话、插话打断、中文求助、声学镜子对比与 FSRS 存卡全链路。</li>
+        </ul>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const themeBtn = document.getElementById("btn-theme");
+      if (themeBtn) {
+        themeBtn.onclick = () => {
+          const isDark = document.body.classList.toggle("dark");
+          themeBtn.textContent = isDark ? "☀️ 日间模式" : "🌙 夜间模式";
+        };
+      }
+
+      const links = Array.from(document.querySelectorAll(".toc-link"));
+      const targets = links
+        .map((a) => document.querySelector(a.getAttribute("href")))
+        .filter(Boolean);
+
+      if ("IntersectionObserver" in window && targets.length) {
+        const obs = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                const id = "#" + entry.target.id;
+                links.forEach((l) => l.classList.toggle("active", l.getAttribute("href") === id));
+              }
+            });
+          },
+          { rootMargin: "-15% 0px -70% 0px", threshold: 0.01 }
+        );
+        targets.forEach((t) => obs.observe(t));
+      }
+    })();
+  </script>
+</body>
+</html>

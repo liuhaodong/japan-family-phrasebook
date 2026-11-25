@@ -1,0 +1,9 @@
+server/.venv/
+server/.env
+server/sensei.db
+server/sensei.db-*
+server/cache/
+server/data/curriculum_snapshot.json
+__pycache__/
+*.py[cod]
+.pytest_cache/

@@ -19,7 +19,7 @@
   });
 
   // Load persisted UI preferences
-  const VALID_MODES = new Set(["verbs", "grammar", "oral", "practice", "phrasebook", "itinerary"]);
+  const VALID_MODES = new Set(["verbs", "grammar", "oral", "sensei", "practice", "phrasebook", "itinerary"]);
   const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
 
   // App State
@@ -2147,13 +2147,14 @@
     document.body.classList.toggle("practice-mode", state.practiceMode);
     document.body.classList.toggle("dark-mode", state.darkMode);
 
-    // Sync all 6 Primary App Modes
+    // Sync all 7 Primary App Modes
     const stickyEl = document.getElementById("sticky-controls");
     const itinView = document.getElementById("itinerary-view-container");
     const phraseView = document.getElementById("phrasebook-view-container");
     const verbsView = document.getElementById("verbs-view-container");
     const grammarView = document.getElementById("grammar-view-container");
     const oralView = document.getElementById("oral-view-container");
+    const senseiView = document.getElementById("sensei-view-container");
     const practiceView = document.getElementById("practice-view-container");
     const phraseToolbar = document.getElementById("phrasebook-toolbar-row");
     const toolbarCollapsible = document.getElementById("toolbar-collapsible");
@@ -2166,6 +2167,7 @@
     if (verbsView) verbsView.style.display = mode === "verbs" ? "flex" : "none";
     if (grammarView) grammarView.style.display = mode === "grammar" ? "flex" : "none";
     if (oralView) oralView.style.display = mode === "oral" ? "flex" : "none";
+    if (senseiView) senseiView.style.display = mode === "sensei" ? "flex" : "none";
     if (practiceView) practiceView.style.display = mode === "practice" ? "flex" : "none";
 
     if (phraseToolbar) phraseToolbar.style.display = mode === "phrasebook" ? "flex" : "none";
@@ -2173,7 +2175,7 @@
     if (legTabs) legTabs.style.display = mode === "itinerary" || mode === "phrasebook" ? "flex" : "none";
     if (globalDisplayBar) globalDisplayBar.style.display = "flex";
     if (stickyEl) {
-      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "oral" || mode === "practice");
+      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "oral" || mode === "sensei" || mode === "practice");
     }
 
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
@@ -2205,6 +2207,7 @@
   function switchAppMode(newMode) {
     if (!VALID_MODES.has(newMode)) return;
     if (window.JP_ORAL_COACH) window.JP_ORAL_COACH.stopAll();
+    if (window.JP_SENSEI && window.JP_SENSEI.stopAll) window.JP_SENSEI.stopAll();
     state.appMode = newMode;
     savePrefs();
     closeAllPopovers();
@@ -2227,6 +2230,10 @@
     } else if (state.appMode === "oral") {
       if (window.JP_ORAL_COACH) {
         window.JP_ORAL_COACH.renderDedicatedView(document.getElementById("oral-view-container"));
+      }
+    } else if (state.appMode === "sensei") {
+      if (window.JP_SENSEI) {
+        window.JP_SENSEI.render(document.getElementById("sensei-view-container"));
       }
     } else if (window.JP_LEARNING) {
       window.JP_LEARNING.renderMode(state.appMode);

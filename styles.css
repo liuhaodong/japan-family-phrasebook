@@ -1491,10 +1491,10 @@ body.dark-mode .mode-tab.active {
     bottom: 0;
     z-index: 65;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     background: var(--bg-card);
     border-top: 1px solid var(--border-color);
-    padding: 0.32rem 0.12rem calc(0.35rem + env(safe-area-inset-bottom));
+    padding: 0.3rem 0.06rem calc(0.35rem + env(safe-area-inset-bottom));
     box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
   }
   .mnav-btn {
@@ -5128,4 +5128,1073 @@ body.dark-mode .vg-link-btn {
   background: rgba(96, 165, 250, 0.15);
   color: #93c5fd;
   border-color: rgba(96, 165, 250, 0.35);
+}
+
+
+/* =================================================================== */
+/* NIHONGO SENSEI AI STUDIO                                            */
+/* =================================================================== */
+.mode-tab-sensei {
+  color: #4f46e5;
+}
+body.dark-mode .mode-tab-sensei {
+  color: #a5b4fc;
+}
+.mode-tab-sensei.active {
+  background: linear-gradient(135deg, #4f46e5, #0f766e);
+  color: #ffffff;
+}
+
+.sensei-shell {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.sensei-topbar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 0.95rem 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+}
+
+.sensei-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.sensei-brand h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sensei-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+.sensei-status-dot.online {
+  background: #10b981;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+}
+
+.sensei-model-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+.sensei-model-pills span {
+  font-size: 0.7rem;
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  font-weight: 600;
+}
+
+.sensei-profile-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.sensei-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.sensei-subtab {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  padding: 0.52rem 0.92rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sensei-subtab.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+}
+
+.sensei-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+.sensei-card h3,
+.sensei-card h4 {
+  margin: 0 0 0.45rem;
+  color: var(--text-primary);
+}
+
+.sensei-key-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 0.6rem 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.sensei-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.sensei-lbl {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 0.28rem;
+}
+
+.sensei-select,
+.sensei-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+.sensei-select.compact {
+  width: auto;
+  padding: 0.36rem 0.55rem;
+  font-size: 0.8rem;
+}
+.sensei-input.small {
+  width: 210px;
+  padding: 0.32rem 0.55rem;
+}
+
+.sensei-toggles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border-color);
+}
+.sensei-chk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.sensei-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sensei-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sensei-btn.primary {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: #ffffff;
+}
+.sensei-btn.danger {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+.sensei-btn.warn {
+  background: #d97706;
+  border-color: #d97706;
+  color: #ffffff;
+}
+.sensei-btn.big {
+  padding: 0.78rem 1.45rem;
+  font-size: 0.96rem;
+}
+
+.sensei-mini-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 0.24rem 0.62rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sensei-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+}
+.sensei-step-pill {
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sensei-step-pill.active {
+  background: #4f46e5;
+  color: #fff;
+  border-color: #4f46e5;
+}
+.sensei-step-pill.done {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.sensei-stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+.sensei-badge {
+  display: inline-block;
+  padding: 0.16rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+}
+body.dark-mode .sensei-badge {
+  color: #a5b4fc;
+}
+.sensei-attempt-pill {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.sensei-cue-box {
+  background: var(--bg-indigo-soft);
+  border-left: 4px solid #4f46e5;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+}
+
+.sensei-target-card,
+.sensei-hidden-target {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.8rem;
+}
+.sensei-jp-line {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 2.15;
+  color: var(--text-primary);
+}
+.sensei-cn-line {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+.sensei-tip-line {
+  font-size: 0.8rem;
+  color: #0f766e;
+  margin-top: 0.35rem;
+}
+body.dark-mode .sensei-tip-line {
+  color: #5eead4;
+}
+.sensei-target-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.6rem;
+}
+
+.sensei-chunk-focus {
+  background: rgba(217, 119, 6, 0.13);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.85rem;
+}
+.sensei-chunk-word {
+  color: #b45309;
+  font-size: 1.05rem;
+}
+body.dark-mode .sensei-chunk-word {
+  color: #fbbf24;
+}
+
+.sensei-mirror-banner {
+  background: linear-gradient(90deg, #4f46e5, #0f766e);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.sensei-mic-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.sensei-mic-btn {
+  width: 100%;
+  max-width: 440px;
+  padding: 0.85rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #4f46e5, #0284c7);
+  color: #ffffff;
+  font-size: 0.96rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.25);
+}
+.sensei-mic-btn.recording {
+  background: linear-gradient(135deg, #dc2626, #ea580c);
+  animation: senseiPulse 1.1s infinite;
+}
+@keyframes senseiPulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45); }
+  70% { box-shadow: 0 0 0 14px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.sensei-step-nav {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.sensei-diagnosis-card.pass {
+  border-left: 5px solid #10b981;
+}
+.sensei-diagnosis-card.retry {
+  border-left: 5px solid #f59e0b;
+}
+.sensei-diagnosis-card.warn {
+  border-left: 5px solid #3b82f6;
+}
+.sensei-diag-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+.sensei-diag-badge {
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+.sensei-score-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+}
+.sensei-diff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+.sensei-diff-col {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+}
+.sensei-diff-lbl {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.sensei-diff-val {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 2.05;
+  margin-bottom: 0.35rem;
+}
+.sensei-teacher-speech {
+  background: rgba(16, 185, 129, 0.09);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.88rem;
+  margin-bottom: 0.45rem;
+}
+.sensei-note-row {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+.sensei-vocab-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+}
+.sensei-save-vocab-btn {
+  border: 1px solid rgba(79, 70, 229, 0.35);
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+  border-radius: 999px;
+  padding: 0.2rem 0.58rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+body.dark-mode .sensei-save-vocab-btn {
+  color: #a5b4fc;
+}
+
+/* Interactive Tap-Any-Word Japanese Tokens */
+.sensei-tok {
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  margin: 0 1px;
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1.5px dotted rgba(79, 70, 229, 0.45);
+}
+.sensei-tok:hover {
+  background: rgba(79, 70, 229, 0.14);
+}
+.sensei-tok.func {
+  border-bottom-color: rgba(148, 163, 184, 0.4);
+}
+.sensei-tok ruby {
+  ruby-align: center;
+}
+.sensei-tok rt {
+  font-size: 0.54em;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--accent-red);
+}
+.sensei-blackboard .sensei-tok rt {
+  color: #fde68a;
+}
+body.dark-mode .sensei-tok rt {
+  color: #fca5a5;
+}
+
+/* Live Call Stage & Chat */
+.sensei-call-stage {
+  margin-top: 0.9rem;
+  padding: 1.15rem 0.8rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+.sensei-call-orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.9rem;
+  background: #e2e8f0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body.dark-mode .sensei-call-orb {
+  background: #334155;
+}
+.sensei-call-orb.state-listening {
+  background: #0f766e;
+  color: #fff;
+  box-shadow: 0 0 0 10px rgba(15, 118, 110, 0.18);
+}
+.sensei-call-orb.state-ai_speaking {
+  background: #4f46e5;
+  color: #fff;
+  transform: scale(1.06);
+  box-shadow: 0 0 0 12px rgba(79, 70, 229, 0.24);
+}
+.sensei-call-status {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.sensei-call-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.sensei-hints-drawer {
+  margin-top: 0.8rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.sensei-hints-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+.sensei-hint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.85rem;
+}
+.sensei-hint-read {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.sensei-chat-head {
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin-bottom: 0.65rem;
+}
+.sensei-live-chat {
+  max-height: 430px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.sensei-empty-chat {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.sensei-chat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.sensei-chat-item.user {
+  align-items: flex-end;
+}
+.sensei-chat-meta {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.sensei-chat-bubble {
+  max-width: 88%;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+.sensei-chat-item.user .sensei-chat-bubble {
+  background: var(--bg-indigo-soft);
+}
+.sensei-corr-card {
+  max-width: 88%;
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--border-color);
+  background: rgba(245, 158, 11, 0.08);
+}
+.sensei-corr-card.good {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.sensei-corr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+}
+.sensei-corr-btns {
+  display: flex;
+  gap: 0.3rem;
+}
+.sensei-corr-better {
+  margin-top: 0.3rem;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.sensei-corr-note {
+  margin-top: 0.2rem;
+  color: var(--text-secondary);
+}
+
+/* FSRS & Weaknesses & Stories */
+.sensei-nb-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.sensei-nb-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+.sensei-muted-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0.15rem 0 0;
+}
+.sensei-fsrs-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+}
+.sensei-fsrs-progress {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.sensei-fsrs-front {
+  font-size: 1.55rem;
+  font-weight: 900;
+  margin: 0.45rem 0 0.2rem;
+}
+.sensei-fsrs-read {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.75rem;
+}
+.sensei-fsrs-back {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.7rem;
+  margin-bottom: 0.75rem;
+}
+.sensei-fsrs-meaning {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+.sensei-fsrs-ctx {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+.sensei-fsrs-ratings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.45rem;
+}
+.sensei-rate-btn {
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-radius: 9px;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sensei-weakness-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sensei-weak-row {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+}
+.sensei-weak-tag {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+  font-weight: 800;
+  margin-right: 0.35rem;
+}
+.sensei-weak-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.4rem;
+}
+.sensei-weak-note {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.sensei-story-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+.sensei-story-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.sensei-story-seg {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: var(--bg-subtle);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+}
+.sensei-story-spk {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #4f46e5;
+  min-width: 70px;
+}
+.sensei-story-cn {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+.sensei-story-quiz {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  background: var(--bg-indigo-soft);
+  font-size: 0.84rem;
+}
+
+.sensei-report-scores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-bottom: 0.55rem;
+}
+.sensei-report-scores span {
+  background: var(--bg-subtle);
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
+.sensei-code-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.7rem 0.85rem;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.6rem 0;
+}
+.sensei-offline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+.sensei-offline-form .sensei-input {
+  flex: 1 1 260px;
+}
+
+/* Dictionary Lookup Popover */
+.sensei-dict-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+}
+@media (min-width: 640px) {
+  .sensei-dict-backdrop {
+    align-items: center;
+  }
+}
+.sensei-dict-popover {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+}
+.sensei-dict-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sensei-dict-surface {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+.sensei-dict-lemma {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-left: 0.35rem;
+}
+.sensei-dict-reading {
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+  margin: 0.3rem 0;
+}
+.sensei-dict-meaning {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+.sensei-dict-note,
+.sensei-dict-ex {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+.sensei-dict-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+/* Hands-free VAD Live Level Meter */
+.sensei-vad-wrap {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+.sensei-vad-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+.sensei-vad-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  transition: width 0.06s linear;
+}
+.sensei-vad-fill.active {
+  background: linear-gradient(90deg, #ef4444, #f59e0b);
+}
+.sensei-vad-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sensei-vad-hint {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Veteran Sensei Syllabus Modes & Blackboard */
+.sensei-mode-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+}
+.sensei-mode-pill {
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 0.4rem 0.82rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sensei-mode-pill.active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.sensei-rec-banner {
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.09), rgba(15, 118, 110, 0.09));
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  border-radius: 12px;
+  padding: 0.78rem 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.sensei-rec-info {
+  flex: 1 1 320px;
+}
+.sensei-rec-kicker {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #4f46e5;
+}
+body.dark-mode .sensei-rec-kicker {
+  color: #a5b4fc;
+}
+.sensei-rec-title {
+  font-size: 0.98rem;
+  font-weight: 900;
+  margin: 0.14rem 0;
+}
+.sensei-rec-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.sensei-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.sensei-blackboard {
+  background: #1e293b;
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+.sensei-bb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+}
+.sensei-bb-head .sensei-badge {
+  background: rgba(99, 102, 241, 0.35);
+  color: #e0e7ff;
+}
+.sensei-bb-formula {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: 0.3rem;
+}
+.sensei-bb-pitfall {
+  font-size: 0.8rem;
+  color: #fde68a;
+  line-height: 1.5;
+}
+.sensei-contrast-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.3);
+  font-size: 0.82rem;
+}
+.sensei-contrast-row .bad {
+  color: #fca5a5;
+  text-decoration: line-through;
+}
+.sensei-contrast-row .good {
+  color: #6ee7b7;
+  font-weight: 800;
+}
+.sensei-contrast-row .note {
+  color: #cbd5e1;
+  font-size: 0.76rem;
+}
+
+.sensei-free-q {
+  background: rgba(15, 118, 110, 0.08);
+  border: 1px solid rgba(15, 118, 110, 0.3);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+}
+.sensei-free-q-lbl {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f766e;
+  margin-bottom: 0.25rem;
+}
+body.dark-mode .sensei-free-q-lbl {
+  color: #5eead4;
 }

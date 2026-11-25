@@ -8,9 +8,9 @@
   <meta name="theme-color" content="#1b2c52" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json?v=17" />
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=17" />
-  <link rel="stylesheet" href="styles.css?v=17" />
+  <link rel="manifest" href="manifest.json?v=19" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=24" />
+  <link rel="stylesheet" href="styles.css?v=27" />
 </head>
 <body>
   <!-- Compact Learning-First Top Header -->
@@ -81,6 +81,9 @@
           </button>
           <button type="button" class="mode-tab" id="mode-btn-oral" data-appmode="oral" role="tab" aria-selected="false">
             🎙️ 口语跟读
+          </button>
+          <button type="button" class="mode-tab mode-tab-sensei" id="mode-btn-sensei" data-appmode="sensei" role="tab" aria-selected="false">
+            🧑‍🏫 AI私教
           </button>
           <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab" aria-selected="false">
             🎯 实战练习
@@ -156,6 +159,11 @@
   <!-- VIEW 3: ORAL FOLLOW-READING & PRONUNCIATION COACH                   -->
   <!-- =================================================================== -->
   <section id="oral-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 3B: NIHONGO SENSEI AI STUDIO (LIVE CALL + AUDIO MIRROR + FSRS) -->
+  <!-- =================================================================== -->
+  <section id="sensei-view-container" class="learning-view-wrapper" style="display:none;"></section>
 
   <!-- =================================================================== -->
   <!-- VIEW 4: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
@@ -285,6 +293,10 @@
       <span class="mnav-ico">🎙️</span>
       <span class="mnav-lbl">口语</span>
     </button>
+    <button type="button" class="mnav-btn" data-appmode="sensei" role="tab" aria-selected="false">
+      <span class="mnav-ico">🧑‍🏫</span>
+      <span class="mnav-lbl">私教</span>
+    </button>
     <button type="button" class="mnav-btn" data-appmode="practice" role="tab" aria-selected="false">
       <span class="mnav-ico">🎯</span>
       <span class="mnav-lbl">练习</span>
@@ -311,20 +323,21 @@
   <div class="toast" id="app-toast"></div>
 
   <!-- Data & Application Scripts -->
-  <script src="vendor/leaflet/leaflet.js?v=17"></script>
-  <script src="data/itinerary.js?v=17"></script>
-  <script src="data/modules_1_to_6.js?v=17"></script>
-  <script src="data/modules_7_to_12.js?v=17"></script>
-  <script src="data/modules_13_to_18.js?v=17"></script>
-  <script src="data/audio_manifest.js?v=17"></script>
-  <script src="data/audio_learning_manifest.js?v=17"></script>
-  <script src="data/verbs_top200.js?v=17"></script>
-  <script src="data/grammar_n5_n3.js?v=17"></script>
-  <script src="data/video_grammar.js?v=17"></script>
-  <script src="data/learning_extras.js?v=17"></script>
-  <script src="app.js?v=17"></script>
-  <script src="oral_coach.js?v=17"></script>
-  <script src="learning.js?v=17"></script>
+  <script src="vendor/leaflet/leaflet.js?v=18"></script>
+  <script src="data/itinerary.js?v=18"></script>
+  <script src="data/modules_1_to_6.js?v=18"></script>
+  <script src="data/modules_7_to_12.js?v=18"></script>
+  <script src="data/modules_13_to_18.js?v=18"></script>
+  <script src="data/audio_manifest.js?v=18"></script>
+  <script src="data/audio_learning_manifest.js?v=18"></script>
+  <script src="data/verbs_top200.js?v=18"></script>
+  <script src="data/grammar_n5_n3.js?v=18"></script>
+  <script src="data/video_grammar.js?v=18"></script>
+  <script src="data/learning_extras.js?v=18"></script>
+  <script src="app.js?v=18"></script>
+  <script src="oral_coach.js?v=18"></script>
+  <script src="learning.js?v=19"></script>
+  <script src="sensei_ui.js?v=27"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -333,7 +346,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=17").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=27").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

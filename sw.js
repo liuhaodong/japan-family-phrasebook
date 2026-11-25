@@ -1,24 +1,26 @@
-const CACHE_NAME = "japan-family-phrasebook-v17";
+const CACHE_NAME = "japan-family-phrasebook-v27";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=17",
-  "./app.js?v=17",
-  "./oral_coach.js?v=17",
-  "./learning.js?v=17",
-  "./manifest.json?v=17",
-  "./vendor/leaflet/leaflet.css?v=17",
-  "./vendor/leaflet/leaflet.js?v=17",
-  "./data/itinerary.js?v=17",
-  "./data/modules_1_to_6.js?v=17",
-  "./data/modules_7_to_12.js?v=17",
-  "./data/modules_13_to_18.js?v=17",
-  "./data/audio_manifest.js?v=17",
-  "./data/audio_learning_manifest.js?v=17",
-  "./data/verbs_top200.js?v=17",
-  "./data/grammar_n5_n3.js?v=17",
-  "./data/video_grammar.js?v=17",
-  "./data/learning_extras.js?v=17"
+  "./styles.css?v=27",
+  "./app.js?v=19",
+  "./oral_coach.js?v=19",
+  "./learning.js?v=19",
+  "./sensei_ui.js?v=27",
+  "./live_audio_worklet.js?v=19",
+  "./manifest.json?v=18",
+  "./vendor/leaflet/leaflet.css?v=18",
+  "./vendor/leaflet/leaflet.js?v=18",
+  "./data/itinerary.js?v=18",
+  "./data/modules_1_to_6.js?v=18",
+  "./data/modules_7_to_12.js?v=18",
+  "./data/modules_13_to_18.js?v=18",
+  "./data/audio_manifest.js?v=18",
+  "./data/audio_learning_manifest.js?v=18",
+  "./data/verbs_top200.js?v=18",
+  "./data/grammar_n5_n3.js?v=18",
+  "./data/video_grammar.js?v=18",
+  "./data/learning_extras.js?v=18"
 ];
 
 self.addEventListener("install", (event) => {
@@ -52,9 +54,10 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   if (req.method !== "GET") return;
 
-  // Never intercept cross-origin requests (map tiles, external CDNs, QR API)
+  // Never intercept cross-origin requests or backend API / WebSocket / audio byte-range requests
+  let reqUrl;
   try {
-    const reqUrl = new URL(req.url);
+    reqUrl = new URL(req.url);
     if (reqUrl.origin !== self.location.origin) {
       return;
     }
@@ -62,8 +65,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Let browser handle MP3 audio & byte-range requests natively
-  if (req.url.includes(".mp3") || req.headers.has("range")) {
+  if (
+    reqUrl.pathname.startsWith("/api/") ||
+    reqUrl.pathname.startsWith("/ws/") ||
+    req.url.includes(".mp3") ||
+    req.url.includes(".wav") ||
+    req.headers.has("range")
+  ) {
     return;
   }
 
