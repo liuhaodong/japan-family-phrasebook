@@ -337,7 +337,7 @@
   <script src="app.js?v=18"></script>
   <script src="oral_coach.js?v=18"></script>
   <script src="learning.js?v=19"></script>
-  <script src="sensei_ui.js?v=28"></script>
+  <script src="sensei_ui.js?v=29"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -346,7 +346,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=28").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=29").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }

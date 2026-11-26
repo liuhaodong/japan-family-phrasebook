@@ -84,9 +84,17 @@
     loadingToken: false,
   };
 
+  const isIOSDevice =
+    /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
   let containerEl = null;
   let currentAudioEl = null;
+  let sharedAudioEl = null;
+  let sharedAudioUnlocked = false;
   let localMirrorBlobUrl = "";
+  let lastMirrorBlob = null;
+  let activeMirrorPlayId = 0;
   let turnChoreographySeq = 0;
   let mediaRecorder = null;
   let mediaStream = null;
@@ -96,6 +104,7 @@
   let lessonTtsCtx = null;
   let vadAnalyser = null;
   let vadSourceNode = null;
+  let vadSilentGain = null;
   let vadDataArray = null;
   let suppressNextStopSubmit = false;
   let autoAdvanceTimer = null;
@@ -193,7 +202,42 @@
     return data;
   }
 
+  function getSharedAudioEl() {
+    if (!sharedAudioEl) {
+      sharedAudioEl = new Audio();
+      sharedAudioEl.playsInline = true;
+      sharedAudioEl.setAttribute("playsinline", "");
+      sharedAudioEl.preload = "auto";
+    }
+    return sharedAudioEl;
+  }
+
+  function unlockSharedAudioEl() {
+    try {
+      const el = getSharedAudioEl();
+      if (sharedAudioUnlocked || currentAudioEl === el || !el.paused) return;
+      el.muted = true;
+      el.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      const p = el.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => {
+          try {
+            el.pause();
+            el.currentTime = 0;
+            el.muted = false;
+            sharedAudioUnlocked = true;
+          } catch {}
+        }).catch(() => {
+          el.muted = false;
+        });
+      } else {
+        el.muted = false;
+      }
+    } catch {}
+  }
+
   function stopSimpleAudio() {
+    activeMirrorPlayId += 1;
     if (lessonStreamAbort) {
       try {
         lessonStreamAbort.abort();
@@ -215,8 +259,11 @@
     }
     if (currentAudioEl) {
       try {
+        currentAudioEl.onended = null;
+        currentAudioEl.onerror = null;
         currentAudioEl.pause();
-        currentAudioEl.src = "";
+        currentAudioEl.removeAttribute("src");
+        currentAudioEl.load();
       } catch {}
       currentAudioEl = null;
     }
@@ -229,16 +276,83 @@
         resolve();
         return;
       }
-      const audio = new Audio(resolveUrl(url));
+      const audio = getSharedAudioEl();
+      audio.playsInline = true;
+      audio.setAttribute("playsinline", "");
+      audio.muted = false;
       currentAudioEl = audio;
+      let finished = false;
       const done = () => {
+        if (finished) return;
+        finished = true;
+        audio.onended = null;
+        audio.onerror = null;
         if (currentAudioEl === audio) currentAudioEl = null;
         resolve();
       };
       audio.onended = done;
       audio.onerror = done;
-      audio.play().catch(done);
+      try {
+        audio.src = resolveUrl(url);
+        audio.load();
+        const p = audio.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(done);
+        }
+      } catch {
+        done();
+      }
     });
+  }
+
+  async function playBlobViaWebAudio(audioBlob, fallbackUrl = "") {
+    stopSimpleAudio();
+    const playId = ++activeMirrorPlayId;
+    if (!audioBlob || !audioBlob.size) return;
+
+    const ctx = ensureLessonTtsCtx(24000) || ensureLessonAudioCtx();
+    if (ctx) {
+      try {
+        if (ctx.state === "suspended" || ctx.state === "interrupted") {
+          await ctx.resume().catch(() => {});
+        }
+        const arrayBuf = await audioBlob.arrayBuffer();
+        if (playId !== activeMirrorPlayId) return;
+        const audioBuf = await ctx.decodeAudioData(arrayBuf.slice(0));
+        if (playId !== activeMirrorPlayId) return;
+
+        await new Promise((resolve) => {
+          let finished = false;
+          let safetyTimer = null;
+          const finish = () => {
+            if (finished) return;
+            finished = true;
+            if (safetyTimer) clearTimeout(safetyTimer);
+            if (lessonStreamDoneResolve === finish) {
+              lessonStreamDoneResolve = null;
+            }
+            resolve();
+          };
+          const src = ctx.createBufferSource();
+          src.buffer = audioBuf;
+          src.connect(ctx.destination);
+          lessonStreamSources.push(src);
+          lessonStreamDoneResolve = finish;
+          src.onended = () => {
+            lessonStreamSources = lessonStreamSources.filter((s) => s !== src);
+            finish();
+          };
+          safetyTimer = setTimeout(finish, Math.max(400, Math.ceil(audioBuf.duration * 1000) + 500));
+          src.start(0);
+        });
+        return;
+      } catch {
+        // Fall back to pre-unlocked HTMLAudioElement below if decodeAudioData fails.
+      }
+    }
+
+    if (playId !== activeMirrorPlayId) return;
+    await playUrlAsync(fallbackUrl || URL.createObjectURL(audioBlob));
   }
 
   function flushLiveAiAudio() {
@@ -470,7 +584,7 @@
           lessonTtsCtx = new AudioCtx();
         }
       }
-      if (lessonTtsCtx.state === "suspended") {
+      if (lessonTtsCtx.state === "suspended" || lessonTtsCtx.state === "interrupted") {
         lessonTtsCtx.resume().catch(() => {});
       }
       return lessonTtsCtx;
@@ -696,6 +810,7 @@
 
   // ==================== Guided Lesson & Audio Mirror Loop ====================
   function ensureLessonAudioCtx() {
+    unlockSharedAudioEl();
     ensureLessonTtsCtx(24000);
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -703,7 +818,7 @@
       if (!lessonAudioCtx || lessonAudioCtx.state === "closed") {
         lessonAudioCtx = new AudioCtx();
       }
-      if (lessonAudioCtx.state === "suspended") {
+      if (lessonAudioCtx.state === "suspended" || lessonAudioCtx.state === "interrupted") {
         lessonAudioCtx.resume().catch(() => {});
       }
       return lessonAudioCtx;
@@ -871,6 +986,12 @@
       } catch {}
       vadAnalyser = null;
     }
+    if (vadSilentGain) {
+      try {
+        vadSilentGain.disconnect();
+      } catch {}
+      vadSilentGain = null;
+    }
     vadDataArray = null;
     if (mediaStream) {
       mediaStream.getTracks().forEach((t) => t.stop());
@@ -905,7 +1026,11 @@
       vadAnalyser.fftSize = 1024;
       vadAnalyser.smoothingTimeConstant = 0.2;
       vadDataArray = new Float32Array(vadAnalyser.fftSize);
+      vadSilentGain = ctx.createGain();
+      vadSilentGain.gain.value = 0;
       vadSourceNode.connect(vadAnalyser);
+      vadAnalyser.connect(vadSilentGain);
+      vadSilentGain.connect(ctx.destination);
     } catch {
       return;
     }
@@ -916,6 +1041,7 @@
     let noiseFloor = 0.008;
     let speechStreakMs = 0;
     let hasSpoken = false;
+    let sawNonZeroSample = false;
     let lastSpeechAt = startedAt;
     let lastFrameAt = startedAt;
     let stopTriggered = false;
@@ -932,7 +1058,11 @@
         sq += s * s;
       }
       const rms = Math.sqrt(sq / vadDataArray.length);
+      if (rms > 0.0005) {
+        sawNonZeroSample = true;
+      }
       const elapsed = now - startedAt;
+      const vadUnavailable = elapsed >= 1500 && !sawNonZeroSample;
 
       if (elapsed < 350) {
         calSum += rms;
@@ -976,6 +1106,8 @@
       if (hintEl) {
         if (!state.autoStopSilence) {
           hintEl.textContent = "🎙️ 手动控制录音中，说完请点击上方按钮结束";
+        } else if (vadUnavailable) {
+          hintEl.textContent = "🎙️ 录音中，说完请点击上方按钮结束并提交";
         } else if (!hasSpoken) {
           hintEl.textContent = "🎙️ 正在聆听，请直接开口说话...";
         } else if (silenceMs < 350) {
@@ -986,7 +1118,7 @@
         }
       }
 
-      if (state.autoStopSilence) {
+      if (state.autoStopSilence && !vadUnavailable) {
         if (hasSpoken && silenceMs >= silenceLimitMs) {
           stopTriggered = true;
           suppressNextStopSubmit = false;
@@ -1036,7 +1168,7 @@
 
     if (state.isRecordingTurn) {
       suppressNextStopSubmit = false;
-      playSoftChime("close");
+      if (!isIOSDevice) playSoftChime("close");
       if (mediaRecorder && mediaRecorder.state !== "inactive") {
         mediaRecorder.stop();
       }
@@ -1053,52 +1185,132 @@
     const step = currentLessonStep();
     if (!step) return;
 
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showToast("❌ 当前浏览器不支持麦克风录音，请用 HTTPS / Safari 或 Chrome 打开");
+      return;
+    }
+    if (typeof MediaRecorder === "undefined") {
+      showToast("❌ 当前浏览器不支持录音，请使用 Safari 或 Chrome");
+      return;
+    }
+
     try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-      });
+      const audioConstraints = isIOSDevice
+        ? {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        : {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          };
+
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+      } catch (constraintErr) {
+        if (constraintErr && (constraintErr.name === "OverconstrainedError" || constraintErr.name === "TypeError")) {
+          mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        } else {
+          throw constraintErr;
+        }
+      }
+
+      // iOS Safari may suspend or interrupt AudioContexts while the permission sheet is shown.
+      const actx = ensureLessonAudioCtx();
+      if (actx && (actx.state === "suspended" || actx.state === "interrupted")) {
+        await actx.resume().catch(() => {});
+      }
+      if (lessonTtsCtx && (lessonTtsCtx.state === "suspended" || lessonTtsCtx.state === "interrupted")) {
+        await lessonTtsCtx.resume().catch(() => {});
+      }
+
       audioChunks = [];
       suppressNextStopSubmit = false;
-      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-      const chosenMime = mimeTypes.find((m) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(m)) || "";
+      const mimeTypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4"];
+      const chosenMime =
+        typeof MediaRecorder.isTypeSupported === "function"
+          ? mimeTypes.find((m) => MediaRecorder.isTypeSupported(m)) || ""
+          : "";
+      const isMp4OrIOS = isIOSDevice || !chosenMime || chosenMime.includes("mp4");
+
       let rec;
       try {
-        rec = chosenMime
-          ? new MediaRecorder(mediaStream, { mimeType: chosenMime, audioBitsPerSecond: 24000 })
-          : new MediaRecorder(mediaStream, { audioBitsPerSecond: 24000 });
+        if (!isMp4OrIOS) {
+          rec = new MediaRecorder(mediaStream, { mimeType: chosenMime, audioBitsPerSecond: 24000 });
+        } else if (chosenMime) {
+          rec = new MediaRecorder(mediaStream, { mimeType: chosenMime });
+        } else {
+          rec = new MediaRecorder(mediaStream);
+        }
       } catch {
-        rec = chosenMime ? new MediaRecorder(mediaStream, { mimeType: chosenMime }) : new MediaRecorder(mediaStream);
+        try {
+          rec = chosenMime ? new MediaRecorder(mediaStream, { mimeType: chosenMime }) : new MediaRecorder(mediaStream);
+        } catch {
+          rec = new MediaRecorder(mediaStream);
+        }
       }
       mediaRecorder = rec;
 
       rec.ondataavailable = (ev) => {
         if (ev.data && ev.data.size > 0) audioChunks.push(ev.data);
       };
+      rec.onerror = () => {
+        cleanupTurnRecorder();
+        state.isRecordingTurn = false;
+        state.mirrorPhase = "";
+        renderView();
+        showToast("⚠️ 录音中断，请重新点击麦克风");
+      };
       rec.onstop = async () => {
         const shouldSkip = suppressNextStopSubmit;
         suppressNextStopSubmit = false;
-        const blob = new Blob(audioChunks, { type: rec?.mimeType || "audio/webm" });
+        const actualMime =
+          (rec && rec.mimeType) ||
+          chosenMime ||
+          (audioChunks[0] && audioChunks[0].type) ||
+          (isIOSDevice ? "audio/mp4" : "audio/webm");
+        const blob = new Blob(audioChunks, { type: actualMime });
         cleanupTurnRecorder();
-        if (shouldSkip || blob.size < 400) {
+        if (shouldSkip) {
           return;
+        }
+        if (blob.size < 400) {
+          state.isRecordingTurn = false;
+          state.mirrorPhase = "";
+          renderView();
+          showToast("⚠️ 录音时间太短或未采集到声音，请靠近麦克风重试");
+          return;
+        }
+        if (isIOSDevice) {
+          await new Promise((r) => setTimeout(r, 60));
         }
         await submitLessonAudioTurn(blob);
       };
 
-      rec.start(100);
+      if (isMp4OrIOS) {
+        rec.start();
+      } else {
+        rec.start(100);
+      }
       state.isRecordingTurn = true;
       state.mirrorPhase = "";
-      playSoftChime("open");
+      if (!isIOSDevice) {
+        playSoftChime("open");
+      }
       renderView();
       startLessonVadMonitor(mediaStream, rec);
     } catch (err) {
       cleanupTurnRecorder();
-      showToast(`❌ 无法打开麦克风：${err.message}`);
+      state.isRecordingTurn = false;
+      renderView();
+      if (opts.autoTriggered) {
+        showToast("🎙️ 请点击蓝色麦克风按钮开始说话");
+      } else {
+        showToast(`❌ 无法打开麦克风：${err.message || err.name}`);
+      }
     }
   }
 
@@ -1137,6 +1349,7 @@
         URL.revokeObjectURL(localMirrorBlobUrl);
       } catch {}
     }
+    lastMirrorBlob = audioBlob;
     localMirrorBlobUrl = URL.createObjectURL(audioBlob);
     const mirrorSnapshotUrl = localMirrorBlobUrl;
 
@@ -1163,13 +1376,22 @@
     }, 200);
 
     const mirrorPlayPromise =
-      state.mirrorPlayback && mirrorSnapshotUrl
-        ? playUrlAsync(mirrorSnapshotUrl)
+      state.mirrorPlayback && audioBlob
+        ? playBlobViaWebAudio(audioBlob, mirrorSnapshotUrl)
         : Promise.resolve();
 
     try {
       const fd = new FormData();
-      fd.append("audio", audioBlob, "student_turn.webm");
+      const mimeLower = (audioBlob.type || "").toLowerCase();
+      const uploadExt =
+        mimeLower.includes("mp4") || mimeLower.includes("m4a") || mimeLower.includes("aac")
+          ? "m4a"
+          : mimeLower.includes("ogg")
+          ? "ogg"
+          : mimeLower.includes("wav")
+          ? "wav"
+          : "webm";
+      fd.append("audio", audioBlob, `student_turn.${uploadExt}`);
       fd.append("session_id", state.lessonSession.sessionId);
       fd.append("user_id", state.userId);
       fd.append("step_index", String(step.stepIndex));
@@ -2691,7 +2913,14 @@
 
     // Shared audio & Tap-Any-Word token popover bindings
     containerEl.querySelectorAll("[data-play-url]").forEach((btn) => {
-      btn.onclick = () => playUrlAsync(btn.dataset.playUrl);
+      btn.onclick = () => {
+        ensureLessonAudioCtx();
+        const url = btn.dataset.playUrl;
+        if (url && url === localMirrorBlobUrl && lastMirrorBlob) {
+          return playBlobViaWebAudio(lastMirrorBlob, url);
+        }
+        return playUrlAsync(url);
+      };
     });
     containerEl.querySelectorAll("[data-tts-text]").forEach((btn) => {
       btn.onclick = () => playTextTts(btn.dataset.ttsText, { lang: btn.dataset.ttsLang || null });

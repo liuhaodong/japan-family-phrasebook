@@ -862,3 +862,33 @@ def test_passcode_auth_gate_on_verify_and_protected_endpoints(isolated_env, monk
         headers={"X-App-Passcode": "1993"},
     )
     assert authed.status_code == 200
+
+
+def test_detect_native_gemini_audio_prefers_magic_bytes():
+    from server.services import audio_utils
+
+    # iOS MP4/M4A bytes mislabeled as .webm / audio/webm must still resolve as audio/mp4
+    mp4_bytes = b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom"
+    assert (
+        audio_utils.detect_native_gemini_audio(
+            mp4_bytes, filename="student_turn.webm", content_type="audio/webm"
+        )
+        == ("audio/mp4", "m4a")
+    )
+
+    # WebM EBML header resolves as audio/webm
+    webm_bytes = b"\x1a\x45\xdf\xa3\x9fB\x86\x81\x01B\xf7\x81\x01"
+    assert (
+        audio_utils.detect_native_gemini_audio(
+            webm_bytes, filename="student_turn.webm", content_type="audio/webm;codecs=opus"
+        )
+        == ("audio/webm", "webm")
+    )
+
+    # Fallback to MIME type when bytes have no known magic header
+    assert (
+        audio_utils.detect_native_gemini_audio(
+            b"\x00" * 16, filename="clip.bin", content_type="audio/mp4;codecs=mp4a.40.2"
+        )
+        == ("audio/mp4", "m4a")
+    )

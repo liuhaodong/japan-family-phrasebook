@@ -57,25 +57,43 @@ def detect_native_gemini_audio(
     base_mime = (content_type or "").split(";")[0].strip().lower()
     ext_hint = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
+    # 1. Inspect container magic bytes first so mislabeled uploads (e.g. iOS MP4 named .webm) are never misclassified.
     if len(raw_bytes) >= 12 and raw_bytes[:4] == b"RIFF" and raw_bytes[8:12] == b"WAVE":
         return ("audio/wav", "wav")
-    if raw_bytes[:4] == b"\x1a\x45\xdf\xa3" or base_mime == "audio/webm" or ext_hint == "webm":
+    if raw_bytes[:4] == b"\x1a\x45\xdf\xa3":
         return ("audio/webm", "webm")
-    if raw_bytes[:4] == b"OggS" or base_mime == "audio/ogg" or ext_hint == "ogg":
+    if raw_bytes[:4] == b"OggS":
         return ("audio/ogg", "ogg")
-    if (
-        raw_bytes[:3] == b"ID3"
-        or (len(raw_bytes) >= 2 and raw_bytes[0] == 0xFF and (raw_bytes[1] & 0xE0) == 0xE0)
-        or base_mime in ("audio/mp3", "audio/mpeg")
-        or ext_hint == "mp3"
+    if len(raw_bytes) >= 12 and raw_bytes[4:8] == b"ftyp":
+        return ("audio/mp4", "m4a")
+    if raw_bytes[:3] == b"ID3" or (
+        len(raw_bytes) >= 2 and raw_bytes[0] == 0xFF and (raw_bytes[1] & 0xE0) == 0xE0
     ):
         return ("audio/mp3", "mp3")
-    if (
-        (len(raw_bytes) >= 12 and raw_bytes[4:8] == b"ftyp")
-        or base_mime in ("audio/mp4", "audio/m4a", "audio/aac")
-        or ext_hint in ("m4a", "mp4")
-    ):
+
+    # 2. Fall back to MIME type.
+    if base_mime in ("audio/wav", "audio/x-wav"):
+        return ("audio/wav", "wav")
+    if base_mime == "audio/webm":
+        return ("audio/webm", "webm")
+    if base_mime == "audio/ogg":
+        return ("audio/ogg", "ogg")
+    if base_mime in ("audio/mp4", "audio/m4a", "audio/aac", "audio/x-m4a"):
         return ("audio/mp4", "m4a")
+    if base_mime in ("audio/mp3", "audio/mpeg"):
+        return ("audio/mp3", "mp3")
+
+    # 3. Fall back to filename extension.
+    if ext_hint == "wav":
+        return ("audio/wav", "wav")
+    if ext_hint == "webm":
+        return ("audio/webm", "webm")
+    if ext_hint == "ogg":
+        return ("audio/ogg", "ogg")
+    if ext_hint in ("m4a", "mp4", "aac"):
+        return ("audio/mp4", "m4a")
+    if ext_hint == "mp3":
+        return ("audio/mp3", "mp3")
     return None
 
 
