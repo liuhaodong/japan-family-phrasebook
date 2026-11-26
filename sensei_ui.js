@@ -15,10 +15,13 @@
   const INCLUDE_REVIEW_STORAGE = "jp_sensei_include_review_v1";
   const GEMINI_KEY_STORAGE = "jp_phrasebook_gemini_key_v1";
 
+  const DEFAULT_CLOUD_BACKEND = "https://nihongo-sensei-production-5d273b95.up.railway.app";
+
   const state = {
     subTab: "lesson", // lesson | call | notebook | story
     backendBase: (localStorage.getItem(BACKEND_URL_STORAGE) || "").replace(/\/+$/, ""),
     passcode: localStorage.getItem(PASSCODE_STORAGE) || "",
+    passcodeVerified: false,
     userId: localStorage.getItem(USER_STORAGE) || "haodong",
     voice: localStorage.getItem(VOICE_STORAGE) || "Aoede",
     coachModel: localStorage.getItem(COACH_MODEL_STORAGE) || "",
@@ -133,7 +136,10 @@
 
   function apiBase() {
     if (state.backendBase) return state.backendBase;
-    if (location.hostname.endsWith("github.io") || location.protocol === "file:") {
+    if (location.hostname.endsWith("github.io")) {
+      return DEFAULT_CLOUD_BACKEND;
+    }
+    if (location.protocol === "file:") {
       return "http://127.0.0.1:8000";
     }
     return "";
@@ -178,6 +184,10 @@
       data = { detail: text };
     }
     if (!resp.ok) {
+      if (resp.status === 401) {
+        state.passcodeVerified = false;
+        renderView();
+      }
       throw new Error(data.detail || `HTTP ${resp.status}`);
     }
     return data;
@@ -299,6 +309,20 @@
       state.health = h;
       state.backendOnline = !!h.ok;
       state.healthChecked = true;
+      if (!h.auth_required) {
+        state.passcodeVerified = true;
+      } else if (state.passcode) {
+        try {
+          await apiJson("/api/auth/verify", { method: "POST" });
+          state.passcodeVerified = true;
+        } catch {
+          state.passcode = "";
+          state.passcodeVerified = false;
+          localStorage.removeItem(PASSCODE_STORAGE);
+        }
+      } else {
+        state.passcodeVerified = false;
+      }
       const [usersRes, scenRes] = await Promise.all([apiJson("/api/users"), apiJson("/api/scenarios")]);
       state.users = usersRes.users || [];
       state.scenarios = scenRes.scenarios || [];
@@ -2390,6 +2414,15 @@
           </div>`
         : "";
 
+    const passcodeBanner =
+      state.health?.auth_required && !state.passcodeVerified
+        ? `<div class="sensei-key-banner">
+            🔒 <strong>家庭口令验证：</strong>请输入口令解锁 AI 私教与语音功能（本设备仅需输入一次）：
+            <input type="password" inputmode="numeric" id="sensei-passcode-input" class="sensei-input small" placeholder="输入家庭口令..." value="${escapeHtml(state.passcode)}" />
+            <button type="button" class="sensei-mini-btn" id="sensei-save-passcode-btn">🔓 解锁</button>
+          </div>`
+        : "";
+
     let bodyHtml = "";
     if (state.subTab === "lesson") bodyHtml = renderLessonTab();
     else if (state.subTab === "call") bodyHtml = renderCallTab();
@@ -2418,6 +2451,7 @@
         </div>
 
         ${missingKeyWarning}
+        ${passcodeBanner}
 
         <div class="sensei-subtabs">
           <button type="button" class="sensei-subtab ${state.subTab === "lesson" ? "active" : ""}" data-subtab="lesson">🎓 10分钟私教课 & 纠音</button>
@@ -2465,6 +2499,32 @@
         localStorage.setItem(GEMINI_KEY_STORAGE, key);
         showToast("✅ 已保存本地 Gemini Key");
         renderView();
+      };
+    }
+
+    const passcodeInput = containerEl.querySelector("#sensei-passcode-input");
+    const savePasscodeBtn = containerEl.querySelector("#sensei-save-passcode-btn");
+    const submitPasscode = async () => {
+      const code = (passcodeInput?.value || "").trim();
+      if (!code) return;
+      state.passcode = code;
+      try {
+        await apiJson("/api/auth/verify", { method: "POST" });
+        localStorage.setItem(PASSCODE_STORAGE, code);
+        state.passcodeVerified = true;
+        showToast("✅ 家庭口令已解锁");
+        renderView();
+      } catch {
+        state.passcode = "";
+        state.passcodeVerified = false;
+        localStorage.removeItem(PASSCODE_STORAGE);
+        showToast("❌ 口令错误，请重试");
+      }
+    };
+    if (savePasscodeBtn) savePasscodeBtn.onclick = submitPasscode;
+    if (passcodeInput) {
+      passcodeInput.onkeydown = (e) => {
+        if (e.key === "Enter") submitPasscode();
       };
     }
 

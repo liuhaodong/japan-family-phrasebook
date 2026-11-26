@@ -89,6 +89,7 @@ app.add_middleware(
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-TTS-Sample-Rate", "X-TTS-Cache-Url"],
 )
 
 
@@ -182,6 +183,14 @@ async def health() -> Dict[str, Any]:
         "coach_models": COACH_MODEL_OPTIONS,
         "features": {"live": True, "sudachi": True, "fsrs": True},
     }
+
+
+@app.post("/api/auth/verify")
+async def api_verify_auth(
+    x_app_passcode: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
+    return {"ok": True, "auth_required": bool(APP_PASSCODE)}
 
 
 @app.get("/api/users")
@@ -401,7 +410,9 @@ async def api_tokenize(body: TokenizeRequest) -> Dict[str, Any]:
 async def api_define(
     body: DefineRequest,
     x_gemini_api_key: Optional[str] = Header(default=None),
+    x_app_passcode: Optional[str] = Header(default=None),
 ) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
     api_key = resolve_api_key(x_gemini_api_key, required=False) or None
     entry = await define_word(
         surface=body.surface,

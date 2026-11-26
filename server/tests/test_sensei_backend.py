@@ -835,3 +835,30 @@ async def test_tts_stream_bilingual_stitches_parallel_segments(isolated_env):
             cache_url = resp.headers["x-tts-cache-url"]
             wav_file = isolated_env["tts_dir"] / Path(cache_url).name
             assert wav_file.exists() and wav_file.read_bytes()[:4] == b"RIFF"
+
+
+def test_passcode_auth_gate_on_verify_and_protected_endpoints(isolated_env, monkeypatch):
+    monkeypatch.setattr(config, "APP_PASSCODE", "1993")
+    monkeypatch.setattr("server.main.APP_PASSCODE", "1993")
+
+    client = TestClient(app)
+    health = client.get("/api/health")
+    assert health.status_code == 200
+    assert health.json()["auth_required"] is True
+
+    assert client.post("/api/auth/verify").status_code == 401
+    assert client.post("/api/auth/verify", headers={"X-App-Passcode": "0000"}).status_code == 401
+
+    ok_auth = client.post("/api/auth/verify", headers={"X-App-Passcode": "1993"})
+    assert ok_auth.status_code == 200
+    assert ok_auth.json() == {"ok": True, "auth_required": True}
+
+    unauthed = client.post("/api/sensei/lesson/start", json={"user_id": "haodong", "curriculum_mode": "sensei_syllabus"})
+    assert unauthed.status_code == 401
+
+    authed = client.post(
+        "/api/sensei/lesson/start",
+        json={"user_id": "haodong", "curriculum_mode": "sensei_syllabus"},
+        headers={"X-App-Passcode": "1993"},
+    )
+    assert authed.status_code == 200
