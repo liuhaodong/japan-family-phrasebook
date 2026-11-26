@@ -973,3 +973,34 @@ async def test_synthesize_tts_awaits_inflight_prewarm_without_duplicate_call(iso
         wav_path = isolated_env["tts_dir"] / Path(pre_url).name
         assert wav_path.exists() and wav_path.read_bytes()[:4] == b"RIFF"
         assert len(upstream_calls) == 1
+
+
+def test_strip_wav_header_excludes_trailing_c2pa_chunk_and_polishes_pcm():
+    import array
+    import struct
+
+    # 1. Valid RIFF/WAVE containing fmt + data + trailing C2PA JUMBF metadata chunk
+    expected_pcm = b"".join(struct.pack("<h", (i * 137) % 10000 - 5000) for i in range(600))
+    fmt_chunk = b"fmt " + struct.pack("<IHHIIHH", 16, 1, 1, 24000, 48000, 2, 16)
+    data_chunk = b"data" + struct.pack("<I", len(expected_pcm)) + expected_pcm
+    c2pa_payload = b"jumb\x00\x00\x00\x1ejumdc2pa\x00\x11" + b"\xff" * 48
+    c2pa_chunk = b"C2PA" + struct.pack("<I", len(c2pa_payload)) + c2pa_payload
+    riff_body = b"WAVE" + fmt_chunk + data_chunk + c2pa_chunk
+    wav_with_c2pa = b"RIFF" + struct.pack("<I", len(riff_body)) + riff_body
+
+    stripped = tts_service._strip_wav_header(wav_with_c2pa)
+    assert stripped == expected_pcm
+    assert b"C2PA" not in stripped and b"jumb" not in stripped
+
+    # Also verify fallback C2PA guard on raw unframed PCM chunks
+    assert tts_service._strip_wav_header(expected_pcm + b"C2PA" + c2pa_payload) == expected_pcm
+
+    # 2. Peak soft-limiter (<= 29500) + smooth 4ms boundary fade-in/out on real-length speech
+    loud = array.array("h", [32767 if i % 2 == 0 else -32768 for i in range(1000)])
+    polished_bytes = tts_service._polish_pcm_segment(loud.tobytes(), sample_rate=24000)
+    assert len(polished_bytes) == len(loud.tobytes())
+    polished = array.array("h")
+    polished.frombytes(polished_bytes)
+    assert max(abs(s) for s in polished) <= 29500
+    assert polished[0] == 0 and polished[-1] == 0
+    assert abs(polished[500]) > 28000

@@ -17,6 +17,10 @@
 
   const DEFAULT_CLOUD_BACKEND = "https://nihongo-sensei-production-5d273b95.up.railway.app";
 
+  const isIOSDevice =
+    /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+
   const state = {
     subTab: "lesson", // lesson | call | notebook | story
     backendBase: (localStorage.getItem(BACKEND_URL_STORAGE) || "").replace(/\/+$/, ""),
@@ -48,7 +52,7 @@
     drillChunkTokens: [],
     peekHint: false,
     mirrorPlayback: true,
-    autoReopenMic: true,
+    autoReopenMic: !isIOSDevice,
     autoStopSilence: true,
     autoAdvanceOnPass: true,
     isRecordingTurn: false,
@@ -84,10 +88,6 @@
     loadingToken: false,
   };
 
-  const isIOSDevice =
-    /iPad|iPhone|iPod/.test(navigator.userAgent || "") ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
   let containerEl = null;
   let currentAudioEl = null;
   let currentAudioDoneResolve = null;
@@ -96,6 +96,8 @@
   let localMirrorBlobUrl = "";
   let lastMirrorBlob = null;
   let activeMirrorPlayId = 0;
+  let isStartingRecording = false;
+  let iosRecTimerInterval = null;
   let turnChoreographySeq = 0;
   let mediaRecorder = null;
   let mediaStream = null;
@@ -871,6 +873,7 @@
   // ==================== Guided Lesson & Audio Mirror Loop ====================
   function ensureLessonAudioCtx() {
     unlockSharedAudioEl();
+    if (isIOSDevice) return null;
     ensureLessonTtsCtx(24000);
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -888,6 +891,7 @@
   }
 
   function playSoftChime(kind = "open") {
+    if (isIOSDevice) return;
     try {
       const ctx = ensureLessonAudioCtx();
       if (!ctx) return;
@@ -922,8 +926,15 @@
   }
 
   async function maybeAutoOpenMic(seq) {
-    if (seq !== turnChoreographySeq || !state.autoReopenMic || state.subTab !== "lesson") return;
+    if (seq !== turnChoreographySeq || state.subTab !== "lesson") return;
     if (state.isRecordingTurn || state.isEvaluatingTurn) return;
+    if (isIOSDevice || !state.autoReopenMic) {
+      if (isIOSDevice) {
+        state.mirrorPhase = "ready_retry";
+        updateMirrorPhaseDom();
+      }
+      return;
+    }
     state.mirrorPhase = "ready_retry";
     updateMirrorPhaseDom();
     await new Promise((r) => setTimeout(r, 260));
@@ -1034,6 +1045,10 @@
       cancelAnimationFrame(micLevelRaf);
       micLevelRaf = 0;
     }
+    if (iosRecTimerInterval) {
+      clearInterval(iosRecTimerInterval);
+      iosRecTimerInterval = null;
+    }
     if (vadSourceNode) {
       try {
         vadSourceNode.disconnect();
@@ -1065,6 +1080,32 @@
     }
     mediaRecorder = null;
     audioChunks = [];
+  }
+
+  function startIosRecordingTimer() {
+    if (iosRecTimerInterval) {
+      clearInterval(iosRecTimerInterval);
+      iosRecTimerInterval = null;
+    }
+    const startedAt = performance.now();
+    iosRecTimerInterval = setInterval(() => {
+      if (!state.isRecordingTurn) {
+        clearInterval(iosRecTimerInterval);
+        iosRecTimerInterval = null;
+        return;
+      }
+      const elapsedSec = (performance.now() - startedAt) / 1000;
+      const hintEl = document.getElementById("sensei-vad-hint");
+      if (hintEl) {
+        hintEl.textContent = `🎙️ 正在录音 (${elapsedSec.toFixed(1)}s)... 说完请点击上方按钮结束并提交`;
+      }
+      const fillEl = document.getElementById("sensei-vad-fill");
+      if (fillEl) {
+        const pct = Math.round(45 + 17 * Math.sin(elapsedSec * 6.5));
+        fillEl.style.width = `${pct}%`;
+        fillEl.classList.add("active");
+      }
+    }, 150);
   }
 
   function cancelLessonRecording() {
@@ -1228,7 +1269,7 @@
   }
 
   async function toggleLessonRecording(opts = {}) {
-    if (state.isEvaluatingTurn) return;
+    if (state.isEvaluatingTurn || isStartingRecording) return;
     clearAutoAdvanceTimer();
     ensureLessonAudioCtx();
 
@@ -1243,6 +1284,7 @@
       return;
     }
 
+    const wasPlayingAudio = Boolean(currentAudioEl && !currentAudioEl.paused);
     stopSimpleAudio();
     if (!opts.autoTriggered) {
       turnChoreographySeq += 1;
@@ -1260,11 +1302,17 @@
       return;
     }
 
+    isStartingRecording = true;
     try {
+      // Allow iOS AVAudioSession to finish tearing down <audio> playback before capturing mic.
+      if (isIOSDevice && wasPlayingAudio) {
+        await new Promise((r) => setTimeout(r, 120));
+      }
+
       const audioConstraints = isIOSDevice
         ? {
-            echoCancellation: true,
-            noiseSuppression: true,
+            echoCancellation: false,
+            noiseSuppression: false,
             autoGainControl: true,
           }
         : {
@@ -1277,20 +1325,51 @@
       try {
         mediaStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
       } catch (constraintErr) {
-        if (constraintErr && (constraintErr.name === "OverconstrainedError" || constraintErr.name === "TypeError")) {
+        if (
+          constraintErr &&
+          (constraintErr.name === "OverconstrainedError" ||
+            constraintErr.name === "TypeError" ||
+            constraintErr.name === "NotReadableError")
+        ) {
           mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         } else {
           throw constraintErr;
         }
       }
 
-      // iOS Safari may suspend or interrupt AudioContexts while the permission sheet is shown.
-      const actx = ensureLessonAudioCtx();
-      if (actx && (actx.state === "suspended" || actx.state === "interrupted")) {
-        await actx.resume().catch(() => {});
+      let track = mediaStream.getAudioTracks()[0];
+      if (!track || track.readyState !== "live") {
+        mediaStream.getTracks().forEach((t) => t.stop());
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        track = mediaStream.getAudioTracks()[0];
       }
-      if (lessonTtsCtx && (lessonTtsCtx.state === "suspended" || lessonTtsCtx.state === "interrupted")) {
-        await lessonTtsCtx.resume().catch(() => {});
+      if (isIOSDevice && track && track.muted) {
+        await new Promise((resolve) => {
+          let settled = false;
+          const done = () => {
+            if (settled) return;
+            settled = true;
+            try {
+              track.removeEventListener("unmute", done);
+            } catch {}
+            resolve();
+          };
+          try {
+            track.addEventListener("unmute", done, { once: true });
+          } catch {}
+          setTimeout(done, 450);
+        });
+      }
+
+      // Desktop uses Web Audio VAD monitor; iOS keeps AudioContext completely detached so MediaRecorder never stalls.
+      if (!isIOSDevice) {
+        const actx = ensureLessonAudioCtx();
+        if (actx && (actx.state === "suspended" || actx.state === "interrupted")) {
+          await actx.resume().catch(() => {});
+        }
+        if (lessonTtsCtx && (lessonTtsCtx.state === "suspended" || lessonTtsCtx.state === "interrupted")) {
+          await lessonTtsCtx.resume().catch(() => {});
+        }
       }
 
       audioChunks = [];
@@ -1367,7 +1446,11 @@
         playSoftChime("open");
       }
       renderView();
-      startLessonVadMonitor(mediaStream, rec);
+      if (isIOSDevice) {
+        startIosRecordingTimer();
+      } else {
+        startLessonVadMonitor(mediaStream, rec);
+      }
     } catch (err) {
       cleanupTurnRecorder();
       state.isRecordingTurn = false;
@@ -1377,6 +1460,8 @@
       } else {
         showToast(`❌ 无法打开麦克风：${err.message || err.name}`);
       }
+    } finally {
+      isStartingRecording = false;
     }
   }
 

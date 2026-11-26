@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import array
 import asyncio
 import base64
 import hashlib
 import json
 import re
+import struct
+import sys
 from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -188,7 +191,7 @@ async def _post_single_segment_pcm(
                 last_error = f"{mdl} HTTP {resp.status_code}: {resp.text[:220]}"
                 continue
             pcm, rate = _extract_pcm_and_rate(resp.json())
-            return pcm, rate, mdl
+            return _polish_pcm_segment(pcm, rate), rate, mdl
         except Exception as exc:
             last_error = f"{mdl}: {exc}"
     raise RuntimeError(f"语音合成失败：{last_error or 'unknown error'}")
@@ -213,7 +216,7 @@ async def synthesize_speech(
     if TTS_STORY_MODEL not in models_to_try:
         models_to_try.append(TTS_STORY_MODEL)
 
-    cache_key = hashlib.sha256(f"{primary_model}|{chosen_voice}|{clean_text}".encode("utf-8")).hexdigest()[:32]
+    cache_key = hashlib.sha256(f"v2|{primary_model}|{chosen_voice}|{clean_text}".encode("utf-8")).hexdigest()[:32]
     cache_dir.mkdir(parents=True, exist_ok=True)
     wav_path = cache_dir / f"{cache_key}.wav"
 
@@ -302,7 +305,7 @@ def get_tts_cache_meta(
     if TTS_STORY_MODEL not in models_to_try:
         models_to_try.append(TTS_STORY_MODEL)
 
-    cache_key = hashlib.sha256(f"{primary_model}|{chosen_voice}|{clean_text}".encode("utf-8")).hexdigest()[:32]
+    cache_key = hashlib.sha256(f"v2|{primary_model}|{chosen_voice}|{clean_text}".encode("utf-8")).hexdigest()[:32]
     wav_path = cache_dir / f"{cache_key}.wav"
     return {
         "clean_text": clean_text,
@@ -316,13 +319,61 @@ def get_tts_cache_meta(
 
 
 def _strip_wav_header(raw: bytes) -> bytes:
-    """Strip RIFF/WAVE header if present to return pure 16-bit PCM bytes."""
-    if len(raw) > 44 and raw[:4] == b"RIFF":
+    """Extract pure 16-bit PCM bytes from a RIFF/WAVE container, excluding trailing chunks like C2PA."""
+    if not raw:
+        return raw
+    if len(raw) >= 12 and raw[:4] == b"RIFF" and raw[8:12] == b"WAVE":
+        pos = 12
+        total = len(raw)
+        while pos + 8 <= total:
+            chunk_id = raw[pos : pos + 4]
+            chunk_size = struct.unpack_from("<I", raw, pos + 4)[0]
+            data_start = pos + 8
+            data_end = min(total, data_start + chunk_size)
+            if chunk_id == b"data":
+                pcm = raw[data_start:data_end]
+                return pcm[: len(pcm) - (len(pcm) % 2)]
+            pos = data_start + chunk_size + (chunk_size & 1)
         idx = raw.find(b"data")
-        if idx != -1 and idx + 8 <= len(raw):
-            return raw[idx + 8 :]
-        return raw[44:]
+        if idx != -1 and idx + 8 <= total:
+            chunk_size = struct.unpack_from("<I", raw, idx + 4)[0]
+            data_start = idx + 8
+            data_end = min(total, data_start + chunk_size) if chunk_size > 0 else total
+            pcm = raw[data_start:data_end]
+            return pcm[: len(pcm) - (len(pcm) % 2)]
+        pcm = raw[44:]
+        return pcm[: len(pcm) - (len(pcm) % 2)]
+    c2pa_idx = raw.find(b"C2PA")
+    if c2pa_idx != -1 and raw.find(b"jumb", c2pa_idx, min(len(raw), c2pa_idx + 64)) != -1:
+        raw = raw[:c2pa_idx]
     return raw
+
+
+def _polish_pcm_segment(pcm: bytes, sample_rate: int = 24000) -> bytes:
+    """Soft-limit peaks to prevent iOS speaker clipping and apply 4ms boundary fades."""
+    usable = len(pcm) - (len(pcm) % 2)
+    if usable < 960:
+        return pcm[:usable]
+    samples = array.array("h")
+    samples.frombytes(pcm[:usable])
+    if sys.byteorder != "little":
+        samples.byteswap()
+    n = len(samples)
+    peak = max((abs(s) for s in samples), default=0)
+    if peak > 29500:
+        scale = 29500.0 / peak
+        for i in range(n):
+            samples[i] = int(samples[i] * scale)
+    fade_n = min(int(sample_rate * 0.004), n // 8)
+    if fade_n > 1:
+        for i in range(fade_n):
+            gain = i / fade_n
+            samples[i] = int(samples[i] * gain)
+            j = n - 1 - i
+            samples[j] = int(samples[j] * gain)
+    if sys.byteorder != "little":
+        samples.byteswap()
+    return samples.tobytes()
 
 
 async def _stream_single_segment_pcm(
@@ -460,8 +511,9 @@ class _InflightTtsStream:
                     self.sample_rate = rate0
                     gap = b"\x00\x00" * int(rate0 * 0.16)
                     for t in tail_tasks:
-                        seg_pcm, _ = await t
+                        seg_pcm, seg_rate = await t
                         if seg_pcm:
+                            seg_pcm = _polish_pcm_segment(seg_pcm, seg_rate or rate0)
                             if gap:
                                 all_pcm.append(gap)
                                 await self._push_chunk(gap)
