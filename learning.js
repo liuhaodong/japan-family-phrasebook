@@ -36,9 +36,10 @@
     { key: "imperative", label: "命令形", sub: "命令/标牌" }
   ];
 
-  // Local view states for the 3 learning tabs
+  // Local view states for Library & Review views
   const vState = {
     subTab: "verbs300", // 'verbs300' | 'n5vocab' | 'n4n3lib'
+    filtersOpen: false,
     // Verbs 300
     search: "",
     jlpt: "all",
@@ -59,6 +60,7 @@
 
   const gState = {
     subTab: "core", // 'core' | 'voylin-n4' | 'voylin-n3'
+    filtersOpen: false,
     search: "",
     level: "all", // 'all' | 'N5' | 'N4' | 'N3'
     importance: "all", // 'all' | '5' | '4' | '3'
@@ -389,16 +391,18 @@
     const n5Mastered = n5List.filter((w) => state.mastered[w.id]).length;
 
     const subTabBar = `
-      <div class="vocab-hub-switcher scroll-fade-x">
-        <button type="button" class="map-pill ${vState.subTab === "verbs300" ? "active" : ""}" data-vhub="verbs300">
-          ⚡ 高频动词 ${VERBS.length} (${verbsMastered}/${VERBS.length})
-        </button>
-        <button type="button" class="map-pill ${vState.subTab === "n5vocab" ? "active" : ""}" data-vhub="n5vocab">
-          🟢 N5 核心词汇 (${n5Mastered}/${n5List.length})
-        </button>
-        <button type="button" class="map-pill ${vState.subTab === "n4n3lib" ? "active" : ""}" data-vhub="n4n3lib">
-          🚀 N4–N3 进阶词库 (缩略·副词·拟态·敬语)
-        </button>
+      <div class="library-subnav-row">
+        <div class="ui-segmented">
+          <button type="button" class="ui-seg-btn ${vState.subTab === "verbs300" ? "active" : ""}" data-vhub="verbs300">
+            动词 ${VERBS.length}
+          </button>
+          <button type="button" class="ui-seg-btn ${vState.subTab === "n5vocab" ? "active" : ""}" data-vhub="n5vocab">
+            N5 核心词 ${n5List.length}
+          </button>
+          <button type="button" class="ui-seg-btn ${vState.subTab === "n4n3lib" ? "active" : ""}" data-vhub="n4n3lib">
+            N4–N3 词库
+          </button>
+        </div>
       </div>
     `;
 
@@ -449,30 +453,29 @@
         vState.category !== "all" ||
         vState.status !== "all";
 
+      const activeFilterCount =
+        (vState.jlpt !== "all" ? 1 : 0) +
+        (vState.group !== "all" ? 1 : 0) +
+        (vState.transitivity !== "all" ? 1 : 0) +
+        (vState.category !== "all" ? 1 : 0) +
+        (vState.status !== "all" ? 1 : 0);
+
       container.innerHTML = `
-        <div class="learning-hero-card">
+        <div class="learning-hero-card compact-editorial-head">
           ${subTabBar}
-          <div class="learning-hero-top" style="margin-top:0.75rem;">
+          <div class="learning-hero-top">
             <div>
-              <h2 class="itin-section-title">⚡ 日语高频 Top 300 动词 · 自他成对对照 & 13 种变形</h2>
-              <p class="itin-section-sub">涵盖 N5 核心、56 组自他成对动词、N3 复合动词与服务业敬语动词，配助词搭配与 900 句日常/口语缩略例句。</p>
+              <h2 class="itin-section-title">高频 Top 300 动词 · 已掌握 ${verbsMastered}/${VERBS.length} (${pct}%)</h2>
+              <p class="itin-section-sub">自他成对对照、13 种变形与日常例句</p>
             </div>
             <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
               <button type="button" class="action-btn ${vState.showCheatSheet ? "primary-audio" : ""}" id="btn-toggle-conj-sheet">
-                📐 ${vState.showCheatSheet ? "收起变形口诀" : "变形 & 自他口诀"}
+                ${vState.showCheatSheet ? "收起变形口诀" : "变形口诀"}
               </button>
               <button type="button" class="action-btn primary-audio" id="btn-jump-conj-drill">
-                ⚡ 动词变形闪电战 →
+                变形测验 →
               </button>
             </div>
-          </div>
-
-          <div class="learning-progress-row">
-            <div class="progress-text-meta">
-              <span>🎯 动词掌握进度：<strong>${verbsMastered} / ${VERBS.length}</strong> (${pct}%)</span>
-              <span>当前显示：<strong>${filtered.length}</strong> 个动词</span>
-            </div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;"></div></div>
           </div>
 
           ${
@@ -523,61 +526,71 @@
           <div class="lf-row-top">
             <div class="search-box" style="flex:1 1 240px;">
               <span class="search-icon">🔍</span>
-              <input type="text" id="verb-search-input" value="${escapeHtml(vState.search)}" placeholder="搜动词、假名、罗马音、中文、助词搭配或例句..." />
+              <input type="text" id="verb-search-input" value="${escapeHtml(vState.search)}" placeholder="搜动词、假名、罗马音、中文或例句..." />
               <button type="button" class="search-clear" id="verb-search-clear" style="display:${vState.search ? "block" : "none"};">✕</button>
             </div>
-            <select id="verb-cat-select" class="lf-select" aria-label="按场景分类筛选">
-              ${categories.map((c) => `<option value="${escapeHtml(c)}" ${vState.category === c ? "selected" : ""}>${c === "all" ? "📂 全部分类" : `📂 ${escapeHtml(c)}`}</option>`).join("")}
-            </select>
-            <select id="verb-group-select" class="lf-select" aria-label="按变形组筛选">
-              <option value="all" ${vState.group === "all" ? "selected" : ""}>📐 全部变形类</option>
-              <option value="godan" ${vState.group === "godan" ? "selected" : ""}>五段 (u-verb)</option>
-              <option value="ichidan" ${vState.group === "ichidan" ? "selected" : ""}>一段 (ru-verb)</option>
-              <option value="irregular" ${vState.group === "irregular" ? "selected" : ""}>不规则 (する/来る)</option>
-            </select>
+            <button type="button" class="btn-drawer-toggle ${vState.filtersOpen || activeFilterCount ? "active" : ""}" id="btn-verb-filters-toggle">
+              筛选${activeFilterCount ? ` (${activeFilterCount})` : ""}
+            </button>
           </div>
 
-          <div class="lf-chips-row">
-            <div class="toggle-group">
-              ${["all", "N5", "N4", "N3"]
-                .map((lvl) => `<button type="button" class="toggle-chip ${vState.jlpt === lvl ? "active" : ""}" data-vjlpt="${lvl}">${lvl === "all" ? "全部级别" : lvl}</button>`)
-                .join("")}
-            </div>
-            <div class="toggle-group">
-              ${[
-                ["all", "全部自他"],
-                ["paired", "⇄ 仅看自他成对"],
-                ["vi", "🔵 自动词"],
-                ["vt", "🟠 他动词"]
-              ]
-                .map(([tk, tlbl]) => `<button type="button" class="toggle-chip ${vState.transitivity === tk ? "active" : ""}" data-vtrans="${tk}">${tlbl}</button>`)
-                .join("")}
-            </div>
-            <div class="toggle-group">
-              ${[
-                ["all", "📚 全部"],
-                ["unmastered", "⏳ 未掌握"],
-                ["mastered", "✅ 已掌握"],
-                ["starred", "⭐ 收藏"]
-              ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.status === k ? "active" : ""}" data-vstatus="${k}">${lbl}</button>`)
-                .join("")}
-            </div>
-          </div>
+          ${
+            vState.filtersOpen
+              ? `<div class="filter-panel-sheet">
+                  <div class="lf-row-top" style="margin-bottom:0.55rem;">
+                    <select id="verb-cat-select" class="lf-select" aria-label="按场景分类筛选">
+                      ${categories.map((c) => `<option value="${escapeHtml(c)}" ${vState.category === c ? "selected" : ""}>${c === "all" ? "全部分类" : escapeHtml(c)}</option>`).join("")}
+                    </select>
+                    <select id="verb-group-select" class="lf-select" aria-label="按变形组筛选">
+                      <option value="all" ${vState.group === "all" ? "selected" : ""}>全部变形类</option>
+                      <option value="godan" ${vState.group === "godan" ? "selected" : ""}>五段 (u-verb)</option>
+                      <option value="ichidan" ${vState.group === "ichidan" ? "selected" : ""}>一段 (ru-verb)</option>
+                      <option value="irregular" ${vState.group === "irregular" ? "selected" : ""}>不规则 (する/来る)</option>
+                    </select>
+                  </div>
+                  <div class="lf-chips-row">
+                    <div class="toggle-group">
+                      ${["all", "N5", "N4", "N3"]
+                        .map((lvl) => `<button type="button" class="toggle-chip ${vState.jlpt === lvl ? "active" : ""}" data-vjlpt="${lvl}">${lvl === "all" ? "全级别" : lvl}</button>`)
+                        .join("")}
+                    </div>
+                    <div class="toggle-group">
+                      ${[
+                        ["all", "全自他"],
+                        ["paired", "自他成对"],
+                        ["vi", "自动词"],
+                        ["vt", "他动词"]
+                      ]
+                        .map(([tk, tlbl]) => `<button type="button" class="toggle-chip ${vState.transitivity === tk ? "active" : ""}" data-vtrans="${tk}">${tlbl}</button>`)
+                        .join("")}
+                    </div>
+                    <div class="toggle-group">
+                      ${[
+                        ["all", "全部"],
+                        ["unmastered", "未掌握"],
+                        ["mastered", "已掌握"],
+                        ["starred", "收藏"]
+                      ]
+                        .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.status === k ? "active" : ""}" data-vstatus="${k}">${lbl}</button>`)
+                        .join("")}
+                    </div>
+                  </div>
+                </div>`
+              : ""
+          }
 
           ${
             !isFilteredActive
               ? `
             <div class="lf-range-row">
-              <span style="font-size:0.75rem;font-weight:700;color:var(--text-muted);">高频分段：</span>
               ${[
-                ["1-50", "🔥 1–50"],
-                ["51-100", "⭐ 51–100"],
-                ["101-150", "📘 101–150"],
-                ["151-200", "💎 151–200"],
-                ["201-250", "⇄ 201–250 (自他补完)"],
-                ["251-300", "🚀 251–300 (复合/敬语)"],
-                ["all", "📋 全部 300"]
+                ["1-50", "1–50"],
+                ["51-100", "51–100"],
+                ["101-150", "101–150"],
+                ["151-200", "151–200"],
+                ["201-250", "201–250"],
+                ["251-300", "251–300"],
+                ["all", "全部 300"]
               ]
                 .map(([rk, rlbl]) => `<button type="button" class="map-pill ${vState.range === rk ? "active" : ""}" data-vrange="${rk}">${rlbl}</button>`)
                 .join("")}
@@ -684,10 +697,12 @@
       `;
 
       // Bind Verbs 300 Events
+      const btnVerbFilters = document.getElementById("btn-verb-filters-toggle");
+      if (btnVerbFilters) btnVerbFilters.onclick = () => { vState.filtersOpen = !vState.filtersOpen; renderVerbsView(); };
       const toggleSheet = document.getElementById("btn-toggle-conj-sheet");
       if (toggleSheet) toggleSheet.onclick = () => { vState.showCheatSheet = !vState.showCheatSheet; renderVerbsView(); };
       const jumpDrill = document.getElementById("btn-jump-conj-drill");
-      if (jumpDrill) jumpDrill.onclick = () => { pState.subMode = "conj"; pState.conjQuestion = null; switchAppMode("practice"); };
+      if (jumpDrill) jumpDrill.onclick = () => { pState.subMode = "conj"; pState.conjQuestion = null; switchAppMode("review", { reviewTab: "drills" }); };
       const searchEl = document.getElementById("verb-search-input");
       if (searchEl) {
         searchEl.oninput = (e) => {
@@ -739,24 +754,18 @@
         return true;
       });
 
+      const n5FilterCount = (vState.n5Cat !== "all" ? 1 : 0) + (vState.n5Status !== "all" ? 1 : 0);
       container.innerHTML = `
-        <div class="learning-hero-card">
+        <div class="learning-hero-card compact-editorial-head">
           ${subTabBar}
-          <div class="learning-hero-top" style="margin-top:0.75rem;">
+          <div class="learning-hero-top">
             <div>
-              <h2 class="itin-section-title">🟢 JLPT N5 核心词汇总复习 (${n5List.length} 词 · 含 75 核心形容词)</h2>
-              <p class="itin-section-sub">完整覆盖指示词、时间日期、家人、方位场所、交通、饮食、身体日用品、天气颜色及 い/な 形容词四态变化，每词配 Studio 真人例句！</p>
+              <h2 class="itin-section-title">N5 核心词汇 · 已掌握 ${n5Mastered}/${n5List.length} (${pct}%)</h2>
+              <p class="itin-section-sub">覆盖时间日期、家人、方位、交通饮食与 75 个核心形容词</p>
             </div>
             <button type="button" class="action-btn primary-audio" id="btn-jump-n5-srs">
-              🃏 去刷 N5 词汇闪卡 →
+              刷 N5 闪卡 →
             </button>
-          </div>
-          <div class="learning-progress-row">
-            <div class="progress-text-meta">
-              <span>🎯 N5 词汇掌握进度：<strong>${n5Mastered} / ${n5List.length}</strong> (${pct}%)</span>
-              <span>当前显示：<strong>${filtered.length}</strong> 个词条</span>
-            </div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%;background:#059669;"></div></div>
           </div>
         </div>
 
@@ -764,25 +773,34 @@
           <div class="lf-row-top">
             <div class="search-box" style="flex:1 1 240px;">
               <span class="search-icon">🔍</span>
-              <input type="text" id="n5-search-input" value="${escapeHtml(vState.n5Search)}" placeholder="搜 N5 单词、假名、罗马音、中文（如：今日、駅、おいし、天気）..." />
+              <input type="text" id="n5-search-input" value="${escapeHtml(vState.n5Search)}" placeholder="搜 N5 单词、假名、罗马音、中文..." />
               <button type="button" class="search-clear" id="n5-search-clear" style="display:${vState.n5Search ? "block" : "none"};">✕</button>
             </div>
-            <div class="toggle-group">
-              ${[
-                ["all", "📚 全部"],
-                ["unmastered", "⏳ 未掌握"],
-                ["mastered", "✅ 已掌握"],
-                ["starred", "⭐ 收藏"]
-              ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.n5Status === k ? "active" : ""}" data-n5status="${k}">${lbl}</button>`)
-                .join("")}
-            </div>
+            <button type="button" class="btn-drawer-toggle ${vState.filtersOpen || n5FilterCount ? "active" : ""}" id="btn-n5-filters-toggle">
+              筛选${n5FilterCount ? ` (${n5FilterCount})` : ""}
+            </button>
           </div>
-          <div class="lf-range-row">
-            ${cats
-              .map((c) => `<button type="button" class="map-pill ${vState.n5Cat === c ? "active" : ""}" data-n5cat="${escapeHtml(c)}">${c === "all" ? `全部 (${n5List.length})` : escapeHtml(c)}</button>`)
-              .join("")}
-          </div>
+          ${
+            vState.filtersOpen
+              ? `<div class="filter-panel-sheet">
+                  <div class="toggle-group" style="margin-bottom:0.55rem;">
+                    ${[
+                      ["all", "全部"],
+                      ["unmastered", "未掌握"],
+                      ["mastered", "已掌握"],
+                      ["starred", "收藏"]
+                    ]
+                      .map(([k, lbl]) => `<button type="button" class="toggle-chip ${vState.n5Status === k ? "active" : ""}" data-n5status="${k}">${lbl}</button>`)
+                      .join("")}
+                  </div>
+                  <div class="lf-range-row" style="border-top:none;padding-top:0;">
+                    ${cats
+                      .map((c) => `<button type="button" class="map-pill ${vState.n5Cat === c ? "active" : ""}" data-n5cat="${escapeHtml(c)}">${c === "all" ? `全部 (${n5List.length})` : escapeHtml(c)}</button>`)
+                      .join("")}
+                  </div>
+                </div>`
+              : ""
+          }
         </div>
 
         <div class="vocab-grid">
@@ -840,13 +858,15 @@
         </div>
       `;
 
+      const btnN5Filters = document.getElementById("btn-n5-filters-toggle");
+      if (btnN5Filters) btnN5Filters.onclick = () => { vState.filtersOpen = !vState.filtersOpen; renderVerbsView(); };
       const jumpN5Srs = document.getElementById("btn-jump-n5-srs");
       if (jumpN5Srs) {
         jumpN5Srs.onclick = () => {
           pState.subMode = "srs";
           pState.srsDeck = "n5vocab";
           pState.srsCurrentCard = null;
-          switchAppMode("practice");
+          switchAppMode("review", { reviewTab: "srs" });
         };
       }
       const n5SearchEl = document.getElementById("n5-search-input");
@@ -1110,15 +1130,15 @@
       }
 
       container.innerHTML = `
-        <div class="learning-hero-card">
+        <div class="learning-hero-card compact-editorial-head">
           ${subTabBar}
-          <div class="learning-hero-top" style="margin-top:0.75rem;">
+          <div class="learning-hero-top">
             <div>
-              <h2 class="itin-section-title">🚀 N4–N3 地道日语实战词库（突破课本，听懂真实日本）</h2>
-              <p class="itin-section-sub">覆盖口语缩略、N3 高频副词、美食与育儿拟态词、服务业敬语动词、店员快语速听力解码、汉字避坑与街头看板。</p>
+              <h2 class="itin-section-title">N4–N3 实战词库</h2>
+              <p class="itin-section-sub">口语缩略 · N3 副词 · 拟态词 · 敬语 · 店员听解 · 街头看板</p>
             </div>
             <button type="button" class="action-btn primary-audio" id="btn-jump-staff-quiz">
-              🏪 去测店员听力解码 →
+              店员听力测验 →
             </button>
           </div>
         </div>
@@ -1127,18 +1147,18 @@
           <div class="lf-row-top">
             <div class="search-box" style="flex:1 1 240px;">
               <span class="search-icon">🔍</span>
-              <input type="text" id="lib-search-input" value="${escapeHtml(vState.libSearch)}" placeholder="在当前词库中搜索日文/中文关键词..." />
+              <input type="text" id="lib-search-input" value="${escapeHtml(vState.libSearch)}" placeholder="搜索日文或中文关键词..." />
               <button type="button" class="search-clear" id="lib-search-clear" style="display:${vState.libSearch ? "block" : "none"};">✕</button>
             </div>
           </div>
           <div class="lf-range-row" style="border-top:none;padding-top:0;">
             ${[
-              ["contractions", `💬 口语缩略 (${(EXTRAS.contractions || []).length})`],
-              ["adverbs", `🎯 N3副词 (${(EXTRAS.adverbs || []).length})`],
-              ["onomatopoeia", `🍜 拟声拟态 (${(EXTRAS.onomatopoeia || []).length})`],
-              ["keigo", `🙇 敬语动词 (${(EXTRAS.keigoVerbs || []).length})`],
-              ["staff", `🏪 店员听力 (${(EXTRAS.staffDecoder || []).length})`],
-              ["signs", `🚧 陷阱与看板 (${(EXTRAS.kanjiTraps || []).length + (EXTRAS.streetSigns || []).length})`]
+              ["contractions", `口语缩略 (${(EXTRAS.contractions || []).length})`],
+              ["adverbs", `N3副词 (${(EXTRAS.adverbs || []).length})`],
+              ["onomatopoeia", `拟声拟态 (${(EXTRAS.onomatopoeia || []).length})`],
+              ["keigo", `敬语动词 (${(EXTRAS.keigoVerbs || []).length})`],
+              ["staff", `店员听力 (${(EXTRAS.staffDecoder || []).length})`],
+              ["signs", `陷阱看板 (${(EXTRAS.kanjiTraps || []).length + (EXTRAS.streetSigns || []).length})`]
             ]
               .map(([k, lbl]) => `<button type="button" class="map-pill ${vState.libTab === k ? "active" : ""}" data-libtab="${k}">${lbl}</button>`)
               .join("")}
@@ -1154,7 +1174,7 @@
           pState.subMode = "quiz";
           pState.quizKind = "staff";
           pState.quizQuestion = null;
-          switchAppMode("practice");
+          switchAppMode("review", { reviewTab: "drills" });
         };
       }
       const libSearchEl = document.getElementById("lib-search-input");
@@ -1417,16 +1437,18 @@
     const n3VideoDone = n3VideoAll.filter((v) => state.mastered[v.id]).length;
 
     const subTabBar = `
-      <div class="vocab-hub-switcher scroll-fade-x">
-        <button type="button" class="map-pill ${gState.subTab === "core" ? "active" : ""}" data-ghub="core">
-          📘 精选精讲 ${GRAMMAR.length} (${coreDoneAll}/${GRAMMAR.length})
-        </button>
-        <button type="button" class="map-pill ${gState.subTab === "voylin-n4" ? "active" : ""}" data-ghub="voylin-n4">
-          🎬 视频 N4 ${n4VideoAll.length} (${n4VideoDone}/${n4VideoAll.length})
-        </button>
-        <button type="button" class="map-pill ${gState.subTab === "voylin-n3" ? "active" : ""}" data-ghub="voylin-n3">
-          🎬 视频 N3 ${n3VideoAll.length} (${n3VideoDone}/${n3VideoAll.length})
-        </button>
+      <div class="library-subnav-row">
+        <div class="ui-segmented">
+          <button type="button" class="ui-seg-btn ${gState.subTab === "core" ? "active" : ""}" data-ghub="core">
+            核心精讲 ${GRAMMAR.length}
+          </button>
+          <button type="button" class="ui-seg-btn ${gState.subTab === "voylin-n4" ? "active" : ""}" data-ghub="voylin-n4">
+            视频 N4 ${n4VideoAll.length}
+          </button>
+          <button type="button" class="ui-seg-btn ${gState.subTab === "voylin-n3" ? "active" : ""}" data-ghub="voylin-n3">
+            视频 N3 ${n3VideoAll.length}
+          </button>
+        </div>
       </div>
     `;
 
@@ -1693,53 +1715,34 @@
           .join("");
       }
 
+      const gFilterCount =
+        (gState.importance !== "all" ? 1 : 0) +
+        (gState.status !== "all" ? 1 : 0) +
+        (gState.orderMode !== "n5_first" ? 1 : 0);
+
       container.innerHTML = `
-        <div class="learning-hero-card">
+        <div class="learning-hero-card compact-editorial-head">
           ${subTabBar}
-          <div class="learning-hero-top" style="margin-top:0.75rem;">
+          <div class="learning-hero-top">
             <div>
-              <h2 class="itin-section-title">📖 日语核心语法精讲 · N5 夯基 + N4/N3 进阶 (${GRAMMAR.length} 条)</h2>
-              <p class="itin-section-sub">点击下方级别卡直接切换筛选；上方可切换「🎬 视频 N4 / 视频 N3 全集 (160条·320原句)」联动精练！</p>
+              <h2 class="itin-section-title">核心语法 · 已掌握 ${totalDone}/${GRAMMAR.length} (${totalPct}%)</h2>
+              <p class="itin-section-sub">点击下方级别筛选，或切换视频伴学 N4 / N3</p>
             </div>
             <div style="display:flex;gap:0.45rem;flex-wrap:wrap;">
               <button type="button" class="action-btn ${gState.showComparisons ? "primary-audio" : ""}" id="btn-toggle-gcomp">
-                ⚖️ ${gState.showComparisons ? "收起对比卡" : `易混语法对比 (${comparisons.length}组)`}
+                ${gState.showComparisons ? "收起对比" : `易混对比 (${comparisons.length})`}
               </button>
               <button type="button" class="action-btn primary-audio" id="btn-jump-grammar-quiz">
-                🧩 语法填空测验 →
+                语法测验 →
               </button>
             </div>
           </div>
 
-          <div class="grammar-kpi-row">
-            <button type="button" class="gkpi-card ${gState.level === "all" ? "active" : ""}" data-glevel="all">
-              <span class="verb-rank-pill">ALL</span>
-              <div>
-                <div style="font-weight:800;font-size:0.95rem;">全部 ${totalDone} / ${GRAMMAR.length}</div>
-                <div style="font-size:0.73rem;color:var(--text-muted);">N5–N3 完整总览</div>
-              </div>
-            </button>
+          <div class="lf-range-row" style="border-top:none;padding-top:0.15rem;">
+            <button type="button" class="map-pill ${gState.level === "all" ? "active" : ""}" data-glevel="all">全部 (${totalDone}/${GRAMMAR.length})</button>
             ${statsByLvl
-              .map(
-                (s) => `
-              <button type="button" class="gkpi-card ${gState.level === s.lvl ? "active" : ""}" data-glevel="${s.lvl}">
-                <span class="jlpt-pill jlpt-${s.lvl.toLowerCase()}">${s.lvl}</span>
-                <div>
-                  <div style="font-weight:800;font-size:0.95rem;">已掌握 ${s.done} / ${s.total}</div>
-                  <div style="font-size:0.73rem;color:var(--text-muted);">${s.lvl === "N5" ? "基础总复习" : s.lvl === "N4" ? "日常流利进阶" : "地道细腻表达"}</div>
-                </div>
-              </button>
-            `
-              )
+              .map((s) => `<button type="button" class="map-pill ${gState.level === s.lvl ? "active" : ""}" data-glevel="${s.lvl}">${s.lvl} (${s.done}/${s.total})</button>`)
               .join("")}
-          </div>
-
-          <div class="learning-progress-row">
-            <div class="progress-text-meta">
-              <span>🎯 语法总进度：<strong>${totalDone} / ${GRAMMAR.length}</strong> (${totalPct}%)</span>
-              <span>当前显示：<strong>${filtered.length}</strong> 条语法</span>
-            </div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${totalPct}%;"></div></div>
           </div>
 
           ${
@@ -1783,44 +1786,57 @@
           <div class="lf-row-top">
             <div class="search-box" style="flex:1 1 240px;">
               <span class="search-icon">🔍</span>
-              <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或例句（如：てもいい、こそあど、おかげで、っけ）..." />
+              <input type="text" id="grammar-search-input" value="${escapeHtml(gState.search)}" placeholder="搜语法句型、中文意思或例句..." />
               <button type="button" class="search-clear" id="grammar-search-clear" style="display:${gState.search ? "block" : "none"};">✕</button>
             </div>
-            <select id="grammar-order-select" class="lf-select" aria-label="分组与排序方式">
-              <option value="n5_first" ${gState.orderMode === "n5_first" ? "selected" : ""}>📚 分组：N5 → N4 → N3 (由浅入深)</option>
-              <option value="n3_first" ${gState.orderMode === "n3_first" ? "selected" : ""}>🚀 分组：N3 → N4 → N5 (高阶优先)</option>
-              <option value="importance_all" ${gState.orderMode === "importance_all" ? "selected" : ""}>🔥 跨级别按重要度排序 (5★优先)</option>
-            </select>
+            <button type="button" class="btn-drawer-toggle ${gState.filtersOpen || gFilterCount ? "active" : ""}" id="btn-grammar-filters-toggle">
+              筛选${gFilterCount ? ` (${gFilterCount})` : ""}
+            </button>
           </div>
 
-          <div class="lf-chips-row">
-            <div class="toggle-group">
-              ${[
-                ["all", "全部重要度"],
-                ["5", "🔥 5★每日必用"],
-                ["4", "⭐ 4★高频实用"],
-                ["3", "💎 3★进阶地道"]
-              ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>`)
-                .join("")}
-            </div>
-            <div class="toggle-group">
-              ${[
-                ["all", "全部"],
-                ["unmastered", "⏳ 未掌握"],
-                ["mastered", "✅ 已掌握"],
-                ["starred", "⭐ 收藏"]
-              ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
-                .join("")}
-            </div>
-          </div>
+          ${
+            gState.filtersOpen
+              ? `<div class="filter-panel-sheet">
+                  <div class="lf-row-top" style="margin-bottom:0.55rem;">
+                    <select id="grammar-order-select" class="lf-select" aria-label="分组与排序方式">
+                      <option value="n5_first" ${gState.orderMode === "n5_first" ? "selected" : ""}>分组：N5 → N4 → N3</option>
+                      <option value="n3_first" ${gState.orderMode === "n3_first" ? "selected" : ""}>分组：N3 → N4 → N5</option>
+                      <option value="importance_all" ${gState.orderMode === "importance_all" ? "selected" : ""}>按重要度排序</option>
+                    </select>
+                  </div>
+                  <div class="lf-chips-row">
+                    <div class="toggle-group">
+                      ${[
+                        ["all", "全部重要度"],
+                        ["5", "5★ 必用"],
+                        ["4", "4★ 高频"],
+                        ["3", "3★ 进阶"]
+                      ]
+                        .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.importance === k ? "active" : ""}" data-gimp="${k}">${lbl}</button>`)
+                        .join("")}
+                    </div>
+                    <div class="toggle-group">
+                      ${[
+                        ["all", "全部"],
+                        ["unmastered", "未掌握"],
+                        ["mastered", "已掌握"],
+                        ["starred", "收藏"]
+                      ]
+                        .map(([k, lbl]) => `<button type="button" class="toggle-chip ${gState.status === k ? "active" : ""}" data-gstatus="${k}">${lbl}</button>`)
+                        .join("")}
+                    </div>
+                  </div>
+                </div>`
+              : ""
+          }
         </div>
 
         ${crossSearchBanner}
         ${contentHtml}
       `;
 
+      const btnGFilters = document.getElementById("btn-grammar-filters-toggle");
+      if (btnGFilters) btnGFilters.onclick = () => { gState.filtersOpen = !gState.filtersOpen; renderGrammarView(); };
       const toggleComp = document.getElementById("btn-toggle-gcomp");
       if (toggleComp) toggleComp.onclick = () => { gState.showComparisons = !gState.showComparisons; renderGrammarView(); };
       const jumpQuiz = document.getElementById("btn-jump-grammar-quiz");
@@ -1829,7 +1845,7 @@
           pState.subMode = "quiz";
           pState.quizKind = "grammar";
           pState.quizQuestion = null;
-          switchAppMode("practice");
+          switchAppMode("review", { reviewTab: "drills" });
         };
       }
       const searchEl = document.getElementById("grammar-search-input");
@@ -2269,31 +2285,33 @@
 
       stageHtml = `
         <div class="practice-stage-card">
-          <div class="practice-toolbar-row">
-            <div class="toggle-group">
+          <div class="srs-compact-bar">
+            <select id="srs-deck-select" class="lf-select" aria-label="选择记忆卡组">
               ${[
-                ["due", `⏰ 待复习 (${dueCount})`],
-                ["n5vocab", "🟢 N5词汇"],
-                ["verbs", "⚡ 动词300"],
-                ["pairs", "🔗 自他动词对"],
-                ["grammar", `📖 语法${GRAMMAR.length}`],
-                ["video_grammar", `🎬 视频语法${VIDEO_GRAMMAR.length}`],
-                ["phrases", "🗣️ 场景"],
-                ["starred", "⭐ 收藏"]
+                ["due", `待复习 (${dueCount})`],
+                ["n5vocab", "N5 核心词汇"],
+                ["verbs", "高频动词 300"],
+                ["pairs", "自他动词对"],
+                ["grammar", `核心语法 ${GRAMMAR.length}`],
+                ["video_grammar", `视频语法 ${VIDEO_GRAMMAR.length}`],
+                ["phrases", "旅行场景短语"],
+                ["starred", "我的收藏句"]
               ]
-                .map(([k, lbl]) => `<button type="button" class="toggle-chip ${pState.srsDeck === k ? "active" : ""}" data-srsdeck="${k}">${lbl}</button>`)
+                .map(([k, lbl]) => `<option value="${k}" ${pState.srsDeck === k ? "selected" : ""}>卡组：${lbl}</option>`)
                 .join("")}
-            </div>
+            </select>
+            ${
+              pState.srsDeck === "verbs" || pState.srsDeck === "grammar" || pState.srsDeck === "video_grammar"
+                ? `<select id="srs-jlpt-select" class="lf-select" aria-label="按级别筛选">
+                    ${(pState.srsDeck === "video_grammar" ? ["all", "N4", "N3"] : ["all", "N5", "N4", "N3"])
+                      .map((l) => `<option value="${l}" ${pState.srsJlpt === l ? "selected" : ""}>${l === "all" ? "全部级别" : l}</option>`)
+                      .join("")}
+                  </select>`
+                : ""
+            }
             <div class="toggle-group">
-              ${
-                pState.srsDeck === "verbs" || pState.srsDeck === "grammar" || pState.srsDeck === "video_grammar"
-                  ? (pState.srsDeck === "video_grammar" ? ["all", "N4", "N3"] : ["all", "N5", "N4", "N3"])
-                      .map((l) => `<button type="button" class="toggle-chip ${pState.srsJlpt === l ? "active" : ""}" data-srsjlpt="${l}">${l === "all" ? "全级别" : l}</button>`)
-                      .join("")
-                  : ""
-              }
-              <button type="button" class="toggle-chip ${pState.srsListenFirst ? "active" : ""}" id="btn-srs-listenfirst" title="隐藏文字，先靠耳朵盲听辨意">🎧 盲听模式</button>
-              <button type="button" class="toggle-chip ${pState.srsAutoPlay ? "active" : ""}" id="btn-srs-autoplay">🔊 自动发声</button>
+              <button type="button" class="toggle-chip ${pState.srsListenFirst ? "active" : ""}" id="btn-srs-listenfirst" title="隐藏文字，先听再翻面">盲听</button>
+              <button type="button" class="toggle-chip ${pState.srsAutoPlay ? "active" : ""}" id="btn-srs-autoplay">自动发声</button>
             </div>
           </div>
 
@@ -2683,60 +2701,42 @@
       `;
     }
 
-    container.innerHTML = `
-      <div class="learning-hero-card">
-        <div class="learning-hero-top">
-          <div>
-            <h2 class="itin-section-title">🎯 日语实战训练场 & 个人学习仪表盘</h2>
-            <p class="itin-section-sub">覆盖 N5 词汇、自他动词与助词、动词变形、N5–N3 语法与店员快语速盲听；开口跟读请前往顶部「🎙️ 口语跟读」专栏！</p>
+    const isDrillsView = state.appMode === "review" && state.reviewTab === "drills";
+    if (isDrillsView) {
+      container.innerHTML = `
+        <div class="library-subnav-row" style="margin-bottom:0.2rem;">
+          <div class="ui-segmented">
+            <button type="button" class="ui-seg-btn ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">动词变形</button>
+            <button type="button" class="ui-seg-btn ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">自他与助词</button>
+            <button type="button" class="ui-seg-btn ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">语法与听解</button>
           </div>
-          <div class="dash-streak-badge">
-            <div style="font-size:1.35rem;font-weight:900;">🔥 ${state.streak.count || 0} 天</div>
-            <div style="font-size:0.72rem;opacity:0.9;">今日已完成 ${todayCount} 题/卡</div>
+        </div>
+        ${stageHtml}
+      `;
+    } else if (state.appMode === "review" && state.reviewTab === "srs") {
+      container.innerHTML = `
+        ${stageHtml}
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="learning-hero-card compact-editorial-head">
+          <div class="learning-hero-top">
+            <div>
+              <h2 class="itin-section-title">日语实战训练 · 连续 ${state.streak.count || 0} 天 · 今日 +${todayCount}</h2>
+              <p class="itin-section-sub">N5词汇 ${n5Done}/${n5All.length} · 动词 ${vDone}/${VERBS.length} · 语法 ${gDone}/${GRAMMAR.length} · 场景 ${pDone}/${allPhrases.length}</p>
+            </div>
+          </div>
+          <div class="practice-subtabs scroll-fade-x">
+            <button type="button" class="map-pill ${pState.subMode === "srs" ? "active" : ""}" data-psub="srs">间隔闪卡 (SRS)</button>
+            <button type="button" class="map-pill ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">自他动词 & 助词</button>
+            <button type="button" class="map-pill ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">动词变形闪电战</button>
+            <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">语法 & 听力测验</button>
           </div>
         </div>
 
-        <div class="dash-metrics-grid">
-          <div class="dash-metric">
-            <div class="dm-top"><span>🟢 N5核心词汇</span><strong>${n5Done} / ${n5All.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${n5All.length ? Math.round((n5Done / n5All.length) * 100) : 0}%;background:#059669;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>⚡ 高频动词300</span><strong>${vDone} / ${VERBS.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VERBS.length ? Math.round((vDone / VERBS.length) * 100) : 0}%;background:#0284c7;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>📖 语法${GRAMMAR.length}</span><strong>${gDone} / ${GRAMMAR.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${GRAMMAR.length ? Math.round((gDone / GRAMMAR.length) * 100) : 0}%;background:#7c3aed;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>🎬 视频语法${VIDEO_GRAMMAR.length}</span><strong>${vgDone} / ${VIDEO_GRAMMAR.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${VIDEO_GRAMMAR.length ? Math.round((vgDone / VIDEO_GRAMMAR.length) * 100) : 0}%;background:#2563eb;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>🗣️ 场景短语</span><strong>${pDone} / ${allPhrases.length}</strong></div>
-            <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${allPhrases.length ? Math.round((pDone / allPhrases.length) * 100) : 0}%;"></div></div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>🎙️ 口语达标</span><strong style="color:${oralWeak > 0 ? "#d97706" : "var(--accent-emerald)"};">${oralPassed} 句 (≥80分)</strong></div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">待复训薄弱句：${oralWeak} 句</div>
-          </div>
-          <div class="dash-metric">
-            <div class="dm-top"><span>⏰ 闪卡待复习</span><strong style="color:${dueCount > 0 ? "var(--accent-red)" : "var(--accent-emerald)"};">${dueCount} 张</strong></div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.2rem;">SRS追踪：${Object.keys(state.srs || {}).length} 项</div>
-          </div>
-        </div>
-
-        <div class="practice-subtabs scroll-fade-x">
-          <button type="button" class="map-pill ${pState.subMode === "srs" ? "active" : ""}" data-psub="srs">🃏 间隔复习闪卡 (SRS)</button>
-          <button type="button" class="map-pill ${pState.subMode === "vivt" ? "active" : ""}" data-psub="vivt">🔗 自他动词 & 助词战</button>
-          <button type="button" class="map-pill ${pState.subMode === "conj" ? "active" : ""}" data-psub="conj">⚡ 动词变形闪电战</button>
-          <button type="button" class="map-pill ${pState.subMode === "quiz" ? "active" : ""}" data-psub="quiz">🧩 语法 & 听力测验</button>
-        </div>
-      </div>
-
-      ${stageHtml}
-    `;
+        ${stageHtml}
+      `;
+    }
 
     // Bind Practice Subtabs
     container.querySelectorAll("[data-psub]").forEach((b) => {
@@ -2747,7 +2747,26 @@
       };
     });
 
-    // Bind SRS Flashcard Events
+    // Bind SRS Flashcard Events (compact selects + fallback chips)
+    const srsDeckSel = document.getElementById("srs-deck-select");
+    if (srsDeckSel) {
+      srsDeckSel.onchange = () => {
+        pState.srsDeck = srsDeckSel.value;
+        if (pState.srsDeck === "video_grammar" && pState.srsJlpt === "N5") pState.srsJlpt = "all";
+        pState.srsCurrentCard = null;
+        pickNextSrsCard();
+        renderPracticeView();
+      };
+    }
+    const srsJlptSel = document.getElementById("srs-jlpt-select");
+    if (srsJlptSel) {
+      srsJlptSel.onchange = () => {
+        pState.srsJlpt = srsJlptSel.value;
+        pState.srsCurrentCard = null;
+        pickNextSrsCard();
+        renderPracticeView();
+      };
+    }
     container.querySelectorAll("[data-srsdeck]").forEach((b) => {
       b.onclick = () => {
         pState.srsDeck = b.dataset.srsdeck;
@@ -2933,7 +2952,11 @@
   // Desktop Practice Keyboard Shortcuts
   document.addEventListener("keydown", (e) => {
     const a = app();
-    if (!a || !a.state || a.state.appMode !== "practice") return;
+    if (!a || !a.state) return;
+    const isPracticeActive =
+      a.state.appMode === "practice" ||
+      (a.state.appMode === "review" && (a.state.reviewTab === "srs" || a.state.reviewTab === "drills"));
+    if (!isPracticeActive) return;
     const modal = document.getElementById("app-modal");
     if (modal && modal.classList.contains("open")) return;
     const tag = (e.target && e.target.tagName) || "";
@@ -2987,11 +3010,19 @@
       else if (mode === "grammar") renderGrammarView();
       else if (mode === "practice") renderPracticeView();
     },
+    renderReviewSubMode(tab) {
+      if (tab === "srs") {
+        pState.subMode = "srs";
+      } else if (tab === "drills") {
+        if (pState.subMode === "srs" || pState.subMode === "shadow") pState.subMode = "conj";
+      }
+      renderPracticeView();
+    },
     openOralRoleplay(dlgId) {
       if (window.JP_ORAL_COACH) {
         window.JP_ORAL_COACH.openRoleplayDialogue(dlgId);
       }
-      app().switchAppMode("oral");
+      app().switchAppMode("review", { reviewTab: "oral" });
     }
   };
 })();

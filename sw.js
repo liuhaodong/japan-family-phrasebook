@@ -1,12 +1,12 @@
-const CACHE_NAME = "japan-family-phrasebook-v31";
+const CACHE_NAME = "japan-family-phrasebook-v32";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=28",
-  "./app.js?v=19",
-  "./oral_coach.js?v=19",
-  "./learning.js?v=19",
-  "./sensei_ui.js?v=31",
+  "./styles.css?v=32",
+  "./app.js?v=32",
+  "./oral_coach.js?v=32",
+  "./learning.js?v=32",
+  "./sensei_ui.js?v=32",
   "./live_audio_worklet.js?v=19",
   "./manifest.json?v=18",
   "./vendor/leaflet/leaflet.css?v=18",

@@ -18,13 +18,63 @@
     }
   });
 
-  // Load persisted UI preferences
-  const VALID_MODES = new Set(["verbs", "grammar", "oral", "sensei", "practice", "phrasebook", "itinerary"]);
+  const UI_ICONS = {
+    mic: '<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/>',
+    stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    speaker: '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>',
+    book: '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+    layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+    map: '<polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/>',
+    sliders: '<line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/>',
+    sparkles: '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    headphones: '<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+    bookmark: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
+    check: '<polyline points="20 6 9 17 4 12"/>',
+    chevronLeft: '<polyline points="15 18 9 12 15 6"/>',
+    chevronRight: '<polyline points="9 18 15 12 9 6"/>',
+    search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    more: '<circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/>',
+    flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+    refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>'
+  };
+
+  function icon(name, cls = "") {
+    const inner = UI_ICONS[name] || "";
+    const extra = cls ? ` ${cls}` : "";
+    return `<svg class="ui-ico${extra}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+  }
+
+  // Load persisted UI preferences & migrate legacy 7-tab routing to 4 Editorial Destinations
+  const VALID_MODES = new Set(["sensei", "library", "review", "itinerary"]);
+  const LEGACY_MODE_MAP = {
+    verbs: { appMode: "library", libraryTab: "verbs" },
+    grammar: { appMode: "library", libraryTab: "grammar" },
+    phrasebook: { appMode: "library", libraryTab: "phrasebook" },
+    practice: { appMode: "review", reviewTab: "srs" },
+    oral: { appMode: "review", reviewTab: "oral" },
+  };
+  const VALID_LIBRARY_TABS = new Set(["verbs", "grammar", "phrasebook"]);
+  const VALID_REVIEW_TABS = new Set(["notebook", "srs", "drills", "oral"]);
+
   const savedPrefs = JSON.parse(localStorage.getItem("jp_phrasebook_prefs_v1") || "{}");
+  const migrated = LEGACY_MODE_MAP[savedPrefs.appMode] || null;
 
   // App State
   const state = {
-    appMode: VALID_MODES.has(savedPrefs.appMode) ? savedPrefs.appMode : "verbs",
+    appMode: VALID_MODES.has(savedPrefs.appMode)
+      ? savedPrefs.appMode
+      : migrated
+      ? migrated.appMode
+      : "sensei",
+    libraryTab: VALID_LIBRARY_TABS.has(savedPrefs.libraryTab)
+      ? savedPrefs.libraryTab
+      : migrated?.libraryTab || "verbs",
+    reviewTab: VALID_REVIEW_TABS.has(savedPrefs.reviewTab)
+      ? savedPrefs.reviewTab
+      : migrated?.reviewTab || "notebook",
     mapRegion: "all", // 'all' | 'tokyo' | 'ginza' | 'karuizawa' | 'kyushu'
     mapLayer: savedPrefs.mapLayer || "esri_street", // 'esri_street' | 'gsi_pale' | 'esri_sat'
     activeLeg: "all",
@@ -84,7 +134,7 @@
     const isAlive = state.streak.lastDate === today || state.streak.lastDate === yesterday;
     const days = isAlive ? (state.streak.count || 0) : 0;
     const todayCnt = state.streak.todayDate === today ? (state.streak.todayCount || 0) : 0;
-    el.textContent = todayCnt > 0 ? `🔥 ${days}天连学 · 今日+${todayCnt}` : `🔥 ${days}天连学`;
+    el.innerHTML = `${icon("flame")}<span>${todayCnt > 0 ? `${days}天 · +${todayCnt}` : `${days}天`}</span>`;
   }
 
   function savePrefs() {
@@ -92,6 +142,8 @@
       "jp_phrasebook_prefs_v1",
       JSON.stringify({
         appMode: state.appMode,
+        libraryTab: state.libraryTab,
+        reviewTab: state.reviewTab,
         showFurigana: state.showFurigana,
         showRomaji: state.showRomaji,
         showCn: state.showCn,
@@ -2121,10 +2173,11 @@
   }
 
   function syncStickyOffset() {
-    const stickyEl = document.getElementById("sticky-controls");
-    if (!stickyEl) return;
-    const h = stickyEl.offsetHeight || 0;
-    document.documentElement.style.setProperty("--sticky-offset", `${Math.max(16, Math.ceil(h + 10))}px`);
+    const topEl = document.getElementById("app-topbar");
+    const subEl = document.getElementById("workspace-subbar-wrap");
+    const topH = topEl ? topEl.offsetHeight : 0;
+    const subH = subEl && subEl.style.display !== "none" ? subEl.offsetHeight : 0;
+    document.documentElement.style.setProperty("--sticky-offset", `${Math.max(56, Math.ceil(topH + subH + 8))}px`);
   }
 
   function closeAllPopovers() {
@@ -2139,7 +2192,45 @@
     });
   }
 
-  // Sync body classes & toolbar buttons
+  function renderWorkspaceSubbar() {
+    const wrap = document.getElementById("workspace-subbar-wrap");
+    if (!wrap) return;
+    if (state.appMode === "library") {
+      wrap.style.display = "block";
+      wrap.innerHTML = `
+        <div class="workspace-subbar-inner">
+          <div class="ui-segmented" role="tablist" aria-label="词库与语法分类">
+            <button type="button" class="ui-seg-btn ${state.libraryTab === "verbs" ? "active" : ""}" data-libtab="verbs">动词与词库</button>
+            <button type="button" class="ui-seg-btn ${state.libraryTab === "grammar" ? "active" : ""}" data-libtab="grammar">语法 N5–N3</button>
+            <button type="button" class="ui-seg-btn ${state.libraryTab === "phrasebook" ? "active" : ""}" data-libtab="phrasebook">旅行场景对话</button>
+          </div>
+        </div>
+      `;
+      wrap.querySelectorAll("[data-libtab]").forEach((btn) => {
+        btn.onclick = () => switchAppMode("library", { libraryTab: btn.dataset.libtab });
+      });
+    } else if (state.appMode === "review") {
+      wrap.style.display = "block";
+      wrap.innerHTML = `
+        <div class="workspace-subbar-inner">
+          <div class="ui-segmented" role="tablist" aria-label="复习与练习模式">
+            <button type="button" class="ui-seg-btn ${state.reviewTab === "notebook" ? "active" : ""}" data-revtab="notebook">AI 记忆本</button>
+            <button type="button" class="ui-seg-btn ${state.reviewTab === "srs" ? "active" : ""}" data-revtab="srs">本地闪卡</button>
+            <button type="button" class="ui-seg-btn ${state.reviewTab === "drills" ? "active" : ""}" data-revtab="drills">专项测验</button>
+            <button type="button" class="ui-seg-btn ${state.reviewTab === "oral" ? "active" : ""}" data-revtab="oral">离线跟读</button>
+          </div>
+        </div>
+      `;
+      wrap.querySelectorAll("[data-revtab]").forEach((btn) => {
+        btn.onclick = () => switchAppMode("review", { reviewTab: btn.dataset.revtab });
+      });
+    } else {
+      wrap.style.display = "none";
+      wrap.innerHTML = "";
+    }
+  }
+
+  // Sync body classes & 4-destination shell
   function syncToolbarUI() {
     document.body.classList.toggle("hide-furigana", !state.showFurigana);
     document.body.classList.toggle("hide-romaji", !state.showRomaji);
@@ -2147,8 +2238,6 @@
     document.body.classList.toggle("practice-mode", state.practiceMode);
     document.body.classList.toggle("dark-mode", state.darkMode);
 
-    // Sync all 7 Primary App Modes
-    const stickyEl = document.getElementById("sticky-controls");
     const itinView = document.getElementById("itinerary-view-container");
     const phraseView = document.getElementById("phrasebook-view-container");
     const verbsView = document.getElementById("verbs-view-container");
@@ -2156,27 +2245,33 @@
     const oralView = document.getElementById("oral-view-container");
     const senseiView = document.getElementById("sensei-view-container");
     const practiceView = document.getElementById("practice-view-container");
-    const phraseToolbar = document.getElementById("phrasebook-toolbar-row");
-    const toolbarCollapsible = document.getElementById("toolbar-collapsible");
+    const reviewNotebookView = document.getElementById("review-notebook-container");
+    const phraseControls = document.getElementById("phrasebook-controls-bar");
     const legTabs = document.getElementById("leg-tabs-container");
-    const globalDisplayBar = document.getElementById("global-display-bar");
+    const mobileTitle = document.getElementById("mobile-active-title");
 
     const mode = state.appMode;
-    if (itinView) itinView.style.display = mode === "itinerary" ? "flex" : "none";
-    if (phraseView) phraseView.style.display = mode === "phrasebook" ? "grid" : "none";
-    if (verbsView) verbsView.style.display = mode === "verbs" ? "flex" : "none";
-    if (grammarView) grammarView.style.display = mode === "grammar" ? "flex" : "none";
-    if (oralView) oralView.style.display = mode === "oral" ? "flex" : "none";
-    if (senseiView) senseiView.style.display = mode === "sensei" ? "flex" : "none";
-    if (practiceView) practiceView.style.display = mode === "practice" ? "flex" : "none";
+    const isPhrasebook = mode === "library" && state.libraryTab === "phrasebook";
 
-    if (phraseToolbar) phraseToolbar.style.display = mode === "phrasebook" ? "flex" : "none";
-    if (toolbarCollapsible) toolbarCollapsible.style.display = mode === "phrasebook" ? "" : "none";
-    if (legTabs) legTabs.style.display = mode === "itinerary" || mode === "phrasebook" ? "flex" : "none";
-    if (globalDisplayBar) globalDisplayBar.style.display = "flex";
-    if (stickyEl) {
-      stickyEl.classList.toggle("mobile-hidden-bar", mode === "verbs" || mode === "grammar" || mode === "oral" || mode === "sensei" || mode === "practice");
-    }
+    if (senseiView) senseiView.style.display = mode === "sensei" ? "flex" : "none";
+    if (verbsView) verbsView.style.display = mode === "library" && state.libraryTab === "verbs" ? "flex" : "none";
+    if (grammarView) grammarView.style.display = mode === "library" && state.libraryTab === "grammar" ? "flex" : "none";
+    if (phraseView) phraseView.style.display = isPhrasebook ? "grid" : "none";
+    if (reviewNotebookView) reviewNotebookView.style.display = mode === "review" && state.reviewTab === "notebook" ? "flex" : "none";
+    if (practiceView) practiceView.style.display = mode === "review" && (state.reviewTab === "srs" || state.reviewTab === "drills") ? "flex" : "none";
+    if (oralView) oralView.style.display = mode === "review" && state.reviewTab === "oral" ? "flex" : "none";
+    if (itinView) itinView.style.display = mode === "itinerary" ? "flex" : "none";
+
+    if (phraseControls) phraseControls.style.display = isPhrasebook ? "flex" : "none";
+    if (legTabs) legTabs.style.display = mode === "itinerary" || isPhrasebook ? "flex" : "none";
+
+    const titles = {
+      sensei: "今日私教",
+      library: "词库语法",
+      review: "复习练习",
+      itinerary: "日本行程"
+    };
+    if (mobileTitle) mobileTitle.textContent = titles[mode] || "Nihongo Sensei";
 
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
       const active = btn.dataset.appmode === mode;
@@ -2201,14 +2296,27 @@
       btn.classList.toggle("active", btn.dataset.viewmode === state.viewMode);
     });
 
+    renderWorkspaceSubbar();
     requestAnimationFrame(syncStickyOffset);
   }
 
-  function switchAppMode(newMode) {
+  function switchAppMode(newMode, opts = {}) {
+    if (LEGACY_MODE_MAP[newMode]) {
+      const mapped = LEGACY_MODE_MAP[newMode];
+      newMode = mapped.appMode;
+      if (mapped.libraryTab && !opts.libraryTab) opts.libraryTab = mapped.libraryTab;
+      if (mapped.reviewTab && !opts.reviewTab) opts.reviewTab = mapped.reviewTab;
+    }
     if (!VALID_MODES.has(newMode)) return;
     if (window.JP_ORAL_COACH) window.JP_ORAL_COACH.stopAll();
     if (window.JP_SENSEI && window.JP_SENSEI.stopAll) window.JP_SENSEI.stopAll();
     state.appMode = newMode;
+    if (opts.libraryTab && VALID_LIBRARY_TABS.has(opts.libraryTab)) {
+      state.libraryTab = opts.libraryTab;
+    }
+    if (opts.reviewTab && VALID_REVIEW_TABS.has(opts.reviewTab)) {
+      state.reviewTab = opts.reviewTab;
+    }
     savePrefs();
     closeAllPopovers();
     renderAll();
@@ -2218,31 +2326,45 @@
   function renderAll() {
     syncToolbarUI();
     updateHeaderStreak();
-    if (state.appMode === "itinerary" || state.appMode === "phrasebook") {
+    const isPhrasebook = state.appMode === "library" && state.libraryTab === "phrasebook";
+    if (state.appMode === "itinerary" || isPhrasebook) {
       renderLegTabs();
     }
-    if (state.appMode === "itinerary") {
-      renderItineraryView();
-    } else if (state.appMode === "phrasebook") {
-      const filtered = getFilteredModules();
-      renderSidebar(filtered);
-      renderModules(filtered);
-    } else if (state.appMode === "oral") {
-      if (window.JP_ORAL_COACH) {
-        window.JP_ORAL_COACH.renderDedicatedView(document.getElementById("oral-view-container"));
-      }
-    } else if (state.appMode === "sensei") {
+    if (state.appMode === "sensei") {
       if (window.JP_SENSEI) {
         window.JP_SENSEI.render(document.getElementById("sensei-view-container"));
       }
-    } else if (window.JP_LEARNING) {
-      window.JP_LEARNING.renderMode(state.appMode);
+    } else if (state.appMode === "library") {
+      if (isPhrasebook) {
+        const filtered = getFilteredModules();
+        renderSidebar(filtered);
+        renderModules(filtered);
+      } else if (window.JP_LEARNING) {
+        window.JP_LEARNING.renderMode(state.libraryTab);
+      }
+    } else if (state.appMode === "review") {
+      if (state.reviewTab === "notebook") {
+        if (window.JP_SENSEI && window.JP_SENSEI.renderNotebook) {
+          window.JP_SENSEI.renderNotebook(document.getElementById("review-notebook-container"));
+        }
+      } else if (state.reviewTab === "oral") {
+        if (window.JP_ORAL_COACH) {
+          window.JP_ORAL_COACH.renderDedicatedView(document.getElementById("oral-view-container"));
+        }
+      } else if (window.JP_LEARNING && window.JP_LEARNING.renderReviewSubMode) {
+        window.JP_LEARNING.renderReviewSubMode(state.reviewTab);
+      } else if (window.JP_LEARNING) {
+        window.JP_LEARNING.renderMode("practice");
+      }
+    } else if (state.appMode === "itinerary") {
+      renderItineraryView();
     }
   }
 
-  // Expose shared bridge for learning.js & oral_coach.js
+  // Expose shared bridge for learning.js, oral_coach.js & sensei_ui.js
   window.JP_APP = {
     state,
+    icon,
     saveUserState,
     savePrefs,
     recordStudyActivity,
@@ -2360,20 +2482,18 @@
     if (btnStarred) {
       btnStarred.onclick = () => {
         closeAllPopovers();
-        state.appMode = "phrasebook";
         state.viewMode = state.viewMode === "starred" ? "all" : "starred";
-        savePrefs();
-        renderAll();
+        switchAppMode("library", { libraryTab: "phrasebook" });
       };
     }
 
     const headerStreak = document.getElementById("header-streak-pill");
     if (headerStreak) {
       headerStreak.style.cursor = "pointer";
-      headerStreak.onclick = () => switchAppMode("practice");
+      headerStreak.onclick = () => switchAppMode("review");
     }
 
-    // Bind Top-Level & Bottom-Nav App Mode Switcher (5 Modes)
+    // Bind Top-Level & Bottom-Nav App Mode Switcher (4 Modes)
     document.querySelectorAll("[data-appmode]").forEach((btn) => {
       btn.onclick = () => switchAppMode(btn.dataset.appmode);
     });

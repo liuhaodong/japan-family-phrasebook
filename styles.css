@@ -1,30 +1,31 @@
 /* Japan Family Phrasebook & Roleplay Web App Styles (Mobile-First Compact Edition) */
 :root {
-  --bg-main: #f8f6f2;
+  --bg-main: #faf8f4;
   --bg-card: #ffffff;
-  --bg-subtle: #f1ede6;
+  --bg-subtle: #f3efe8;
   --bg-accent-soft: #fdf2f0;
-  --bg-indigo-soft: #eef2f8;
-  --bg-emerald-soft: #eaf5f0;
-  --bg-amber-soft: #fef8e8;
-  --text-primary: #1c222b;
-  --text-secondary: #4a5568;
-  --text-muted: #718096;
-  --accent-red: #c83e37;
-  --accent-red-dark: #a32c26;
-  --accent-indigo: #233b6e;
-  --accent-indigo-light: #345496;
-  --accent-gold: #b8860b;
-  --accent-emerald: #1e7e56;
-  --border-color: #e4dfd7;
-  --shadow-sm: 0 2px 6px rgba(28, 34, 43, 0.05);
-  --shadow-md: 0 6px 18px rgba(28, 34, 43, 0.08);
-  --shadow-lg: 0 14px 34px rgba(28, 34, 43, 0.14);
+  --bg-indigo-soft: #edf1f8;
+  --bg-emerald-soft: #ebf5f0;
+  --bg-amber-soft: #fdf7e9;
+  --text-primary: #18191c;
+  --text-secondary: #525760;
+  --text-muted: #8a8f99;
+  --accent-red: #c44536;
+  --accent-red-dark: #9f3529;
+  --accent-indigo: #243b64;
+  --accent-indigo-light: #35558d;
+  --accent-gold: #a67c2e;
+  --accent-emerald: #246a50;
+  --border-color: #e7e2d8;
+  --shadow-sm: 0 1px 3px rgba(24, 25, 28, 0.04);
+  --shadow-md: 0 6px 20px rgba(24, 25, 28, 0.06);
+  --shadow-lg: 0 16px 40px rgba(24, 25, 28, 0.12);
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 18px;
-  --sticky-offset: 135px;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --sticky-offset: 64px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-jp-editorial: "Hiragino Mincho ProN", "Yu Mincho", "Hiragino Sans", "Noto Serif JP", "PingFang SC", serif;
 }
 
 [hidden] {
@@ -32,19 +33,21 @@
 }
 
 body.dark-mode {
-  --bg-main: #12161f;
-  --bg-card: #1c222e;
-  --bg-subtle: #252d3d;
-  --bg-accent-soft: #2e1d21;
-  --bg-indigo-soft: #1e293b;
-  --bg-emerald-soft: #162c26;
-  --bg-amber-soft: #2d2618;
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --border-color: #2e3848;
-  --accent-indigo: #60a5fa;
-  --accent-red: #f87171;
+  --bg-main: #111317;
+  --bg-card: #191c22;
+  --bg-subtle: #222731;
+  --bg-accent-soft: #2e1d20;
+  --bg-indigo-soft: #1d2636;
+  --bg-emerald-soft: #162b24;
+  --bg-amber-soft: #2c2517;
+  --text-primary: #f3f4f6;
+  --text-secondary: #b0b7c3;
+  --text-muted: #7a8291;
+  --border-color: #2b313e;
+  --accent-indigo: #7ba4e8;
+  --accent-indigo-light: #93b7f2;
+  --accent-red: #e87366;
+  --accent-emerald: #5ac09a;
 }
 
 * {
@@ -1491,38 +1494,46 @@ body.dark-mode .mode-tab.active {
     bottom: 0;
     z-index: 65;
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    background: var(--bg-card);
+    grid-template-columns: repeat(4, 1fr);
+    background: rgba(250, 248, 244, 0.9);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
     border-top: 1px solid var(--border-color);
-    padding: 0.3rem 0.06rem calc(0.35rem + env(safe-area-inset-bottom));
-    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08);
+    padding: 0.35rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 14px rgba(24, 25, 28, 0.05);
+  }
+  body.dark-mode .mobile-bottom-nav {
+    background: rgba(25, 28, 34, 0.9);
   }
   .mnav-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.1rem;
+    gap: 0.16rem;
     min-height: 46px;
     min-width: 0;
     border: none;
     background: transparent;
     color: var(--text-muted);
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
-    padding: 0.15rem 0.05rem;
+    padding: 0.15rem 0.2rem;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
   .mnav-btn.active {
     color: var(--accent-indigo);
+    font-weight: 700;
   }
   .mnav-ico {
-    font-size: 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     line-height: 1;
   }
   .mnav-lbl {
-    font-size: 0.61rem;
+    font-size: 0.68rem;
     white-space: nowrap;
   }
   .toast {
@@ -6197,4 +6208,735 @@ body.dark-mode .sensei-rec-kicker {
 }
 body.dark-mode .sensei-free-q-lbl {
   color: #5eead4;
+}
+
+/* ======================================================================== */
+/* WASHI & SUMI EDITORIAL DESIGN SYSTEM OVERRIDES (V32)                     */
+/* ======================================================================== */
+.ui-ico {
+  display: inline-block;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+}
+
+/* 1. Single Slim Topbar */
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  height: 56px;
+  background: rgba(250, 248, 244, 0.88);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
+}
+body.dark-mode .app-topbar {
+  background: rgba(17, 19, 23, 0.88);
+}
+.topbar-inner {
+  max-width: 1180px;
+  height: 100%;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.brand-seal {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--accent-red);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  font-family: var(--font-jp-editorial);
+  flex-shrink: 0;
+}
+.brand-copy {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.brand-name {
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.brand-mobile-title {
+  display: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  height: 100%;
+}
+.topbar-tab {
+  position: relative;
+  height: 100%;
+  padding: 0 0.9rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+.topbar-tab:hover {
+  color: var(--text-primary);
+}
+.topbar-tab.active {
+  color: var(--accent-indigo);
+  font-weight: 700;
+}
+.topbar-tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0.9rem;
+  right: 0.9rem;
+  bottom: 0;
+  height: 2px;
+  background: var(--accent-indigo);
+  border-radius: 2px 2px 0 0;
+}
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.streak-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.streak-chip .ui-ico {
+  color: var(--accent-red);
+}
+.topbar-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.topbar-icon-btn:hover {
+  background: var(--bg-subtle);
+}
+
+@media (max-width: 768px) {
+  .app-topbar {
+    height: 48px;
+  }
+  .topbar-inner {
+    padding: 0 0.85rem;
+  }
+  .topbar-nav {
+    display: none;
+  }
+  .brand-name {
+    display: none;
+  }
+  .brand-mobile-title {
+    display: inline;
+  }
+}
+
+/* 2. Secondary Workspace Sub-bar & Segmented Pill Control */
+.workspace-subbar-wrap {
+  max-width: 1120px;
+  margin: 0.85rem auto 0;
+  padding: 0 1rem;
+}
+.workspace-subbar-inner {
+  display: flex;
+  justify-content: flex-start;
+}
+.ui-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border-radius: 11px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ui-segmented::-webkit-scrollbar {
+  display: none;
+}
+.ui-seg-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 0.36rem 0.82rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+.ui-seg-btn.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(24, 25, 28, 0.08);
+}
+
+/* 3. Centered Editorial Widths & Clean Cards */
+.learning-view-wrapper,
+.itinerary-view-wrapper {
+  max-width: 1120px;
+}
+#practice-view-container {
+  max-width: 840px;
+}
+.sensei-shell {
+  width: 100%;
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0.45rem 0 2.5rem;
+}
+.sensei-shell.focus-mode {
+  max-width: 780px;
+  padding-top: 0.25rem;
+}
+.sensei-card,
+.learning-hero-card,
+.learning-filter-card,
+.practice-stage-card,
+.itin-card-block,
+.itin-map-card,
+.verb-card,
+.vocab-card,
+.grammar-card {
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+}
+.compact-editorial-head {
+  padding: 0.95rem 1.15rem !important;
+}
+.compact-editorial-head .learning-hero-top {
+  margin-top: 0.35rem;
+}
+.library-subnav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filter-panel-sheet {
+  margin-top: 0.7rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+.phrasebook-controls-bar {
+  max-width: 1180px;
+  margin: 0.65rem auto 0.2rem;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.srs-compact-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+.srs-compact-bar .lf-select {
+  min-width: 150px;
+}
+
+/* 4. AI Sensei Studio Overview */
+.sensei-studio-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+.sensei-studio-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.sensei-user-chip {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+}
+.sensei-hero-stage {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 2.25rem 1.75rem;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.sensei-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-indigo);
+  background: var(--bg-indigo-soft);
+  padding: 0.24rem 0.72rem;
+  border-radius: 999px;
+  margin-bottom: 0.9rem;
+}
+.sensei-hero-title {
+  font-size: clamp(1.3rem, 2.8vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 0.55rem;
+}
+.sensei-hero-sub {
+  max-width: 560px;
+  margin: 0 auto 1.45rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+.sensei-hero-cta-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.sensei-link-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.25rem 0.4rem;
+}
+.sensei-link-btn:hover {
+  color: var(--accent-indigo);
+}
+
+.sensei-lock-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.sensei-lock-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.sensei-lock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 5. Active Lesson Focus Mode */
+.focus-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+.focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.focus-title-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.focus-lesson-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.focus-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.sensei-mini-btn.active {
+  background: var(--bg-indigo-soft);
+  border-color: var(--accent-indigo);
+  color: var(--accent-indigo);
+}
+
+.focus-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.focus-progress-track {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.3rem;
+}
+.focus-progress-seg {
+  height: 5px;
+  border: none;
+  border-radius: 999px;
+  background: var(--border-color);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.16s ease, transform 0.14s ease;
+}
+.focus-progress-seg.done {
+  background: var(--accent-emerald);
+}
+.focus-progress-seg.active {
+  background: var(--accent-indigo);
+}
+.focus-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.focus-stage-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 1.85rem 1.45rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.focus-cue {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.focus-target-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+.focus-jp-hero {
+  font-size: clamp(1.38rem, 3.2vw, 1.85rem);
+  font-weight: 700;
+  line-height: 2.15;
+  color: var(--text-primary);
+  margin: 0.25rem 0;
+}
+.focus-cn {
+  font-size: 0.96rem;
+  font-weight: 600;
+  color: var(--accent-indigo);
+}
+.focus-tip {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 540px;
+}
+.focus-inline-audio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.35rem;
+}
+
+.focus-voice-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.45rem 0;
+}
+.focus-dock-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+}
+.sensei-btn.primary {
+  background: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+  color: #fff;
+}
+.sensei-btn.ghost {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+.sensei-mic-btn {
+  background: var(--accent-indigo);
+  border: none;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.82rem 1.7rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 6px 18px rgba(36, 59, 100, 0.22);
+}
+.sensei-mic-btn.recording {
+  background: var(--accent-red);
+}
+@media (max-width: 600px) {
+  .focus-stage-card {
+    padding: 1.35rem 1rem;
+  }
+  .focus-dock-row {
+    gap: 0.4rem;
+  }
+  .focus-dock-row .sensei-btn.ghost {
+    padding: 0.52rem 0.65rem;
+    font-size: 0.78rem;
+  }
+  .sensei-mic-btn {
+    padding: 0.75rem 1.2rem;
+    font-size: 0.88rem;
+  }
+}
+
+/* 6. Slide-Over Course & Preferences Drawer */
+.ui-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(17, 19, 23, 0.42);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: flex-end;
+}
+.ui-drawer {
+  width: min(410px, 100vw);
+  height: 100%;
+  background: var(--bg-card);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+.ui-drawer-head {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ui-drawer-head h3 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.ui-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.05rem 1.2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.ui-drawer-section {
+  display: flex;
+  flex-direction: column;
+}
+.ui-drawer-sec-title {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+.ui-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+.ui-switch-row:last-child {
+  border-bottom: none;
+}
+.ui-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--border-color);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+.ui-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.18s ease;
+}
+.ui-switch:checked {
+  background: var(--accent-indigo);
+}
+.ui-switch:checked::after {
+  transform: translateX(16px);
+}
+@media (max-width: 768px) {
+  .ui-drawer-backdrop {
+    align-items: flex-end;
+    justify-content: stretch;
+  }
+  .ui-drawer {
+    width: 100%;
+    height: auto;
+    max-height: 86dvh;
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    border-radius: 18px 18px 0 0;
+  }
+}
+
+/* 7. Call Top Strip & Editorial Trip Header */
+.sensei-call-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+.sensei-call-scene-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+.trip-editorial-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  padding: 1.25rem 1.35rem;
+  box-shadow: var(--shadow-sm);
+}
+.trip-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+.trip-eyebrow {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--accent-indigo);
+  margin-bottom: 0.2rem;
+}
+.trip-header-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+.trip-header-sub {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.trip-vault-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.trip-family-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+.trip-member-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
 }

@@ -5082,15 +5082,11 @@
     const todayCount = a.state.streak.todayDate === todayStr ? a.state.streak.todayCount || 0 : 0;
 
     container.innerHTML = `
-      <div class="learning-hero-card">
+      <div class="learning-hero-card compact-editorial-head">
         <div class="learning-hero-top">
           <div>
-            <h2 class="itin-section-title">🎙️ 日语口语跟读与发音私教</h2>
-            <p class="itin-section-sub">示范朗读 → 提示音后自动开麦跟读（长句中间换气不会打断）→ 拍数逐词纠音 → 原声与自录对比，支持 27 组情景对话角色扮演！</p>
-          </div>
-          <div class="dash-streak-badge">
-            <div style="font-size:1.35rem;font-weight:900;">🔥 ${a.state.streak.count || 0} 天</div>
-            <div style="font-size:0.72rem;opacity:0.9;">今日已完成 ${todayCount} 题/卡</div>
+            <h2 class="itin-section-title">离线口语跟读</h2>
+            <p class="itin-section-sub">示范朗读 → 本地音节逐拍对比 · 今日 +${todayCount}</p>
           </div>
         </div>
         <div class="dash-metrics-grid oc-hero-stats" id="oral-hero-stats"></div>
@@ -5107,7 +5103,10 @@
   if (typeof document !== "undefined" && document.addEventListener) {
     document.addEventListener("keydown", (e) => {
       const a = app();
-      if (!a || !a.state || a.state.appMode !== "oral") return;
+      if (!a || !a.state) return;
+      const isOralActive =
+        a.state.appMode === "oral" || (a.state.appMode === "review" && a.state.reviewTab === "oral");
+      if (!isOralActive) return;
       const modal = document.getElementById("app-modal");
       if (modal && modal.classList.contains("open")) return;
       const tag = (e.target && e.target.tagName) || "";

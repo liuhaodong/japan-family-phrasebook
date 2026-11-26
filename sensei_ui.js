@@ -83,12 +83,16 @@
     stories: [],
     generatingStory: false,
 
-    // Word popover state
+    // Word popover & Editorial Drawer UI state
     activeTokenEntry: null,
     loadingToken: false,
+    drawerOpen: false,
+    showBlackboard: false,
+    showCallSettings: false,
   };
 
   let containerEl = null;
+  let notebookContainerEl = null;
   let currentAudioEl = null;
   let currentAudioDoneResolve = null;
   let sharedAudioEl = null;
@@ -2206,229 +2210,179 @@
     const res = state.lastTurnResult;
     const syl = state.syllabus;
     const rec = syl?.recommendedLesson;
-    const scenarioOptions = state.scenarios
-      .map(
-        (s) =>
-          `<option value="${escapeHtml(s.id)}" ${s.id === state.selectedScenarioId ? "selected" : ""}>${escapeHtml(s.icon)} ${escapeHtml(s.title)}（${s.category === "daily" ? "日常" : "旅行"}）</option>`
-      )
-      .join("");
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
 
-    const trackOptGroups = (syl?.tracks || [])
-      .map(
-        (tr) => `
-        <optgroup label="${escapeHtml(tr.title)}">
-          ${(tr.lessons || [])
-            .map((l) => {
-              const badge = l.status === "completed" ? `✅ ${l.bestScore}分 · ` : rec?.id === l.id ? "🎯 推荐 · " : "";
-              return `<option value="${escapeHtml(l.id)}" ${l.id === (state.selectedLessonId || rec?.id) ? "selected" : ""}>${badge}[${escapeHtml(l.level)}] ${escapeHtml(l.title)}</option>`;
-            })
-            .join("")}
-        </optgroup>`
-      )
-      .join("");
-
-    let selectorBody = "";
-    if (state.curriculumMode === "sensei_syllabus") {
-      selectorBody = `
-        ${
-          rec
-            ? `<div class="sensei-rec-banner">
-                <div class="sensei-rec-info">
-                  <div class="sensei-rec-kicker">✨ 老师为你安排的今日课程 · 进度 ${syl.completedCount}/${syl.totalCount} 课</div>
-                  <div class="sensei-rec-title">[${escapeHtml(rec.level)}] ${escapeHtml(rec.title)}</div>
-                  <div class="sensei-rec-sub">${escapeHtml(rec.subtitle)} · ${escapeHtml(rec.cnPitfall)}</div>
-                </div>
-                <button type="button" class="sensei-btn primary" id="sensei-start-rec-btn" ${state.isGeneratingLesson ? "disabled" : ""}>
-                  ${state.isGeneratingLesson ? "⏳ 老师正在现编教材..." : "🚀 开始今日推荐课"}
-                </button>
-              </div>`
-            : ""
-        }
-        <div class="sensei-setup-grid">
-          <div style="grid-column: span 2;">
-            <label class="sensei-lbl">📚 或自选体系化私教大纲（6大进阶阶段 · 16课 · 每次开课现场生成鲜活生活例句）</label>
-            <select id="sensei-lesson-select" class="sensei-select">${trackOptGroups}</select>
+    // STATE A — Clean Editorial Overview before a lesson starts
+    if (!step) {
+      const doneCnt = syl?.completedCount ?? 0;
+      const totalCnt = syl?.totalCount ?? 16;
+      const modeNames = {
+        sensei_syllabus: rec ? `[${escapeHtml(rec.level)}] ${escapeHtml(rec.title)}` : "资深私教体系课",
+        custom_topic: state.customTopic ? `自由命题：${escapeHtml(state.customTopic)}` : "自由命题现编教材",
+        travel_scenario: "旅行与日常情景专项",
+      };
+      return `
+        <div class="sensei-hero-stage">
+          <div class="sensei-hero-eyebrow">
+            <span>今日私教</span>
+            <span class="dot-sep">·</span>
+            <span>大纲进度 ${doneCnt} / ${totalCnt} 课</span>
           </div>
-          <div class="sensei-setup-cta">
-            <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" ${state.isGeneratingLesson ? "disabled" : ""}>
-              ${state.isGeneratingLesson ? "⏳ 老师正在现编教材..." : state.lessonSession ? "🔄 用选定课重开一堂" : "🎓 开始选定课程"}
+          <h2 class="sensei-hero-title">${rec ? modeNames.sensei_syllabus : "1 对 1 日语发音与口语反射"}</h2>
+          <p class="sensei-hero-sub">
+            ${
+              rec
+                ? `${escapeHtml(rec.subtitle)} · ${escapeHtml(rec.cnPitfall)}`
+                : "每堂课根据你的记忆本与弱点现编教材，录音后立刻回放原声并逐拍纠音。"
+            }
+          </p>
+          <div class="sensei-hero-cta-row">
+            <button type="button" class="sensei-btn primary big" id="${rec ? "sensei-start-rec-btn" : "sensei-start-lesson-btn"}" ${state.isGeneratingLesson ? "disabled" : ""}>
+              ${state.isGeneratingLesson ? "正在现场备课..." : "开始今日私教课"}
             </button>
-          </div>
-        </div>
-      `;
-    } else if (state.curriculumMode === "custom_topic") {
-      const chips = [
-        "彻底搞懂 あげる / もらう / くれる 的视角",
-        "日式委婉拒绝与缓冲语 〜んですけど",
-        "和日本同事聊AI科技、工作与周末",
-        "真人口语缩略 〜てる / 〜ちゃう / 〜なきゃ",
-      ];
-      selectorBody = `
-        <div class="sensei-custom-box">
-          <label class="sensei-lbl">✨ 告诉老师你今天想攻克的任意语法、痛点或生活聊天话题（不限任何固定课本）</label>
-          <div class="sensei-offline-form">
-            <input type="text" id="sensei-custom-topic-input" class="sensei-input" placeholder="如：区分 わけ / はず；或在东京咖啡店与陌生人聊养娃和编程..." value="${escapeHtml(state.customTopic)}" />
-            <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" ${state.isGeneratingLesson ? "disabled" : ""}>
-              ${state.isGeneratingLesson ? "⏳ 老师正在现场备课..." : "📝 现编教材并开课"}
-            </button>
-          </div>
-          <div class="sensei-quick-chips">
-            <span>💡 灵感直选：</span>
-            ${chips.map((c) => `<button type="button" class="sensei-mini-btn" data-quick-topic="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
-          </div>
-        </div>
-      `;
-    } else {
-      selectorBody = `
-        <div class="sensei-setup-grid">
-          <div>
-            <label class="sensei-lbl">🗺️ 选择旅行/日常专项场景（原有18大旅行场景 + 5大日常高频话题）</label>
-            <select id="sensei-scenario-select" class="sensei-select">${scenarioOptions}</select>
-          </div>
-          <div>
-            <label class="sensei-lbl">🎯 训练模式</label>
-            <select id="sensei-lesson-type-select" class="sensei-select">
-              <option value="guided_10min" ${state.lessonType === "guided_10min" ? "selected" : ""}>完整 10 分钟私教课（热身→微课→纠音→替换）</option>
-              <option value="pronunciation_drill" ${state.lessonType === "pronunciation_drill" ? "selected" : ""}>专注声学镜子发音过关特训</option>
-              <option value="substitution_drill" ${state.lessonType === "substitution_drill" ? "selected" : ""}>动词槽位口头替换操练（不看答案说日语）</option>
-            </select>
-          </div>
-          <div class="sensei-setup-cta">
-            <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" ${state.isGeneratingLesson ? "disabled" : ""}>
-              ${state.lessonSession ? "🔄 重新生成本课" : "🚀 开始场景私教课"}
+            <button type="button" class="sensei-link-btn" id="sensei-open-course-picker">
+              自选课程 / 自由命题 / 旅行场景 ${ico("chevronRight")}
             </button>
           </div>
         </div>
       `;
     }
 
-    const isFreeOutput = step?.stage === "FREE_OUTPUT";
+    // STATE B — Active Lesson Focus Mode (zero setup clutter)
+    const steps = state.lessonSession?.steps || [];
+    const meta = state.lessonSession?.lessonMeta || {};
+    const bb = meta?.blackboard;
+    const hasBb = Boolean(bb && bb.titleCn);
+    const isFreeOutput = step.stage === "FREE_OUTPUT";
 
     return `
-      <div class="sensei-card">
-        <div class="sensei-mode-pills">
-          <button type="button" class="sensei-mode-pill ${state.curriculumMode === "sensei_syllabus" ? "active" : ""}" data-curmode="sensei_syllabus">👩‍🏫 资深老师体系课 (16课进阶)</button>
-          <button type="button" class="sensei-mode-pill ${state.curriculumMode === "custom_topic" ? "active" : ""}" data-curmode="custom_topic">✨ 自由命题现编教材</button>
-          <button type="button" class="sensei-mode-pill ${state.curriculumMode === "travel_scenario" ? "active" : ""}" data-curmode="travel_scenario">🗺️ 原旅行场景专项</button>
+      <div class="focus-shell">
+        <div class="focus-header">
+          <button type="button" class="sensei-link-btn" id="sensei-exit-lesson-btn">
+            ${ico("chevronLeft")} <span>课程概览</span>
+          </button>
+          <div class="focus-title-meta">
+            ${meta.level ? `<span class="sensei-badge">${escapeHtml(meta.level)}</span>` : ""}
+            <span class="focus-lesson-name">${escapeHtml(meta.title || state.lessonSession?.scenario?.title || "私教训练")}</span>
+          </div>
+          <div class="focus-head-actions">
+            ${
+              hasBb
+                ? `<button type="button" class="sensei-mini-btn ${state.showBlackboard ? "active" : ""}" id="sensei-toggle-bb-btn">黑板要点</button>`
+                : ""
+            }
+            <button type="button" class="sensei-mini-btn" id="sensei-open-drawer-focus" aria-label="选课与偏好">
+              ${ico("sliders")}
+            </button>
+          </div>
         </div>
 
-        ${selectorBody}
-
-        <div class="sensei-toggles-row">
-          <label class="sensei-chk"><input type="checkbox" id="chk-include-review" ${state.includeReview ? "checked" : ""} /> 🔁 穿插旧词与错题复习</label>
-          <label class="sensei-chk"><input type="checkbox" id="chk-mirror-playback" ${state.mirrorPlayback ? "checked" : ""} /> 🪞 立刻回放我的原声</label>
-          <label class="sensei-chk"><input type="checkbox" id="chk-auto-reopen" ${state.autoReopenMic ? "checked" : ""} /> 🎙️ 老师说完自动开麦</label>
-          <label class="sensei-chk"><input type="checkbox" id="chk-auto-stop" ${state.autoStopSilence ? "checked" : ""} /> 🔇 说完停顿自动结束</label>
-          <label class="sensei-chk"><input type="checkbox" id="chk-auto-next" ${state.autoAdvanceOnPass ? "checked" : ""} /> ⏭️ 过关自动下一题</label>
+        <div class="focus-progress-wrap">
+          <div class="focus-progress-track" role="tablist" aria-label="课程步骤进度">
+            ${steps
+              .map(
+                (st, i) =>
+                  `<button type="button" class="focus-progress-seg ${i === state.lessonStepIdx ? "active" : i < state.lessonStepIdx ? "done" : ""}" data-jump-step="${i}" title="${escapeHtml(st.stageLabel)}"></button>`
+              )
+              .join("")}
+          </div>
+          <div class="focus-progress-meta">
+            <span>第 ${state.lessonStepIdx + 1} / ${steps.length} 步 · ${escapeHtml(step.stageLabel)}</span>
+            <span>第 ${state.attempt} 次尝试${state.drillChunkJp ? " · 拆词重练" : ""}</span>
+          </div>
         </div>
-      </div>
 
-      ${
-        !step
-          ? `<div class="sensei-card sensei-welcome-empty">
-              <div class="sensei-orb-mini">👩‍🏫</div>
-              <h4>资深私教体系已就位：声音地基 → 助词直觉 → 动词反射 → 日常叙事</h4>
-              <p>老师不再只绕着旅行句打转，而是像真实 1 对 1 老师那样系统带你突破中文母语盲区，每堂课现编鲜活东京日常教材，并结合你的记忆本弱点动态出题。</p>
-            </div>`
-          : `
-            <div class="sensei-card">
-              ${renderBlackboardHtml(state.lessonSession?.lessonMeta)}
+        ${hasBb && state.showBlackboard ? renderBlackboardHtml(meta) : ""}
 
-              <div class="sensei-stepper">
-                ${(state.lessonSession.steps || [])
-                  .map(
-                    (st, i) =>
-                      `<button type="button" class="sensei-step-pill ${i === state.lessonStepIdx ? "active" : i < state.lessonStepIdx ? "done" : ""}" data-jump-step="${i}">${escapeHtml(st.stageLabel)}</button>`
-                  )
-                  .join("")}
-              </div>
+        <div class="focus-stage-card">
+          <div class="focus-cue">${escapeHtml(step.cueCn)}</div>
 
-              <div class="sensei-stage-head">
-                <span class="sensei-badge">${escapeHtml(step.stageLabel)}</span>
-                <span class="sensei-attempt-pill">第 ${state.attempt} 次尝试 ${state.drillChunkJp ? "· 拆词单练中" : ""}</span>
-              </div>
+          ${
+            isFreeOutput && step.questionJp
+              ? `<div class="sensei-free-q">
+                  <div class="sensei-free-q-lbl">老师向你提问（请用自己的话直接回答）</div>
+                  <div class="sensei-jp-line">${renderTokensHtml(step.questionTokens, step.questionJp)}</div>
+                  ${step.questionCn ? `<div class="sensei-cn-line">${escapeHtml(step.questionCn)}</div>` : ""}
+                  <div class="sensei-target-actions">
+                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.questionJp)}">${ico("speaker")} 重听提问</button>
+                  </div>
+                </div>`
+              : ""
+          }
 
-              <div class="sensei-cue-box">${escapeHtml(step.cueCn)}</div>
-
-              ${
-                isFreeOutput && step.questionJp
-                  ? `<div class="sensei-free-q">
-                      <div class="sensei-free-q-lbl">🗣️ 老师向你提问（请用自己的话直接开口作答）：</div>
-                      <div class="sensei-jp-line">${renderTokensHtml(step.questionTokens, step.questionJp)}</div>
-                      ${step.questionCn ? `<div class="sensei-cn-line">${escapeHtml(step.questionCn)}</div>` : ""}
-                      <div class="sensei-target-actions">
-                        <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.questionJp)}">🔊 重听老师提问</button>
-                      </div>
-                    </div>`
-                  : ""
-              }
-
-              ${
-                step.hideTarget && !state.peekHint && !res
-                  ? `<div class="sensei-hidden-target">
-                      <p>${
-                        isFreeOutput
-                          ? "🌟 <strong>自由表达时间：</strong>没有唯一标准答案！说完直接听老师如何给你润色。"
-                          : "🙈 <strong>口头反射挑战：</strong>目标日语已隐藏，请根据上方提示直接用日语说出来！"
-                      }</p>
-                      <button type="button" class="sensei-mini-btn" id="sensei-peek-btn">${isFreeOutput ? "💡 看一个参考答法" : "💡 实在想不起来，偷看提示"}</button>
-                    </div>`
-                  : `<div class="sensei-target-card">
-                      ${
-                        state.drillChunkJp
-                          ? `<div class="sensei-chunk-focus">🎯 当前聚焦拆词重练：<strong class="sensei-chunk-word">${state.drillChunkTokens?.length ? renderTokensHtml(state.drillChunkTokens, state.drillChunkJp) : escapeHtml(state.drillChunkJp)}</strong> <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(state.drillChunkJp)}">🔊 听词块示范</button></div>`
-                          : ""
-                      }
-                      <div class="sensei-jp-line">${renderTokensHtml(step.tokens, step.targetJp)}</div>
-                      <div class="sensei-cn-line">${escapeHtml(step.targetCn)}</div>
-                      ${step.tipCn ? `<div class="sensei-tip-line">💡 ${escapeHtml(step.tipCn)}</div>` : ""}
-                      <div class="sensei-target-actions">
-                        <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.targetJp)}">🔊 听原生标准示范</button>
-                        ${step.teacherPrompt ? `<button type="button" class="sensei-mini-btn" data-tts-text="${escapeHtml(step.teacherPromptTts || step.teacherPrompt)}">👩‍🏫 听老师讲解导入</button>` : ""}
-                      </div>
-                    </div>`
-              }
-
-              <div id="sensei-mirror-banner" class="sensei-mirror-banner" style="display:none;"></div>
-
-              <div class="sensei-mic-dock">
-                <button type="button" class="sensei-mic-btn ${state.isRecordingTurn ? "recording" : ""}" id="sensei-record-turn-btn" ${state.isEvaluatingTurn ? "disabled" : ""}>
+          ${
+            step.hideTarget && !state.peekHint && !res
+              ? `<div class="sensei-hidden-target">
+                  <p>${
+                    isFreeOutput
+                      ? "自由表达练习：用你自己的日语直接回答，听老师润色。"
+                      : "口头反射挑战：参考句已隐藏，请根据上方提示直接开口说。"
+                  }</p>
+                  <button type="button" class="sensei-mini-btn" id="sensei-peek-btn">${isFreeOutput ? "查看参考答法" : "显示提示句"}</button>
+                </div>`
+              : `<div class="focus-target-body">
                   ${
-                    state.isEvaluatingTurn
-                      ? `<span id="sensei-eval-elapsed">⏳ 老师正在逐拍倾听诊断... (0.0s)</span>`
-                      : state.isRecordingTurn
-                      ? "⏹️ 正在聆听（说完自动结束 / 点击立即提交）"
-                      : state.drillChunkJp
-                      ? `🎙️ 跟读词块「${escapeHtml(state.drillChunkJp)}」`
-                      : "🎙️ 点击开口回答 / 跟读"
+                    state.drillChunkJp
+                      ? `<div class="sensei-chunk-focus">
+                          <span>拆词聚焦：</span>
+                          <strong class="sensei-chunk-word">${state.drillChunkTokens?.length ? renderTokensHtml(state.drillChunkTokens, state.drillChunkJp) : escapeHtml(state.drillChunkJp)}</strong>
+                          <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(state.drillChunkJp)}">${ico("speaker")} 示范</button>
+                        </div>`
+                      : ""
                   }
-                </button>
-                ${
-                  state.isEvaluatingTurn
-                    ? `<button type="button" class="sensei-mini-btn" id="sensei-cancel-eval-btn">✕ 取消本次诊断</button>`
-                    : ""
-                }
-                ${
-                  state.isRecordingTurn
-                    ? `<div class="sensei-vad-wrap">
-                        <div class="sensei-vad-track"><div id="sensei-vad-fill" class="sensei-vad-fill"></div></div>
-                        <div class="sensei-vad-meta">
-                          <span id="sensei-vad-hint" class="sensei-vad-hint">🎙️ 正在聆听，请直接开口说话...</span>
-                          <button type="button" class="sensei-mini-btn" id="sensei-cancel-rec-btn">✕ 取消录音</button>
-                        </div>
-                      </div>`
-                    : ""
-                }
-                <div class="sensei-step-nav">
-                  <button type="button" class="sensei-btn ghost" id="sensei-prev-step-btn" ${state.lessonStepIdx === 0 ? "disabled" : ""}>⬅️ 上一步</button>
-                  <button type="button" class="sensei-btn ghost" id="sensei-next-step-btn" ${state.lessonStepIdx >= state.lessonSession.steps.length - 1 ? "disabled" : ""}>跳过 / 下一步 ➡️</button>
-                </div>
-              </div>
-            </div>
+                  <div class="focus-jp-hero">${renderTokensHtml(step.tokens, step.targetJp)}</div>
+                  <div class="focus-cn">${escapeHtml(step.targetCn)}</div>
+                  ${step.tipCn ? `<div class="focus-tip">${escapeHtml(step.tipCn)}</div>` : ""}
+                  <div class="focus-inline-audio">
+                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.targetJp)}">${ico("speaker")} 标准示范</button>
+                    ${step.teacherPrompt ? `<button type="button" class="sensei-mini-btn" data-tts-text="${escapeHtml(step.teacherPromptTts || step.teacherPrompt)}">老师讲解</button>` : ""}
+                  </div>
+                </div>`
+          }
 
-            ${res ? renderTurnDiagnosisCard(res) : ""}
-          `
-      }
+          <div id="sensei-mirror-banner" class="sensei-mirror-banner" style="display:none;"></div>
+        </div>
+
+        <div class="focus-voice-dock">
+          <div class="focus-dock-row">
+            <button type="button" class="sensei-btn ghost" id="sensei-prev-step-btn" ${state.lessonStepIdx === 0 ? "disabled" : ""}>
+              ${ico("chevronLeft")} 上一步
+            </button>
+            <button type="button" class="sensei-mic-btn ${state.isRecordingTurn ? "recording" : ""}" id="sensei-record-turn-btn" ${state.isEvaluatingTurn ? "disabled" : ""}>
+              ${
+                state.isEvaluatingTurn
+                  ? `<span id="sensei-eval-elapsed">正在诊断... (0.0s)</span>`
+                  : state.isRecordingTurn
+                  ? `${ico("stop")} <span>结束并提交</span>`
+                  : state.drillChunkJp
+                  ? `${ico("mic")} <span>跟读「${escapeHtml(state.drillChunkJp)}」</span>`
+                  : `${ico("mic")} <span>点击开口说</span>`
+              }
+            </button>
+            <button type="button" class="sensei-btn ghost" id="sensei-next-step-btn" ${state.lessonStepIdx >= steps.length - 1 ? "disabled" : ""}>
+              下一步 ${ico("chevronRight")}
+            </button>
+          </div>
+          ${
+            state.isEvaluatingTurn
+              ? `<button type="button" class="sensei-link-btn" id="sensei-cancel-eval-btn">取消本次诊断</button>`
+              : ""
+          }
+          ${
+            state.isRecordingTurn
+              ? `<div class="sensei-vad-wrap">
+                  <div class="sensei-vad-track"><div id="sensei-vad-fill" class="sensei-vad-fill"></div></div>
+                  <div class="sensei-vad-meta">
+                    <span id="sensei-vad-hint" class="sensei-vad-hint">正在聆听，请直接开口...</span>
+                    <button type="button" class="sensei-mini-btn" id="sensei-cancel-rec-btn">取消</button>
+                  </div>
+                </div>`
+              : ""
+          }
+        </div>
+
+        ${res ? renderTurnDiagnosisCard(res) : ""}
+      </div>
     `;
   }
 
@@ -2437,48 +2391,49 @@
     const advanced = res.decision === "advance";
     const badgeClass = passed ? "pass" : advanced ? "warn" : "retry";
     const badgeText = passed
-      ? "🎉 过关！音调与节奏很稳"
+      ? "过关 · 节奏与音调稳定"
       : advanced
-      ? "📝 已记录错题本，建议先继续下一步"
+      ? "已记入错题 · 建议进入下一步"
       : res.decision === "retry_chunk"
-      ? `🔍 拆词重读中：先读准「${res.drillChunkJp}」`
-      : "🔁 请根据老师语音纠音再试一次";
+      ? `拆词重练：先读准「${res.drillChunkJp}」`
+      : "请听纠音示范再试一次";
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
 
     return `
       <div class="sensei-card sensei-diagnosis-card ${badgeClass}">
         <div class="sensei-diag-top">
-          <span class="sensei-diag-badge ${badgeClass}">${badgeText}</span>
-          <span class="sensei-score-pill" title="纠音模型：${escapeHtml(res.modelUsed || "")}">总分 ${res.overallScore} · 音调 ${res.pitchScore} · 语法 ${res.grammarScore}${res.evalMs ? ` · ⚡ ${(res.evalMs / 1000).toFixed(1)}s` : ""}</span>
+          <span class="sensei-diag-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
+          <span class="sensei-score-pill" title="模型：${escapeHtml(res.modelUsed || "")}">总分 ${res.overallScore} · 音调 ${res.pitchScore} · 语法 ${res.grammarScore}${res.evalMs ? ` · ${(res.evalMs / 1000).toFixed(1)}s` : ""}</span>
         </div>
 
         <div class="sensei-diff-grid">
           <div class="sensei-diff-col">
-            <div class="sensei-diff-lbl">🗣️ 老师真实听到的你：</div>
-            <div class="sensei-diff-val">${renderTokensHtml(res.heardTokens, res.heardJp || "（无清晰人声）")}</div>
-            ${res.localMirrorUrl || res.userAudioUrl ? `<button type="button" class="sensei-mini-btn" data-play-url="${escapeHtml(res.localMirrorUrl || res.userAudioUrl)}">🪞 重听我刚才原声</button>` : ""}
+            <div class="sensei-diff-lbl">老师听到的你</div>
+            <div class="sensei-diff-val">${renderTokensHtml(res.heardTokens, res.heardJp || "（未识别出清晰日语）")}</div>
+            ${res.localMirrorUrl || res.userAudioUrl ? `<button type="button" class="sensei-mini-btn" data-play-url="${escapeHtml(res.localMirrorUrl || res.userAudioUrl)}">${ico("speaker")} 重听原声</button>` : ""}
           </div>
           <div class="sensei-diff-col">
-            <div class="sensei-diff-lbl">🎯 目标标准读法：</div>
+            <div class="sensei-diff-lbl">标准示范读法</div>
             <div class="sensei-diff-val">${renderTokensHtml(res.betterTokens || res.targetTokens, res.betterJp || res.targetJp)}</div>
-            <button type="button" class="sensei-mini-btn" id="sensei-diag-teacher-play" ${res.teacherAudioUrl ? `data-play-url="${escapeHtml(res.teacherAudioUrl)}"` : `data-tts-text="${escapeHtml(res.teacherSpokenTts || res.teacherSpokenScript || res.betterJp || res.targetJp)}"`}>👩‍🏫 重听老师纠音示范</button>
+            <button type="button" class="sensei-mini-btn" id="sensei-diag-teacher-play" ${res.teacherAudioUrl ? `data-play-url="${escapeHtml(res.teacherAudioUrl)}"` : `data-tts-text="${escapeHtml(res.teacherSpokenTts || res.teacherSpokenScript || res.betterJp || res.targetJp)}"`}>${ico("speaker")} 纠音示范</button>
           </div>
         </div>
 
         <div class="sensei-teacher-speech">
-          <strong>👩‍🏫 老师纠音口述：</strong>${escapeHtml(res.teacherSpokenScript)}
+          <strong>老师点评：</strong>${escapeHtml(res.teacherSpokenScript)}
         </div>
 
-        ${res.pitchNote ? `<div class="sensei-note-row">🎵 <strong>音调诊断：</strong>${escapeHtml(res.pitchNote)}</div>` : ""}
-        ${res.grammarNote ? `<div class="sensei-note-row">📘 <strong>语法礼貌：</strong>${escapeHtml(res.grammarNote)}</div>` : ""}
+        ${res.pitchNote ? `<div class="sensei-note-row"><strong>音调：</strong>${escapeHtml(res.pitchNote)}</div>` : ""}
+        ${res.grammarNote ? `<div class="sensei-note-row"><strong>语法：</strong>${escapeHtml(res.grammarNote)}</div>` : ""}
 
         ${
           (res.extractedVocab || []).length
             ? `<div class="sensei-vocab-chips">
-                <span>🔖 重点词汇一键存卡：</span>
+                <span>重点词汇：</span>
                 ${res.extractedVocab
                   .map(
                     (v, i) =>
-                      `<button type="button" class="sensei-save-vocab-btn" data-save-diag-vocab="${i}">➕ ${escapeHtml(v.surface || v.lemma)} (${escapeHtml(v.meaningCn || v.reading || "")})</button>`
+                      `<button type="button" class="sensei-save-vocab-btn" data-save-diag-vocab="${i}">+ ${escapeHtml(v.surface || v.lemma)} (${escapeHtml(v.meaningCn || v.reading || "")})</button>`
                   )
                   .join("")}
               </div>`
@@ -2487,7 +2442,7 @@
 
         ${
           (passed || advanced) && state.lessonSession && state.lessonStepIdx < state.lessonSession.steps.length - 1
-            ? `<div style="margin-top:0.75rem;"><button type="button" class="sensei-btn primary" id="sensei-pass-next-btn">✅ 进入下一步训练 ➡️</button></div>`
+            ? `<div style="margin-top:0.75rem;"><button type="button" class="sensei-btn primary" id="sensei-pass-next-btn">进入下一步 ${ico("chevronRight")}</button></div>`
             : ""
         }
       </div>
@@ -2498,45 +2453,63 @@
     const scenarioOptions = state.scenarios
       .map(
         (s) =>
-          `<option value="${escapeHtml(s.id)}" ${s.id === state.selectedScenarioId ? "selected" : ""}>${escapeHtml(s.icon)} ${escapeHtml(s.title)}</option>`
+          `<option value="${escapeHtml(s.id)}" ${s.id === state.selectedScenarioId ? "selected" : ""}>${escapeHtml(s.title)}</option>`
       )
       .join("");
+    const activeSc = state.scenarios.find((s) => s.id === state.selectedScenarioId);
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
 
     return `
       <div class="sensei-card">
-        <div class="sensei-setup-grid">
-          <div>
-            <label class="sensei-lbl">🎭 实时角色扮演场景</label>
-            <select id="sensei-call-scenario" class="sensei-select" ${state.callActive ? "disabled" : ""}>${scenarioOptions}</select>
+        <div class="sensei-call-top">
+          <div class="sensei-call-scene-label">
+            <span class="sensei-badge">场景</span>
+            <strong>${escapeHtml(activeSc ? activeSc.title : "日常对话练习")}</strong>
           </div>
-          <div>
-            <label class="sensei-lbl">👩‍🏫 纠错教学风格</label>
-            <select id="sensei-corr-mode" class="sensei-select" ${state.callActive ? "disabled" : ""}>
-              <option value="strict" ${state.correctionMode === "strict" ? "selected" : ""}>👩‍🏫 严格私教（出错温柔打断纠音）</option>
-              <option value="flow" ${state.correctionMode === "flow" ? "selected" : ""}>🌊 流畅聊天（保持自然，气泡旁微批注）</option>
-            </select>
-          </div>
-          <div>
-            <label class="sensei-lbl">📱 手机端声音/回音模式</label>
-            <select id="sensei-audio-output-mode" class="sensei-select">
-              <option value="headset" ${state.audioOutputMode === "headset" ? "selected" : ""}>🎧 耳机全双工 (AirPods · 随时插话)</option>
-              <option value="speaker" ${state.audioOutputMode === "speaker" ? "selected" : ""}>📢 手机外放防回音 (AI说时暂闭麦)</option>
-            </select>
-          </div>
+          ${
+            !state.callActive
+              ? `<button type="button" class="sensei-mini-btn ${state.showCallSettings ? "active" : ""}" id="sensei-toggle-call-cfg">${ico("sliders")} 通话设置</button>`
+              : ""
+          }
         </div>
 
+        ${
+          !state.callActive && state.showCallSettings
+            ? `<div class="sensei-setup-grid" style="margin-top:0.75rem;">
+                <div>
+                  <label class="sensei-lbl">角色扮演场景</label>
+                  <select id="sensei-call-scenario" class="sensei-select">${scenarioOptions}</select>
+                </div>
+                <div>
+                  <label class="sensei-lbl">纠错教学风格</label>
+                  <select id="sensei-corr-mode" class="sensei-select">
+                    <option value="strict" ${state.correctionMode === "strict" ? "selected" : ""}>严格私教（出错温柔打断纠音）</option>
+                    <option value="flow" ${state.correctionMode === "flow" ? "selected" : ""}>流畅聊天（气泡旁微批注）</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="sensei-lbl">手机回音模式</label>
+                  <select id="sensei-audio-output-mode" class="sensei-select">
+                    <option value="headset" ${state.audioOutputMode === "headset" ? "selected" : ""}>耳机全双工（随时插话）</option>
+                    <option value="speaker" ${state.audioOutputMode === "speaker" ? "selected" : ""}>手机外放防回音（AI说时闭麦）</option>
+                  </select>
+                </div>
+              </div>`
+            : ""
+        }
+
         <div class="sensei-call-stage">
-          <div id="sensei-call-orb" class="sensei-call-orb state-${state.callStatus}">🎙️</div>
+          <div id="sensei-call-orb" class="sensei-call-orb state-${state.callStatus}">${ico("phone")}</div>
           <div id="sensei-call-status-label" class="sensei-call-status"></div>
           <div class="sensei-call-controls">
             ${
               !state.callActive
-                ? `<button type="button" class="sensei-btn primary big" id="sensei-start-call-btn">📞 开始实时日语语音通话</button>`
+                ? `<button type="button" class="sensei-btn primary big" id="sensei-start-call-btn">开始实时日语通话</button>`
                 : `
-                  <button type="button" class="sensei-btn warn" id="sensei-bargein-btn">✋ 立刻插话 / 打断老师</button>
-                  <button type="button" class="sensei-btn ghost" id="sensei-hint-btn">💡 帮我接话</button>
-                  <button type="button" class="sensei-btn ghost" id="sensei-slow-btn">🐢 慢点说</button>
-                  <button type="button" class="sensei-btn danger" id="sensei-stop-call-btn">📴 挂断并生成战报</button>
+                  <button type="button" class="sensei-btn warn" id="sensei-bargein-btn">插话打断</button>
+                  <button type="button" class="sensei-btn ghost" id="sensei-hint-btn">帮我接话</button>
+                  <button type="button" class="sensei-btn ghost" id="sensei-slow-btn">慢点说</button>
+                  <button type="button" class="sensei-btn danger" id="sensei-stop-call-btn">挂断并生成战报</button>
                 `
             }
           </div>
@@ -2545,13 +2518,13 @@
         ${
           state.liveHints.length
             ? `<div class="sensei-hints-drawer">
-                <div class="sensei-hints-title">💡 救急接话灵感（直接念出来，或点 🔊 先听一遍）：</div>
+                <div class="sensei-hints-title">接话灵感（直接开口念，或点击听示范）：</div>
                 ${state.liveHints
                   .map(
                     (h) => `
                     <div class="sensei-hint-row">
                       <div><strong>${escapeHtml(h.jp)}</strong> <span class="sensei-hint-read">${escapeHtml(h.reading)}</span> · ${escapeHtml(h.cn)}</div>
-                      <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(h.jp)}">🔊 示范</button>
+                      <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(h.jp)}">${ico("speaker")} 示范</button>
                     </div>`
                   )
                   .join("")}
@@ -2561,7 +2534,7 @@
       </div>
 
       <div class="sensei-card">
-        <div class="sensei-chat-head">💬 实时双轨字幕与异步私教纠错（点击任意日语单词即可查义存卡）</div>
+        <div class="sensei-chat-head">实时双轨字幕（点击任意日语词查义存卡）</div>
         <div id="sensei-live-chat" class="sensei-live-chat"></div>
       </div>
 
@@ -2749,23 +2722,154 @@
     `;
   }
 
+  function renderSettingsDrawer(userOptions, voiceOptions, coachOptions) {
+    if (!state.drawerOpen) return "";
+    const syl = state.syllabus;
+    const rec = syl?.recommendedLesson;
+    const scenarioOptions = state.scenarios
+      .map(
+        (s) =>
+          `<option value="${escapeHtml(s.id)}" ${s.id === state.selectedScenarioId ? "selected" : ""}>${escapeHtml(s.title)}（${s.category === "daily" ? "日常" : "旅行"}）</option>`
+      )
+      .join("");
+    const trackOptGroups = (syl?.tracks || [])
+      .map(
+        (tr) => `
+        <optgroup label="${escapeHtml(tr.title)}">
+          ${(tr.lessons || [])
+            .map((l) => {
+              const badge = l.status === "completed" ? `已学 ${l.bestScore}分 · ` : rec?.id === l.id ? "推荐 · " : "";
+              return `<option value="${escapeHtml(l.id)}" ${l.id === (state.selectedLessonId || rec?.id) ? "selected" : ""}>${badge}[${escapeHtml(l.level)}] ${escapeHtml(l.title)}</option>`;
+            })
+            .join("")}
+        </optgroup>`
+      )
+      .join("");
+
+    let courseBody = "";
+    if (state.curriculumMode === "sensei_syllabus") {
+      courseBody = `
+        <label class="sensei-lbl">16 课体系化进阶大纲</label>
+        <select id="sensei-lesson-select" class="sensei-select">${trackOptGroups}</select>
+        <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson ? "disabled" : ""}>
+          ${state.isGeneratingLesson ? "正在现场备课..." : "开始选定课程"}
+        </button>
+      `;
+    } else if (state.curriculumMode === "custom_topic") {
+      const chips = [
+        "彻底搞懂 あげる / もらう / くれる 的视角",
+        "日式委婉拒绝与缓冲语 〜んですけど",
+        "和日本同事聊AI科技、工作与周末",
+        "真人口语缩略 〜てる / 〜ちゃう / 〜なきゃ",
+      ];
+      courseBody = `
+        <label class="sensei-lbl">输入任意语法或生活聊天话题</label>
+        <input type="text" id="sensei-custom-topic-input" class="sensei-input" style="width:100%;" placeholder="如：区分 わけ / はず；或在东京咖啡店聊工作..." value="${escapeHtml(state.customTopic)}" />
+        <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson ? "disabled" : ""}>
+          ${state.isGeneratingLesson ? "正在现场备课..." : "现编教材并开课"}
+        </button>
+        <div class="sensei-quick-chips" style="margin-top:0.65rem;">
+          ${chips.map((c) => `<button type="button" class="sensei-mini-btn" data-quick-topic="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("")}
+        </div>
+      `;
+    } else {
+      courseBody = `
+        <label class="sensei-lbl">选择旅行或日常专项场景</label>
+        <select id="sensei-scenario-select" class="sensei-select">${scenarioOptions}</select>
+        <label class="sensei-lbl" style="margin-top:0.6rem;">训练模式</label>
+        <select id="sensei-lesson-type-select" class="sensei-select">
+          <option value="guided_10min" ${state.lessonType === "guided_10min" ? "selected" : ""}>完整 10 分钟私教课</option>
+          <option value="pronunciation_drill" ${state.lessonType === "pronunciation_drill" ? "selected" : ""}>专注声学镜子发音过关</option>
+          <option value="substitution_drill" ${state.lessonType === "substitution_drill" ? "selected" : ""}>动词槽位口头替换操练</option>
+        </select>
+        <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson ? "disabled" : ""}>
+          开始场景私教课
+        </button>
+      `;
+    }
+
+    return `
+      <div class="ui-drawer-backdrop" id="sensei-drawer-backdrop">
+        <aside class="ui-drawer" role="dialog" aria-modal="true" aria-label="选课与私教偏好">
+          <div class="ui-drawer-head">
+            <h3>选课与私教偏好</h3>
+            <button type="button" class="sensei-mini-btn" id="sensei-drawer-close-btn" aria-label="关闭抽屉">✕</button>
+          </div>
+          <div class="ui-drawer-body">
+            <div class="ui-drawer-section">
+              <div class="ui-drawer-sec-title">切换课程</div>
+              <div class="ui-segmented" style="width:100%;margin-bottom:0.75rem;">
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "sensei_syllabus" ? "active" : ""}" data-curmode="sensei_syllabus">体系 16 课</button>
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "custom_topic" ? "active" : ""}" data-curmode="custom_topic">自由命题</button>
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "travel_scenario" ? "active" : ""}" data-curmode="travel_scenario">旅行场景</button>
+              </div>
+              ${courseBody}
+            </div>
+
+            <div class="ui-drawer-section">
+              <div class="ui-drawer-sec-title">课堂偏好</div>
+              <label class="ui-switch-row">
+                <span>立刻回放我的原声（声学镜子）</span>
+                <input type="checkbox" class="ui-switch" id="chk-mirror-playback" ${state.mirrorPlayback ? "checked" : ""} />
+              </label>
+              <label class="ui-switch-row">
+                <span>穿插旧词与错题复习</span>
+                <input type="checkbox" class="ui-switch" id="chk-include-review" ${state.includeReview ? "checked" : ""} />
+              </label>
+              <label class="ui-switch-row">
+                <span>说完停顿自动提交</span>
+                <input type="checkbox" class="ui-switch" id="chk-auto-stop" ${state.autoStopSilence ? "checked" : ""} />
+              </label>
+              <label class="ui-switch-row">
+                <span>过关后自动进入下一步</span>
+                <input type="checkbox" class="ui-switch" id="chk-auto-next" ${state.autoAdvanceOnPass ? "checked" : ""} />
+              </label>
+              <label class="ui-switch-row">
+                <span>老师说完自动开麦（桌面端）</span>
+                <input type="checkbox" class="ui-switch" id="chk-auto-reopen" ${state.autoReopenMic ? "checked" : ""} />
+              </label>
+            </div>
+
+            <div class="ui-drawer-section">
+              <div class="ui-drawer-sec-title">档案与语音引擎</div>
+              <label class="sensei-lbl">当前学习成员</label>
+              <select id="sensei-user-select" class="sensei-select">${userOptions}</select>
+              <label class="sensei-lbl" style="margin-top:0.6rem;">老师声线</label>
+              <select id="sensei-voice-select" class="sensei-select">${voiceOptions}</select>
+              <label class="sensei-lbl" style="margin-top:0.6rem;">纠音裁判模型</label>
+              <select id="sensei-coach-select" class="sensei-select">${coachOptions}</select>
+            </div>
+          </div>
+        </aside>
+      </div>
+    `;
+  }
+
   async function render(targetEl) {
     if (targetEl) containerEl = targetEl;
     if (!containerEl) return;
 
     if (!state.healthChecked) {
-      containerEl.innerHTML = `<div class="sensei-shell"><div class="sensei-card">⏳ 正在连接 Nihongo Sensei 私教引擎...</div></div>`;
+      containerEl.innerHTML = `<div class="sensei-shell"><div class="sensei-card">正在连接 Nihongo Sensei 私教引擎...</div></div>`;
       await initBackend(false);
     }
 
     if (!state.backendOnline) {
       containerEl.innerHTML = `<div class="sensei-shell">${renderOfflineSetupCard()}</div>`;
-      bindEvents();
+      bindEvents(containerEl);
       return;
     }
 
-    const userOptions = (state.users.length ? state.users : [{ id: "haodong", display_name: "刘浩东", jlpt_target: "N4" }, { id: "sherry", display_name: "Sherry", jlpt_target: "N5" }])
-      .map((u) => `<option value="${escapeHtml(u.id)}" ${u.id === state.userId ? "selected" : ""}>👤 ${escapeHtml(u.display_name)} (${escapeHtml(u.jlpt_target)})</option>`)
+    if (state.subTab === "notebook") {
+      state.subTab = "lesson";
+    }
+
+    const users = state.users.length
+      ? state.users
+      : [{ id: "haodong", display_name: "刘浩东", jlpt_target: "N4" }, { id: "sherry", display_name: "Sherry", jlpt_target: "N5" }];
+    const activeUser = users.find((u) => u.id === state.userId) || users[0];
+    const userOptions = users
+      .map((u) => `<option value="${escapeHtml(u.id)}" ${u.id === state.userId ? "selected" : ""}>${escapeHtml(u.display_name)} (${escapeHtml(u.jlpt_target)})</option>`)
       .join("");
 
     const voices = state.health?.voices || [
@@ -2774,15 +2878,15 @@
       { id: "Puck", label: "Puck（男老师）" },
     ];
     const voiceOptions = voices
-      .map((v) => `<option value="${escapeHtml(v.id)}" ${v.id === state.voice ? "selected" : ""}>🎙️ ${escapeHtml(v.label)}</option>`)
+      .map((v) => `<option value="${escapeHtml(v.id)}" ${v.id === state.voice ? "selected" : ""}>${escapeHtml(v.label)}</option>`)
       .join("");
 
     const defaultCoach = state.health?.models?.coach || "gemini-4-hydrogen";
     const activeCoach = state.coachModel || defaultCoach;
     const coachModels = state.health?.coach_models || [
-      { id: "gemini-4-hydrogen", label: "🎯 Gemini 4 Hydrogen（均衡精准 · ~4s · 推荐）" },
-      { id: "gemini-3.5-flash-lite", label: "⚡ Gemini 3.5 Flash Lite（极速刷句 · ~1.5s）" },
-      { id: "gemini-4-neon", label: "🧠 Gemini 4 Neon（深度精评 · ~10s）" },
+      { id: "gemini-4-hydrogen", label: "Gemini 4 Hydrogen（均衡推荐 · ~4s）" },
+      { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite（极速 · ~1.5s）" },
+      { id: "gemini-4-neon", label: "Gemini 4 Neon（深度精评 · ~10s）" },
     ];
     const coachOptions = coachModels
       .map((m) => `<option value="${escapeHtml(m.id)}" ${m.id === activeCoach ? "selected" : ""}>${escapeHtml(m.label)}</option>`)
@@ -2791,7 +2895,7 @@
     const missingKeyWarning =
       state.health && !state.health.has_server_key && !(localStorage.getItem(GEMINI_KEY_STORAGE) || "").trim()
         ? `<div class="sensei-key-banner">
-            ⚠️ 服务端未设置 <code>GEMINI_API_KEY</code>，请临时填入你的本地 Key 测试（仅存本机浏览器或改配 <code>server/.env</code>）：
+            服务端未设置 <code>GEMINI_API_KEY</code>，请填入本地 Key：
             <input type="password" id="sensei-inline-key-input" class="sensei-input small" placeholder="AIza..." />
             <button type="button" class="sensei-mini-btn" id="sensei-save-inline-key-btn">保存 Key</button>
           </div>`
@@ -2799,56 +2903,51 @@
 
     const passcodeBanner =
       state.health?.auth_required && !state.passcodeVerified
-        ? `<div class="sensei-key-banner">
-            🔒 <strong>家庭口令验证：</strong>请输入口令解锁 AI 私教与语音功能（本设备仅需输入一次）：
-            <input type="password" inputmode="numeric" id="sensei-passcode-input" class="sensei-input small" placeholder="输入家庭口令..." value="${escapeHtml(state.passcode)}" />
-            <button type="button" class="sensei-mini-btn" id="sensei-save-passcode-btn">🔓 解锁</button>
+        ? `<div class="sensei-lock-card">
+            <div class="sensei-lock-title">输入家庭口令以解锁 AI 私教</div>
+            <div class="sensei-lock-row">
+              <input type="password" inputmode="numeric" id="sensei-passcode-input" class="sensei-input small" placeholder="输入家庭口令..." value="${escapeHtml(state.passcode)}" />
+              <button type="button" class="sensei-btn primary" id="sensei-save-passcode-btn">解锁</button>
+            </div>
           </div>`
         : "";
+
+    const isFocusLesson = state.subTab === "lesson" && !!currentLessonStep();
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
 
     let bodyHtml = "";
     if (state.subTab === "lesson") bodyHtml = renderLessonTab();
     else if (state.subTab === "call") bodyHtml = renderCallTab();
-    else if (state.subTab === "notebook") bodyHtml = renderNotebookTab();
     else bodyHtml = renderStoryTab();
 
     containerEl.innerHTML = `
-      <div class="sensei-shell">
-        <div class="sensei-topbar">
-          <div class="sensei-brand">
-            <span class="sensei-status-dot online" title="FastAPI 私教后端已就绪"></span>
-            <div>
-              <h2>🧑‍🏫 Nihongo Sensei AI 语音私教工作室</h2>
-              <div class="sensei-model-pills">
-                <span>Live: ${escapeHtml(state.health?.models?.live || "gemini-3.8-live")}</span>
-                <span>纠音裁判: ${escapeHtml(activeCoach)}</span>
-                <span>语音合成: ${escapeHtml(state.health?.models?.tts_fast || "gemini-3.8-flash-lite-tts")}</span>
-              </div>
-            </div>
-          </div>
-          <div class="sensei-profile-bar">
-            <select id="sensei-user-select" class="sensei-select compact">${userOptions}</select>
-            <select id="sensei-coach-select" class="sensei-select compact" title="切换纠音裁判模型">${coachOptions}</select>
-            <select id="sensei-voice-select" class="sensei-select compact">${voiceOptions}</select>
-          </div>
-        </div>
+      <div class="sensei-shell ${isFocusLesson ? "focus-mode" : ""}">
+        ${
+          !isFocusLesson
+            ? `<div class="sensei-studio-header">
+                <div class="ui-segmented" role="tablist" aria-label="AI 私教模式">
+                  <button type="button" class="ui-seg-btn ${state.subTab === "lesson" ? "active" : ""}" data-subtab="lesson">私教课</button>
+                  <button type="button" class="ui-seg-btn ${state.subTab === "call" ? "active" : ""}" data-subtab="call">实时通话</button>
+                  <button type="button" class="ui-seg-btn ${state.subTab === "story" ? "active" : ""}" data-subtab="story">有声故事</button>
+                </div>
+                <div class="sensei-studio-actions">
+                  <span class="sensei-user-chip">${escapeHtml(activeUser.display_name)} · ${escapeHtml(activeUser.jlpt_target || "N4")}</span>
+                  <button type="button" class="sensei-mini-btn" id="sensei-open-drawer-btn">${ico("sliders")} 选课与偏好</button>
+                </div>
+              </div>`
+            : ""
+        }
 
         ${missingKeyWarning}
         ${passcodeBanner}
 
-        <div class="sensei-subtabs">
-          <button type="button" class="sensei-subtab ${state.subTab === "lesson" ? "active" : ""}" data-subtab="lesson">🎓 10分钟私教课 & 纠音</button>
-          <button type="button" class="sensei-subtab ${state.subTab === "call" ? "active" : ""}" data-subtab="call">📞 实时语音通话</button>
-          <button type="button" class="sensei-subtab ${state.subTab === "notebook" ? "active" : ""}" data-subtab="notebook">📒 老师记忆本 (FSRS)</button>
-          <button type="button" class="sensei-subtab ${state.subTab === "story" ? "active" : ""}" data-subtab="story">🎧 分级有声故事</button>
-        </div>
-
         ${bodyHtml}
+        ${renderSettingsDrawer(userOptions, voiceOptions, coachOptions)}
         ${renderTokenPopover()}
       </div>
     `;
 
-    bindEvents();
+    bindEvents(containerEl);
     updateMirrorPhaseDom();
     if (state.subTab === "call") {
       updateCallStatusDom();
@@ -2856,17 +2955,73 @@
     }
   }
 
-  function renderView() {
-    render(containerEl);
+  async function renderNotebook(targetEl) {
+    if (targetEl) notebookContainerEl = targetEl;
+    const host = notebookContainerEl || containerEl;
+    if (!host) return;
+
+    if (!state.healthChecked) {
+      host.innerHTML = `<div class="sensei-shell"><div class="sensei-card">正在读取 AI 记忆本...</div></div>`;
+      await initBackend(false);
+    }
+    if (!state.backendOnline) {
+      host.innerHTML = `<div class="sensei-shell">${renderOfflineSetupCard()}</div>`;
+      bindEvents(host);
+      return;
+    }
+    if (!state.memoryData) {
+      try {
+        const [mem, cards] = await Promise.all([
+          apiJson(`/api/memory?user_id=${encodeURIComponent(state.userId)}`),
+          apiJson(`/api/srs/cards?user_id=${encodeURIComponent(state.userId)}`),
+        ]);
+        state.memoryData = mem;
+        state.srsCards = cards.cards || [];
+        const nowIso = new Date().toISOString();
+        state.reviewQueue = state.srsCards.filter((c) => !c.next_due || c.next_due <= nowIso);
+        if (state.reviewQueue.length === 0) state.reviewQueue = state.srsCards.slice(0, 10);
+        state.reviewIdx = 0;
+        state.reviewShowBack = false;
+      } catch {}
+    }
+
+    const passcodeBanner =
+      state.health?.auth_required && !state.passcodeVerified
+        ? `<div class="sensei-lock-card">
+            <div class="sensei-lock-title">输入家庭口令以解锁 AI 记忆本</div>
+            <div class="sensei-lock-row">
+              <input type="password" inputmode="numeric" id="sensei-passcode-input" class="sensei-input small" placeholder="输入家庭口令..." value="${escapeHtml(state.passcode)}" />
+              <button type="button" class="sensei-btn primary" id="sensei-save-passcode-btn">解锁</button>
+            </div>
+          </div>`
+        : "";
+
+    host.innerHTML = `
+      <div class="sensei-shell">
+        ${passcodeBanner}
+        ${renderNotebookTab()}
+        ${renderTokenPopover()}
+      </div>
+    `;
+    bindEvents(host);
   }
 
-  function bindEvents() {
-    if (!containerEl) return;
+  function renderView() {
+    if (containerEl && containerEl.style.display !== "none") {
+      render(containerEl);
+    }
+    if (notebookContainerEl && notebookContainerEl.style.display !== "none") {
+      renderNotebook(notebookContainerEl);
+    }
+  }
 
-    const connBtn = containerEl.querySelector("#sensei-connect-backend-btn");
+  function bindEvents(root = containerEl) {
+    if (!root) return;
+
+    const connBtn = root.querySelector("#sensei-connect-backend-btn");
     if (connBtn) {
       connBtn.onclick = async () => {
-        const val = (containerEl.querySelector("#sensei-backend-url-input")?.value || "").trim().replace(/\/+$/, "");
+        const val = (root.querySelector("#sensei-backend-url-input")?.value || "").trim().replace(/\/+$/, "");
         state.backendBase = val;
         localStorage.setItem(BACKEND_URL_STORAGE, val);
         state.healthChecked = false;
@@ -2874,10 +3029,10 @@
       };
     }
 
-    const saveKeyBtn = containerEl.querySelector("#sensei-save-inline-key-btn");
+    const saveKeyBtn = root.querySelector("#sensei-save-inline-key-btn");
     if (saveKeyBtn) {
       saveKeyBtn.onclick = () => {
-        const key = (containerEl.querySelector("#sensei-inline-key-input")?.value || "").trim();
+        const key = (root.querySelector("#sensei-inline-key-input")?.value || "").trim();
         if (!key) return;
         localStorage.setItem(GEMINI_KEY_STORAGE, key);
         showToast("✅ 已保存本地 Gemini Key");
@@ -2885,8 +3040,8 @@
       };
     }
 
-    const passcodeInput = containerEl.querySelector("#sensei-passcode-input");
-    const savePasscodeBtn = containerEl.querySelector("#sensei-save-passcode-btn");
+    const passcodeInput = root.querySelector("#sensei-passcode-input");
+    const savePasscodeBtn = root.querySelector("#sensei-save-passcode-btn");
     const submitPasscode = async () => {
       const code = (passcodeInput?.value || "").trim();
       if (!code) return;
@@ -2911,7 +3066,55 @@
       };
     }
 
-    const userSel = containerEl.querySelector("#sensei-user-select");
+    // Drawer & Focus Header Controls
+    const openDrawer = () => { state.drawerOpen = true; renderView(); };
+    const closeDrawer = () => { state.drawerOpen = false; renderView(); };
+    const openDrawerBtn = root.querySelector("#sensei-open-drawer-btn");
+    if (openDrawerBtn) openDrawerBtn.onclick = openDrawer;
+    const openDrawerFocus = root.querySelector("#sensei-open-drawer-focus");
+    if (openDrawerFocus) openDrawerFocus.onclick = openDrawer;
+    const openCoursePicker = root.querySelector("#sensei-open-course-picker");
+    if (openCoursePicker) openCoursePicker.onclick = openDrawer;
+    const drawerCloseBtn = root.querySelector("#sensei-drawer-close-btn");
+    if (drawerCloseBtn) drawerCloseBtn.onclick = closeDrawer;
+    const drawerBackdrop = root.querySelector("#sensei-drawer-backdrop");
+    if (drawerBackdrop) {
+      drawerBackdrop.onclick = (e) => {
+        if (e.target === drawerBackdrop) closeDrawer();
+      };
+    }
+
+    const exitLessonBtn = root.querySelector("#sensei-exit-lesson-btn");
+    if (exitLessonBtn) {
+      exitLessonBtn.onclick = () => {
+        clearAutoAdvanceTimer();
+        turnChoreographySeq += 1;
+        stopSimpleAudio();
+        if (state.isRecordingTurn) cancelLessonRecording();
+        state.lessonSession = null;
+        state.lastTurnResult = null;
+        state.mirrorPhase = "";
+        renderView();
+      };
+    }
+
+    const toggleBbBtn = root.querySelector("#sensei-toggle-bb-btn");
+    if (toggleBbBtn) {
+      toggleBbBtn.onclick = () => {
+        state.showBlackboard = !state.showBlackboard;
+        renderView();
+      };
+    }
+
+    const toggleCallCfg = root.querySelector("#sensei-toggle-call-cfg");
+    if (toggleCallCfg) {
+      toggleCallCfg.onclick = () => {
+        state.showCallSettings = !state.showCallSettings;
+        renderView();
+      };
+    }
+
+    const userSel = root.querySelector("#sensei-user-select");
     if (userSel) {
       userSel.onchange = async () => {
         state.userId = userSel.value;
@@ -2919,14 +3122,15 @@
         const u = state.users.find((x) => x.id === state.userId);
         if (u) state.jlptTarget = u.jlpt_target || state.jlptTarget;
         state.selectedLessonId = "";
+        state.memoryData = null;
         await loadSyllabus();
-        if (state.subTab === "notebook") await loadNotebookData();
+        if (notebookContainerEl && notebookContainerEl.style.display !== "none") await loadNotebookData();
         else if (state.subTab === "story") await loadStories();
         else renderView();
       };
     }
 
-    const coachSel = containerEl.querySelector("#sensei-coach-select");
+    const coachSel = root.querySelector("#sensei-coach-select");
     if (coachSel) {
       coachSel.onchange = () => {
         state.coachModel = coachSel.value;
@@ -2935,7 +3139,7 @@
       };
     }
 
-    const voiceSel = containerEl.querySelector("#sensei-voice-select");
+    const voiceSel = root.querySelector("#sensei-voice-select");
     if (voiceSel) {
       voiceSel.onchange = () => {
         state.voice = voiceSel.value;
@@ -2943,7 +3147,7 @@
       };
     }
 
-    containerEl.querySelectorAll("[data-subtab]").forEach((btn) => {
+    root.querySelectorAll("[data-subtab]").forEach((btn) => {
       btn.onclick = async () => {
         const tab = btn.dataset.subtab;
         if (state.subTab === tab) return;
@@ -2952,29 +3156,29 @@
         }
         state.subTab = tab;
         renderView();
-        if (tab === "notebook") await loadNotebookData();
-        else if (tab === "story") await loadStories();
+        if (tab === "story") await loadStories();
       };
     });
 
     // Guided lesson bindings
-    containerEl.querySelectorAll("[data-curmode]").forEach((btn) => {
+    root.querySelectorAll("[data-curmode]").forEach((btn) => {
       btn.onclick = () => {
         state.curriculumMode = btn.dataset.curmode;
         renderView();
       };
     });
-    const lessonSel = containerEl.querySelector("#sensei-lesson-select");
+    const lessonSel = root.querySelector("#sensei-lesson-select");
     if (lessonSel) lessonSel.onchange = () => { state.selectedLessonId = lessonSel.value; };
-    const customInput = containerEl.querySelector("#sensei-custom-topic-input");
+    const customInput = root.querySelector("#sensei-custom-topic-input");
     if (customInput) customInput.oninput = () => { state.customTopic = customInput.value; };
-    containerEl.querySelectorAll("[data-quick-topic]").forEach((btn) => {
+    root.querySelectorAll("[data-quick-topic]").forEach((btn) => {
       btn.onclick = () => {
         state.customTopic = btn.dataset.quickTopic;
+        state.drawerOpen = false;
         startGuidedLesson({ curriculumMode: "custom_topic", customTopic: state.customTopic });
       };
     });
-    const startRecBtn = containerEl.querySelector("#sensei-start-rec-btn");
+    const startRecBtn = root.querySelector("#sensei-start-rec-btn");
     if (startRecBtn) {
       startRecBtn.onclick = () =>
         startGuidedLesson({
@@ -2983,56 +3187,61 @@
         });
     }
 
-    const scSel = containerEl.querySelector("#sensei-scenario-select");
+    const scSel = root.querySelector("#sensei-scenario-select");
     if (scSel) scSel.onchange = () => { state.selectedScenarioId = scSel.value; };
-    const ltSel = containerEl.querySelector("#sensei-lesson-type-select");
+    const ltSel = root.querySelector("#sensei-lesson-type-select");
     if (ltSel) ltSel.onchange = () => { state.lessonType = ltSel.value; };
-    const chkReview = containerEl.querySelector("#chk-include-review");
+    const chkReview = root.querySelector("#chk-include-review");
     if (chkReview) {
       chkReview.onchange = () => {
         state.includeReview = chkReview.checked;
         localStorage.setItem(INCLUDE_REVIEW_STORAGE, state.includeReview ? "true" : "false");
       };
     }
-    const chkMirror = containerEl.querySelector("#chk-mirror-playback");
+    const chkMirror = root.querySelector("#chk-mirror-playback");
     if (chkMirror) chkMirror.onchange = () => { state.mirrorPlayback = chkMirror.checked; };
-    const chkAuto = containerEl.querySelector("#chk-auto-reopen");
+    const chkAuto = root.querySelector("#chk-auto-reopen");
     if (chkAuto) chkAuto.onchange = () => { state.autoReopenMic = chkAuto.checked; };
-    const chkAutoStop = containerEl.querySelector("#chk-auto-stop");
+    const chkAutoStop = root.querySelector("#chk-auto-stop");
     if (chkAutoStop) chkAutoStop.onchange = () => { state.autoStopSilence = chkAutoStop.checked; };
-    const chkAutoNext = containerEl.querySelector("#chk-auto-next");
+    const chkAutoNext = root.querySelector("#chk-auto-next");
     if (chkAutoNext) chkAutoNext.onchange = () => { state.autoAdvanceOnPass = chkAutoNext.checked; };
 
-    const startLessonBtn = containerEl.querySelector("#sensei-start-lesson-btn");
-    if (startLessonBtn) startLessonBtn.onclick = () => startGuidedLesson();
+    const startLessonBtn = root.querySelector("#sensei-start-lesson-btn");
+    if (startLessonBtn) {
+      startLessonBtn.onclick = () => {
+        state.drawerOpen = false;
+        startGuidedLesson();
+      };
+    }
 
-    const peekBtn = containerEl.querySelector("#sensei-peek-btn");
+    const peekBtn = root.querySelector("#sensei-peek-btn");
     if (peekBtn) peekBtn.onclick = () => { state.peekHint = true; renderView(); };
 
-    const recBtn = containerEl.querySelector("#sensei-record-turn-btn");
+    const recBtn = root.querySelector("#sensei-record-turn-btn");
     if (recBtn) recBtn.onclick = () => toggleLessonRecording();
 
-    const cancelRecBtn = containerEl.querySelector("#sensei-cancel-rec-btn");
+    const cancelRecBtn = root.querySelector("#sensei-cancel-rec-btn");
     if (cancelRecBtn) cancelRecBtn.onclick = cancelLessonRecording;
 
-    const cancelEvalBtn = containerEl.querySelector("#sensei-cancel-eval-btn");
+    const cancelEvalBtn = root.querySelector("#sensei-cancel-eval-btn");
     if (cancelEvalBtn) cancelEvalBtn.onclick = cancelTurnEvaluation;
 
-    const prevBtn = containerEl.querySelector("#sensei-prev-step-btn");
+    const prevBtn = root.querySelector("#sensei-prev-step-btn");
     if (prevBtn) prevBtn.onclick = () => advanceLessonStep(-1);
-    const nextBtn = containerEl.querySelector("#sensei-next-step-btn");
+    const nextBtn = root.querySelector("#sensei-next-step-btn");
     if (nextBtn) nextBtn.onclick = () => advanceLessonStep(1);
-    const passNextBtn = containerEl.querySelector("#sensei-pass-next-btn");
+    const passNextBtn = root.querySelector("#sensei-pass-next-btn");
     if (passNextBtn) passNextBtn.onclick = () => advanceLessonStep(1);
 
-    containerEl.querySelectorAll("[data-jump-step]").forEach((btn) => {
+    root.querySelectorAll("[data-jump-step]").forEach((btn) => {
       btn.onclick = () => {
         const idx = Number(btn.dataset.jumpStep);
         if (!Number.isNaN(idx)) advanceLessonStep(idx - state.lessonStepIdx);
       };
     });
 
-    containerEl.querySelectorAll("[data-save-diag-vocab]").forEach((btn) => {
+    root.querySelectorAll("[data-save-diag-vocab]").forEach((btn) => {
       btn.onclick = () => {
         const v = (state.lastTurnResult?.extractedVocab || [])[Number(btn.dataset.saveDiagVocab)];
         if (v) saveTokenToSrs({ ...v, context_jp: state.lastTurnResult?.targetJp || "" });
@@ -3040,40 +3249,45 @@
     });
 
     // Live Call bindings
-    const callScSel = containerEl.querySelector("#sensei-call-scenario");
+    const callScSel = root.querySelector("#sensei-call-scenario");
     if (callScSel) callScSel.onchange = () => { state.selectedScenarioId = callScSel.value; };
-    const corrModeSel = containerEl.querySelector("#sensei-corr-mode");
+    const corrModeSel = root.querySelector("#sensei-corr-mode");
     if (corrModeSel) corrModeSel.onchange = () => { state.correctionMode = corrModeSel.value; };
-    const outModeSel = containerEl.querySelector("#sensei-audio-output-mode");
+    const outModeSel = root.querySelector("#sensei-audio-output-mode");
     if (outModeSel) outModeSel.onchange = () => { state.audioOutputMode = outModeSel.value; updateCallStatusDom(); };
 
-    const startCallBtn = containerEl.querySelector("#sensei-start-call-btn");
-    if (startCallBtn) startCallBtn.onclick = startLiveCall;
-    const stopCallBtn = containerEl.querySelector("#sensei-stop-call-btn");
+    const startCallBtn = root.querySelector("#sensei-start-call-btn");
+    if (startCallBtn) {
+      startCallBtn.onclick = () => {
+        state.showCallSettings = false;
+        startLiveCall();
+      };
+    }
+    const stopCallBtn = root.querySelector("#sensei-stop-call-btn");
     if (stopCallBtn) stopCallBtn.onclick = () => stopLiveCall(true);
-    const bargeBtn = containerEl.querySelector("#sensei-bargein-btn");
+    const bargeBtn = root.querySelector("#sensei-bargein-btn");
     if (bargeBtn) bargeBtn.onclick = triggerLiveBargeIn;
-    const hintBtn = containerEl.querySelector("#sensei-hint-btn");
+    const hintBtn = root.querySelector("#sensei-hint-btn");
     if (hintBtn) hintBtn.onclick = () => sendLiveControl("hint_request");
-    const slowBtn = containerEl.querySelector("#sensei-slow-btn");
+    const slowBtn = root.querySelector("#sensei-slow-btn");
     if (slowBtn) slowBtn.onclick = () => sendLiveControl("slow_down");
 
     // Notebook & Story bindings
-    const impBtn = containerEl.querySelector("#sensei-import-legacy-btn");
+    const impBtn = root.querySelector("#sensei-import-legacy-btn");
     if (impBtn) impBtn.onclick = importLegacyToFsrs;
-    const refBtn = containerEl.querySelector("#sensei-refresh-nb-btn");
+    const refBtn = root.querySelector("#sensei-refresh-nb-btn");
     if (refBtn) refBtn.onclick = loadNotebookData;
-    const flipBtn = containerEl.querySelector("#sensei-fsrs-flip-btn");
+    const flipBtn = root.querySelector("#sensei-fsrs-flip-btn");
     if (flipBtn) flipBtn.onclick = () => { state.reviewShowBack = true; renderView(); };
-    containerEl.querySelectorAll("[data-fsrs-rate]").forEach((btn) => {
+    root.querySelectorAll("[data-fsrs-rate]").forEach((btn) => {
       btn.onclick = () => submitFSRSReview(Number(btn.dataset.fsrsRate));
     });
 
-    const genStoryBtn = containerEl.querySelector("#sensei-gen-story-btn");
+    const genStoryBtn = root.querySelector("#sensei-gen-story-btn");
     if (genStoryBtn) genStoryBtn.onclick = createGradedStory;
 
     // Shared audio & Tap-Any-Word token popover bindings
-    containerEl.querySelectorAll("[data-play-url]").forEach((btn) => {
+    root.querySelectorAll("[data-play-url]").forEach((btn) => {
       btn.onclick = () => {
         ensureLessonAudioCtx();
         const url = btn.dataset.playUrl;
@@ -3083,10 +3297,10 @@
         return playUrlAsync(url);
       };
     });
-    containerEl.querySelectorAll("[data-tts-text]").forEach((btn) => {
+    root.querySelectorAll("[data-tts-text]").forEach((btn) => {
       btn.onclick = () => playTextTts(btn.dataset.ttsText, { lang: btn.dataset.ttsLang || null });
     });
-    containerEl.querySelectorAll("[data-tok-surface]").forEach((btn) => {
+    root.querySelectorAll("[data-tok-surface]").forEach((btn) => {
       btn.onclick = () =>
         openWordLookup(
           btn.dataset.tokSurface,
@@ -3096,9 +3310,9 @@
         );
     });
 
-    const dictClose = containerEl.querySelector("#sensei-dict-close");
+    const dictClose = root.querySelector("#sensei-dict-close");
     if (dictClose) dictClose.onclick = () => { state.activeTokenEntry = null; renderView(); };
-    const dictBackdrop = containerEl.querySelector("#sensei-dict-backdrop");
+    const dictBackdrop = root.querySelector("#sensei-dict-backdrop");
     if (dictBackdrop) {
       dictBackdrop.onclick = (e) => {
         if (e.target === dictBackdrop) {
@@ -3107,7 +3321,7 @@
         }
       };
     }
-    const dictSave = containerEl.querySelector("#sensei-dict-save-btn");
+    const dictSave = root.querySelector("#sensei-dict-save-btn");
     if (dictSave) {
       dictSave.onclick = async () => {
         await saveTokenToSrs(state.activeTokenEntry);
@@ -3115,6 +3329,16 @@
         renderView();
       };
     }
+  }
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && (state.drawerOpen || state.activeTokenEntry)) {
+        state.drawerOpen = false;
+        state.activeTokenEntry = null;
+        renderView();
+      }
+    });
   }
 
   function stopAll() {
@@ -3150,6 +3374,7 @@
 
   window.JP_SENSEI = {
     render,
+    renderNotebook,
     stopAll,
     initBackend,
   };

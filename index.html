@@ -5,178 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
   <title>日本家庭35晚长假 · N5–N3 日语学习手册 & 行程地图</title>
   <meta name="description" content="JLPT N5核心词汇250+75形容词、高频300自他成对动词、N5–N3核心语法132条 + 视频语法N4/N3全集160条、实战SRS闪卡/盲听/口语跟读私教与日本35晚行程地图 Web App" />
-  <meta name="theme-color" content="#1b2c52" />
+  <meta name="theme-color" content="#faf8f4" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="manifest" href="manifest.json?v=19" />
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css?v=24" />
-  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="styles.css?v=32" />
 </head>
 <body>
-  <!-- Compact Learning-First Top Header -->
-  <header class="hero-header">
-    <div class="hero-container">
-      <div class="hero-top">
-        <div class="hero-brand">
-          <h1 class="hero-title">🗾 日本旅行 · N5–N3 日语学习手册</h1>
-          <span class="streak-pill" id="header-streak-pill" title="点击进入实战练习 · 查看每日连胜进度">🔥 0天连学</span>
-        </div>
-
-        <div class="hero-actions">
-          <button type="button" class="btn-vault" id="btn-open-toolbox">📘 五十音·量词</button>
-
-          <div class="popover-anchor mobile-display-trigger">
-            <button type="button" class="btn-vault" id="btn-display-popover" aria-expanded="false" aria-controls="display-popover" title="显示与夜览设置">Aa</button>
-            <div class="header-popover" id="display-popover" hidden>
-              <div class="popover-title">显示设置</div>
-              <div class="popover-toggle-list">
-                <button type="button" class="toggle-chip active" data-pref-toggle="showFurigana" aria-pressed="true">あ 汉字假名注音</button>
-                <button type="button" class="toggle-chip active" data-pref-toggle="showRomaji" aria-pressed="true">A 罗马音拼读</button>
-                <button type="button" class="toggle-chip active" data-pref-toggle="showCn" aria-pressed="true">中 显示中文释义</button>
-                <button type="button" class="toggle-chip" data-pref-toggle="darkMode" aria-pressed="false">🌙 夜间护眼模式</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="popover-anchor">
-            <button type="button" class="btn-vault" id="btn-more-menu" aria-expanded="false" aria-controls="more-actions-popover">⋯ 工具</button>
-            <div class="header-popover" id="more-actions-popover" hidden>
-              <button type="button" class="popover-menu-item" id="btn-open-hotels">📍 7家酒店地址与打车卡</button>
-              <button type="button" class="popover-menu-item" id="btn-open-ginza">🥂 银座5场周年午餐预约</button>
-              <button type="button" class="popover-menu-item" id="btn-add-phrase">➕ 新增自定义日语句子</button>
-              <button type="button" class="popover-menu-item" id="btn-share-sync">📲 夫妻同步与离线备份</button>
-              <button type="button" class="popover-menu-item" id="btn-filter-starred">⭐ 只看场景收藏句</button>
-              <button type="button" class="popover-menu-item" id="btn-toggle-trip-info">ℹ️ 展开/收起家庭行程简介</button>
-            </div>
-          </div>
+  <!-- Unified Minimal Washi Topbar -->
+  <header class="app-topbar" id="app-topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <span class="brand-seal" aria-hidden="true">和</span>
+        <div class="brand-copy">
+          <span class="brand-name">Nihongo Sensei</span>
+          <span class="brand-mobile-title" id="mobile-active-title">今日私教</span>
         </div>
       </div>
 
-      <!-- Collapsible Trip Details -->
-      <div class="hero-details" id="hero-details-drawer">
-        <p class="hero-subtitle">
-          2026.12.5 – 2027.1.10 (35晚) · 成田 · 东京高轮 · 轻井泽滑雪 · 保育园周 & 银座7周年午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町跨年
-        </p>
-        <div class="family-pills">
-          <span class="family-pill">👨 <strong>刘浩东</strong> · Google SWE Mgr</span>
-          <span class="family-pill">👩 <strong>Sherry</strong> · SWE</span>
-          <span class="family-pill">👧 <strong>Jinny (6岁半)</strong> · ジニー</span>
-          <span class="family-pill">👶 <strong>Jaycie (2岁半)</strong> · ジェイシー</span>
+      <nav class="topbar-nav" role="tablist" aria-label="主导航">
+        <button type="button" class="topbar-tab active" id="mode-btn-sensei" data-appmode="sensei" role="tab" aria-selected="true">今日私教</button>
+        <button type="button" class="topbar-tab" id="mode-btn-library" data-appmode="library" role="tab" aria-selected="false">词库语法</button>
+        <button type="button" class="topbar-tab" id="mode-btn-review" data-appmode="review" role="tab" aria-selected="false">复习练习</button>
+        <button type="button" class="topbar-tab" id="mode-btn-itinerary" data-appmode="itinerary" role="tab" aria-selected="false">日本行程</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <button type="button" class="streak-chip" id="header-streak-pill" title="点击进入复习练习 · 查看每日连学">0天</button>
+
+        <div class="popover-anchor">
+          <button type="button" class="topbar-icon-btn" id="btn-display-popover" aria-expanded="false" aria-controls="display-popover" title="显示与夜览设置">Aa</button>
+          <div class="header-popover" id="display-popover" hidden>
+            <div class="popover-title">排版与显示</div>
+            <div class="popover-toggle-list">
+              <button type="button" class="toggle-chip active" data-pref-toggle="showFurigana" aria-pressed="true">あ 汉字假名注音</button>
+              <button type="button" class="toggle-chip active" data-pref-toggle="showRomaji" aria-pressed="true">A 罗马音拼读</button>
+              <button type="button" class="toggle-chip active" data-pref-toggle="showCn" aria-pressed="true">中 显示中文释义</button>
+              <button type="button" class="toggle-chip" data-pref-toggle="darkMode" aria-pressed="false">墨 夜间护眼模式</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="popover-anchor">
+          <button type="button" class="topbar-icon-btn" id="btn-more-menu" aria-expanded="false" aria-controls="more-actions-popover" aria-label="更多工具">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="12" cy="19" r="1.3"/></svg>
+          </button>
+          <div class="header-popover" id="more-actions-popover" hidden>
+            <button type="button" class="popover-menu-item" id="btn-open-toolbox">五十音 · 量词速查表</button>
+            <button type="button" class="popover-menu-item" id="btn-add-phrase">新增自定义日语句子</button>
+            <button type="button" class="popover-menu-item" id="btn-share-sync">夫妻同步与离线备份</button>
+            <button type="button" class="popover-menu-item" id="btn-filter-starred">只看场景收藏句</button>
+          </div>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Compact Sticky Filter & Mode Switcher Deck -->
-  <section class="sticky-controls" id="sticky-controls" aria-label="主模式切换与筛选工具栏">
-    <div class="controls-inner">
-      <!-- Top Row: 5 Learning-First Mode Tabs + Desktop Display Mini-Toggles -->
-      <div class="mode-and-search-row">
-        <div class="app-mode-switcher" role="tablist" aria-label="切换主要功能模块">
-          <button type="button" class="mode-tab active" id="mode-btn-verbs" data-appmode="verbs" role="tab" aria-selected="true">
-            📚 词汇·动词
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-grammar" data-appmode="grammar" role="tab" aria-selected="false">
-            📖 语法 N5–N3
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-oral" data-appmode="oral" role="tab" aria-selected="false">
-            🎙️ 口语跟读
-          </button>
-          <button type="button" class="mode-tab mode-tab-sensei" id="mode-btn-sensei" data-appmode="sensei" role="tab" aria-selected="false">
-            🧑‍🏫 AI私教
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-practice" data-appmode="practice" role="tab" aria-selected="false">
-            🎯 实战练习
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-phrasebook" data-appmode="phrasebook" role="tab" aria-selected="false">
-            🗣️ 场景对话
-          </button>
-          <button type="button" class="mode-tab" id="mode-btn-itinerary" data-appmode="itinerary" role="tab" aria-selected="false">
-            📅 行程地图
-          </button>
-        </div>
-
-        <!-- Desktop Global Display Chips -->
-        <div class="global-display-bar" id="global-display-bar">
-          <button type="button" class="toggle-chip active" data-pref-toggle="showFurigana" aria-pressed="true" title="显示或隐藏汉字上方的假名注音">あ 假名</button>
-          <button type="button" class="toggle-chip active" data-pref-toggle="showRomaji" aria-pressed="true" title="显示或隐藏罗马音拼音">A 罗马音</button>
-          <button type="button" class="toggle-chip active" data-pref-toggle="showCn" aria-pressed="true" title="隐藏中文意思进行背诵自测">中 释义</button>
-          <button type="button" class="toggle-chip" data-pref-toggle="darkMode" aria-pressed="false" title="切换深色/浅色模式">🌙 夜览</button>
-        </div>
-      </div>
-
-      <!-- Phrasebook Search + Module Quick Jump + Filter Drawer Button -->
-      <div class="search-and-drawer-row" id="phrasebook-toolbar-row" style="display:none;">
-        <div class="search-box">
-          <span class="search-icon">🔍</span>
-          <input
-            type="text"
-            id="search-input"
-            placeholder="搜日文/中文（如：行李、尿布、山科、替玉、滑雪）..."
-          />
-          <button type="button" class="search-clear" id="search-clear" title="清空搜索">✕</button>
-        </div>
-
-        <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
-          <option value="">📑 目录...</option>
-        </select>
-
-        <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起筛选选项">
-          ⚙️ 筛选
-        </button>
-      </div>
-
-      <!-- Slim Horizontal Trip Leg Bar (Visible in Itinerary & Phrasebook modes) -->
-      <div class="leg-tabs scroll-fade-x" id="leg-tabs-container"></div>
-
-      <!-- Collapsible Toggles Drawer (For Phrasebook mode) -->
-      <div class="toolbar-collapsible" id="toolbar-collapsible" style="display:none;">
-        <div class="toggle-group">
-          <button type="button" class="toggle-chip active" data-viewmode="all">📚 全部</button>
-          <button type="button" class="toggle-chip" data-viewmode="sentences">🗣️ 仅句子</button>
-          <button type="button" class="toggle-chip" data-viewmode="dialogues">💬 仅对话</button>
-          <button type="button" class="toggle-chip" data-viewmode="starred">⭐ 收藏</button>
-          <button type="button" class="toggle-chip" data-viewmode="unmastered">⏳ 未背熟</button>
-        </div>
-        <div class="toggle-group">
-          <button type="button" class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">🎭 遮我方台词</button>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Secondary Workspace Segmented Bar (Library & Review modes only) -->
+  <div class="workspace-subbar-wrap" id="workspace-subbar-wrap" style="display:none;"></div>
 
   <!-- =================================================================== -->
-  <!-- VIEW 1 (DEFAULT): VOCABULARY & TOP 300 VERBS HUB                    -->
+  <!-- VIEW 1 (DEFAULT HOME): AI SENSEI STUDIO                             -->
   <!-- =================================================================== -->
-  <section id="verbs-view-container" class="learning-view-wrapper"></section>
+  <section id="sensei-view-container" class="learning-view-wrapper"></section>
 
   <!-- =================================================================== -->
-  <!-- VIEW 2: JAPANESE GRAMMAR GUIDE (N5 / N4 / N3 — 132 PATTERNS)        -->
+  <!-- VIEW 2: UNIFIED LIBRARY (VERBS 300 / N5-N3 / GRAMMAR / PHRASEBOOK)  -->
   <!-- =================================================================== -->
+  <section id="verbs-view-container" class="learning-view-wrapper" style="display:none;"></section>
   <section id="grammar-view-container" class="learning-view-wrapper" style="display:none;"></section>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 3: ORAL FOLLOW-READING & PRONUNCIATION COACH                   -->
-  <!-- =================================================================== -->
-  <section id="oral-view-container" class="learning-view-wrapper" style="display:none;"></section>
+  <div class="phrasebook-controls-bar" id="phrasebook-controls-bar" style="display:none;">
+    <div class="search-and-drawer-row" id="phrasebook-toolbar-row">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </span>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="搜日文或中文（如：行李、尿布、山科、替玉、滑雪）..."
+        />
+        <button type="button" class="search-clear" id="search-clear" title="清空搜索">✕</button>
+      </div>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 3B: NIHONGO SENSEI AI STUDIO (LIVE CALL + AUDIO MIRROR + FSRS) -->
-  <!-- =================================================================== -->
-  <section id="sensei-view-container" class="learning-view-wrapper" style="display:none;"></section>
+      <select id="mobile-module-select" class="mobile-module-select" aria-label="快速跳转模块">
+        <option value="">目录...</option>
+      </select>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 4: INTERACTIVE PRACTICE & SPACED-REPETITION LAB                -->
-  <!-- =================================================================== -->
-  <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
+      <button type="button" class="btn-drawer-toggle" id="btn-toggle-filters" title="展开/收起筛选选项">筛选</button>
+    </div>
 
-  <!-- =================================================================== -->
-  <!-- VIEW 4: 18-MODULE PHRASEBOOK & ROLEPLAY DIALOGUES                   -->
-  <!-- =================================================================== -->
+    <div class="toolbar-collapsible" id="toolbar-collapsible">
+      <div class="toggle-group">
+        <button type="button" class="toggle-chip active" data-viewmode="all">全部</button>
+        <button type="button" class="toggle-chip" data-viewmode="sentences">仅句子</button>
+        <button type="button" class="toggle-chip" data-viewmode="dialogues">仅对话</button>
+        <button type="button" class="toggle-chip" data-viewmode="starred">收藏</button>
+        <button type="button" class="toggle-chip" data-viewmode="unmastered">未背熟</button>
+      </div>
+      <div class="toggle-group">
+        <button type="button" class="toggle-chip" id="toggle-practice" title="在双人对话中模糊遮盖我方台词，练习开口对答">遮我方台词</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slim Horizontal Trip Leg Bar (Visible in Itinerary & Phrasebook modes) -->
+  <div class="leg-tabs scroll-fade-x" id="leg-tabs-container" style="display:none;"></div>
+
   <main class="app-layout" id="phrasebook-view-container" style="display:none;">
     <aside class="module-sidebar" aria-label="18大模块目录">
       <div class="sidebar-header">
-        <span>📑 18大场景目录</span>
+        <span>18 大场景目录</span>
         <span id="sidebar-total-stats">已背熟 0 / 0 句</span>
       </div>
       <ul class="sidebar-list" id="sidebar-module-list"></ul>
@@ -189,9 +130,35 @@
   </main>
 
   <!-- =================================================================== -->
-  <!-- VIEW 5: VISUAL ITINERARY & INTERACTIVE MAP VIEW                     -->
+  <!-- VIEW 3: UNIFIED REVIEW (AI NOTEBOOK / SRS / DRILLS / ORAL COACH)    -->
+  <!-- =================================================================== -->
+  <section id="review-notebook-container" class="learning-view-wrapper" style="display:none;"></section>
+  <section id="practice-view-container" class="learning-view-wrapper" style="display:none;"></section>
+  <section id="oral-view-container" class="learning-view-wrapper" style="display:none;"></section>
+
+  <!-- =================================================================== -->
+  <!-- VIEW 4: VISUAL ITINERARY & INTERACTIVE MAP VIEW                     -->
   <!-- =================================================================== -->
   <section id="itinerary-view-container" class="itinerary-view-wrapper" style="display:none;">
+    <div class="trip-editorial-header">
+      <div class="trip-header-top">
+        <div>
+          <span class="trip-eyebrow">2026.12.5 – 2027.1.10 · 35 晚家庭长假</span>
+          <h2 class="trip-header-title">日本行程与实用地图</h2>
+          <p class="trip-header-sub">成田 · 东京高轮 · 轻井泽滑雪 · 保育园周与银座 5 场午餐 · 福冈博多 · 由布院龟之井别庄 · 东京浜松町跨年</p>
+        </div>
+        <div class="trip-vault-actions">
+          <button type="button" class="action-btn" id="btn-open-hotels">7 家酒店打车卡</button>
+          <button type="button" class="action-btn" id="btn-open-ginza">银座周年午餐</button>
+        </div>
+      </div>
+      <div class="trip-family-row">
+        <span class="trip-member-chip">浩东 · Google SWE Mgr</span>
+        <span class="trip-member-chip">Sherry · SWE</span>
+        <span class="trip-member-chip">Jinny (6岁半)</span>
+        <span class="trip-member-chip">Jaycie (2岁半)</span>
+      </div>
+    </div>
     <!-- 1. Trip KPI Overview Strip -->
     <div class="itin-kpi-strip" id="itin-kpi-strip"></div>
 
@@ -279,35 +246,31 @@
   <!-- Floating Dialogue Now-Playing Bar -->
   <div class="dialogue-now-playing" id="dialogue-now-playing" style="display:none;"></div>
 
-  <!-- Fixed Mobile Bottom Tab Navigation (<= 768px) -->
+  <!-- Fixed Mobile Bottom Tab Navigation (4 Editorial Tabs, <= 768px) -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" role="tablist" aria-label="移动端主导航">
-    <button type="button" class="mnav-btn active" data-appmode="verbs" role="tab" aria-selected="true">
-      <span class="mnav-ico">📚</span>
-      <span class="mnav-lbl">词汇</span>
+    <button type="button" class="mnav-btn active" data-appmode="sensei" role="tab" aria-selected="true">
+      <span class="mnav-ico" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      </span>
+      <span class="mnav-lbl">今日私教</span>
     </button>
-    <button type="button" class="mnav-btn" data-appmode="grammar" role="tab" aria-selected="false">
-      <span class="mnav-ico">📖</span>
-      <span class="mnav-lbl">语法</span>
+    <button type="button" class="mnav-btn" data-appmode="library" role="tab" aria-selected="false">
+      <span class="mnav-ico" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+      </span>
+      <span class="mnav-lbl">词库语法</span>
     </button>
-    <button type="button" class="mnav-btn" data-appmode="oral" role="tab" aria-selected="false">
-      <span class="mnav-ico">🎙️</span>
-      <span class="mnav-lbl">口语</span>
-    </button>
-    <button type="button" class="mnav-btn" data-appmode="sensei" role="tab" aria-selected="false">
-      <span class="mnav-ico">🧑‍🏫</span>
-      <span class="mnav-lbl">私教</span>
-    </button>
-    <button type="button" class="mnav-btn" data-appmode="practice" role="tab" aria-selected="false">
-      <span class="mnav-ico">🎯</span>
-      <span class="mnav-lbl">练习</span>
-    </button>
-    <button type="button" class="mnav-btn" data-appmode="phrasebook" role="tab" aria-selected="false">
-      <span class="mnav-ico">🗣️</span>
-      <span class="mnav-lbl">场景</span>
+    <button type="button" class="mnav-btn" data-appmode="review" role="tab" aria-selected="false">
+      <span class="mnav-ico" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
+      <span class="mnav-lbl">复习练习</span>
     </button>
     <button type="button" class="mnav-btn" data-appmode="itinerary" role="tab" aria-selected="false">
-      <span class="mnav-ico">📅</span>
-      <span class="mnav-lbl">行程</span>
+      <span class="mnav-ico" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></svg>
+      </span>
+      <span class="mnav-lbl">日本行程</span>
     </button>
   </nav>
 
@@ -334,10 +297,10 @@
   <script src="data/grammar_n5_n3.js?v=18"></script>
   <script src="data/video_grammar.js?v=18"></script>
   <script src="data/learning_extras.js?v=18"></script>
-  <script src="app.js?v=18"></script>
-  <script src="oral_coach.js?v=18"></script>
-  <script src="learning.js?v=19"></script>
-  <script src="sensei_ui.js?v=31"></script>
+  <script src="app.js?v=32"></script>
+  <script src="oral_coach.js?v=32"></script>
+  <script src="learning.js?v=32"></script>
+  <script src="sensei_ui.js?v=32"></script>
   <script>
     if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost" || location.hostname === "127.0.0.1")) {
       let refreshing = false;
@@ -346,7 +309,7 @@
         refreshing = true;
         window.location.reload();
       });
-      navigator.serviceWorker.register("sw.js?v=31").then((reg) => {
+      navigator.serviceWorker.register("sw.js?v=32").then((reg) => {
         reg.update().catch(() => {});
       }).catch(() => {});
     }
