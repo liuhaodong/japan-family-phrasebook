@@ -892,3 +892,84 @@ def test_detect_native_gemini_audio_prefers_magic_bytes():
         )
         == ("audio/mp4", "m4a")
     )
+
+
+@pytest.mark.asyncio
+async def test_synthesize_tts_awaits_inflight_prewarm_without_duplicate_call(isolated_env):
+    import asyncio
+
+    pcm_data = b"\x02\x00" * 1600
+    sse_lines = [
+        "data: "
+        + json.dumps(
+            {
+                "candidates": [
+                    {
+                        "content": {
+                            "parts": [
+                                {
+                                    "inlineData": {
+                                        "mimeType": "audio/L16;rate=24000",
+                                        "data": base64.b64encode(pcm_data).decode("ascii"),
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        )
+    ]
+    upstream_calls = []
+
+    class FakeSlowStreamResp:
+        status_code = 200
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def aread(self):
+            return b""
+
+        async def aiter_lines(self):
+            await asyncio.sleep(0.08)
+            for ln in sse_lines:
+                yield ln
+
+    class FakeSlowStreamClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        def stream(self, method, url, headers=None, json=None, timeout=None):
+            upstream_calls.append(url)
+            return FakeSlowStreamResp()
+
+    tts_service._INFLIGHT_STREAMS.clear()
+    with patch("server.services.tts_service.httpx.AsyncClient", FakeSlowStreamClient):
+        pre_url = tts_service.prewarm_tts_stream(
+            "おはようございます",
+            api_key="test-key",
+            voice="Aoede",
+            cache_dir=isolated_env["tts_dir"],
+        )
+        assert pre_url and pre_url.startswith("/api/tts/cache/")
+        res = await tts_service.synthesize_speech(
+            "おはようございます",
+            api_key="test-key",
+            voice="Aoede",
+            cache_dir=isolated_env["tts_dir"],
+        )
+        assert res["cache_hit"] is True
+        assert res["audio_url"] == pre_url
+        wav_path = isolated_env["tts_dir"] / Path(pre_url).name
+        assert wav_path.exists() and wav_path.read_bytes()[:4] == b"RIFF"
+        assert len(upstream_calls) == 1

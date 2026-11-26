@@ -90,6 +90,7 @@
 
   let containerEl = null;
   let currentAudioEl = null;
+  let currentAudioDoneResolve = null;
   let sharedAudioEl = null;
   let sharedAudioUnlocked = false;
   let localMirrorBlobUrl = "";
@@ -216,7 +217,9 @@
     try {
       const el = getSharedAudioEl();
       if (sharedAudioUnlocked || currentAudioEl === el || !el.paused) return;
-      el.muted = true;
+      // iOS WebKit requires an unmuted play() inside a user gesture to grant autoplay for future clips.
+      el.muted = false;
+      el.volume = 1;
       el.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
       const p = el.play();
       if (p && typeof p.then === "function") {
@@ -224,14 +227,11 @@
           try {
             el.pause();
             el.currentTime = 0;
-            el.muted = false;
             sharedAudioUnlocked = true;
           } catch {}
-        }).catch(() => {
-          el.muted = false;
-        });
+        }).catch(() => {});
       } else {
-        el.muted = false;
+        sharedAudioUnlocked = true;
       }
     } catch {}
   }
@@ -262,10 +262,13 @@
         currentAudioEl.onended = null;
         currentAudioEl.onerror = null;
         currentAudioEl.pause();
-        currentAudioEl.removeAttribute("src");
-        currentAudioEl.load();
       } catch {}
       currentAudioEl = null;
+    }
+    if (currentAudioDoneResolve) {
+      const resolveAudio = currentAudioDoneResolve;
+      currentAudioDoneResolve = null;
+      resolveAudio(true);
     }
   }
 
@@ -273,36 +276,50 @@
     return new Promise((resolve) => {
       stopSimpleAudio();
       if (!url) {
-        resolve();
+        resolve(false);
         return;
       }
       const audio = getSharedAudioEl();
       audio.playsInline = true;
       audio.setAttribute("playsinline", "");
       audio.muted = false;
+      audio.volume = 1;
       currentAudioEl = audio;
       let finished = false;
-      const done = () => {
+      const done = (ok = true) => {
         if (finished) return;
         finished = true;
         audio.onended = null;
         audio.onerror = null;
         if (currentAudioEl === audio) currentAudioEl = null;
-        resolve();
+        if (currentAudioDoneResolve === done) currentAudioDoneResolve = null;
+        resolve(Boolean(ok));
       };
-      audio.onended = done;
-      audio.onerror = done;
+      currentAudioDoneResolve = done;
+      audio.onended = () => done(true);
+      audio.onerror = () => done(false);
       try {
         audio.src = resolveUrl(url);
-        audio.load();
         const p = audio.play();
-        if (p && typeof p.catch === "function") {
-          p.catch(done);
+        if (p && typeof p.then === "function") {
+          p.then(() => {
+            sharedAudioUnlocked = true;
+          }).catch(() => done(false));
         }
       } catch {
-        done();
+        done(false);
       }
     });
+  }
+
+  async function playMirrorAudio(audioBlob, blobUrl = "") {
+    if (!audioBlob || !audioBlob.size) return;
+    if (isIOSDevice) {
+      const targetUrl = blobUrl || URL.createObjectURL(audioBlob);
+      const ok = await playUrlAsync(targetUrl);
+      if (ok) return;
+    }
+    await playBlobViaWebAudio(audioBlob, blobUrl);
   }
 
   async function playBlobViaWebAudio(audioBlob, fallbackUrl = "") {
@@ -604,16 +621,59 @@
     const reqPayload = { text, voice: state.voice };
     if (opts.lang) reqPayload.lang = opts.lang;
 
+    // On iOS Safari / PWA, Web Audio contexts stall or mute opening syllables right after getUserMedia().
+    // Complete WAV playback via the pre-unlocked <audio> element preserves loudspeaker volume and the full opening.
+    if (isIOSDevice) {
+      try {
+        const res = opts.prefetchedTtsJsonPromise
+          ? await opts.prefetchedTtsJsonPromise
+          : await apiJson("/api/tts", {
+              method: "POST",
+              body: JSON.stringify(reqPayload),
+              signal: ctrl.signal,
+            });
+        if (!ctrl.signal.aborted && res && res.audio_url) {
+          if (typeof opts.onCacheUrl === "function") opts.onCacheUrl(res.audio_url);
+          const played = await playUrlAsync(res.audio_url);
+          if (!played && !ctrl.signal.aborted && window.JP_APP && window.JP_APP.speakJapanese) {
+            window.JP_APP.speakJapanese(text, 0.92);
+          }
+        } else if (!ctrl.signal.aborted && !res) {
+          const retryRes = await apiJson("/api/tts", {
+            method: "POST",
+            body: JSON.stringify(reqPayload),
+            signal: ctrl.signal,
+          });
+          if (!ctrl.signal.aborted && retryRes && retryRes.audio_url) {
+            if (typeof opts.onCacheUrl === "function") opts.onCacheUrl(retryRes.audio_url);
+            await playUrlAsync(retryRes.audio_url);
+          }
+        }
+      } catch (err) {
+        if (err && (err.name === "AbortError" || ctrl.signal.aborted)) return;
+        if (window.JP_APP && window.JP_APP.speakJapanese) {
+          window.JP_APP.speakJapanese(text, 0.92);
+        } else {
+          showToast(`语音播报失败：${err.message}`);
+        }
+      } finally {
+        if (lessonStreamAbort === ctrl) lessonStreamAbort = null;
+      }
+      return;
+    }
+
     const ctx = ensureLessonTtsCtx(24000);
     if (!ctx || typeof ReadableStream === "undefined") {
       lessonStreamAbort = null;
       try {
-        const res = await apiJson("/api/tts", {
-          method: "POST",
-          body: JSON.stringify(reqPayload),
-          signal: ctrl.signal,
-        });
-        if (!ctrl.signal.aborted) {
+        const res = opts.prefetchedTtsJsonPromise
+          ? await opts.prefetchedTtsJsonPromise
+          : await apiJson("/api/tts", {
+              method: "POST",
+              body: JSON.stringify(reqPayload),
+              signal: ctrl.signal,
+            });
+        if (!ctrl.signal.aborted && res) {
           if (res.audio_url && typeof opts.onCacheUrl === "function") opts.onCacheUrl(res.audio_url);
           await playUrlAsync(res.audio_url);
         }
@@ -628,7 +688,7 @@
       return;
     }
 
-    if (ctx.state === "suspended") {
+    if (ctx.state === "suspended" || ctx.state === "interrupted") {
       await ctx.resume().catch(() => {});
     }
 
@@ -715,7 +775,7 @@
 
         const now = ctx.currentTime;
         if (lessonStreamNextTime === 0) {
-          lessonStreamNextTime = now + 0.07;
+          lessonStreamNextTime = now + 0.12;
         } else if (lessonStreamNextTime < now) {
           // Only re-anchor on genuine underrun, never while already scheduled ahead of `now`.
           lessonStreamNextTime = now + 0.04;
@@ -996,6 +1056,12 @@
     if (mediaStream) {
       mediaStream.getTracks().forEach((t) => t.stop());
       mediaStream = null;
+    }
+    if (isIOSDevice && lessonAudioCtx) {
+      try {
+        lessonAudioCtx.close().catch(() => {});
+      } catch {}
+      lessonAudioCtx = null;
     }
     mediaRecorder = null;
     audioChunks = [];
@@ -1285,7 +1351,7 @@
           return;
         }
         if (isIOSDevice) {
-          await new Promise((r) => setTimeout(r, 60));
+          await new Promise((r) => setTimeout(r, 220));
         }
         await submitLessonAudioTurn(blob);
       };
@@ -1377,7 +1443,7 @@
 
     const mirrorPlayPromise =
       state.mirrorPlayback && audioBlob
-        ? playBlobViaWebAudio(audioBlob, mirrorSnapshotUrl)
+        ? playMirrorAudio(audioBlob, mirrorSnapshotUrl)
         : Promise.resolve();
 
     try {
@@ -1436,23 +1502,32 @@
         state.drillChunkTokens = [];
       }
 
-      // Immediately prefetch streaming TTS in parallel while local mirror finishes playing
+      // Immediately prefetch TTS in parallel while local mirror finishes playing
       const spokenTtsText = res.teacherSpokenTts || res.teacherSpokenScript || "";
       let ttsAbort = null;
       let ttsStreamRespPromise = null;
+      let ttsJsonPromise = null;
       if (!res.teacherAudioUrl && spokenTtsText) {
         ttsAbort = new AbortController();
-        ttsStreamRespPromise = fetch(resolveUrl("/api/tts/stream"), {
-          method: "POST",
-          headers: getHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ text: spokenTtsText, voice: state.voice }),
-          signal: ttsAbort.signal,
-        }).catch(() => null);
+        if (isIOSDevice) {
+          ttsJsonPromise = apiJson("/api/tts", {
+            method: "POST",
+            body: JSON.stringify({ text: spokenTtsText, voice: state.voice }),
+            signal: ttsAbort.signal,
+          }).catch(() => null);
+        } else {
+          ttsStreamRespPromise = fetch(resolveUrl("/api/tts/stream"), {
+            method: "POST",
+            headers: getHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ text: spokenTtsText, voice: state.voice }),
+            signal: ttsAbort.signal,
+          }).catch(() => null);
+        }
       }
 
       renderView();
 
-      // Finish hearing user's mirror clip (started at t=0s) without cutting it off, then play Sensei streaming TTS!
+      // Finish hearing user's mirror clip (started at t=0s) without cutting it off, then play Sensei TTS!
       await mirrorPlayPromise;
       if (seq !== turnChoreographySeq) {
         if (ttsAbort) ttsAbort.abort();
@@ -1480,6 +1555,7 @@
         updateMirrorPhaseDom();
         await playTextTtsStream(spokenTtsText, {
           prefetchedRespPromise: ttsStreamRespPromise,
+          prefetchedTtsJsonPromise: ttsJsonPromise,
           abortCtrl: ttsAbort,
           onCacheUrl: attachTeacherCacheUrl,
         });
@@ -1502,7 +1578,7 @@
         state.lessonSession &&
         state.lessonStepIdx < state.lessonSession.steps.length - 1
       ) {
-        playSoftChime("pass");
+        if (!isIOSDevice) playSoftChime("pass");
         state.mirrorPhase = "auto_next";
         updateMirrorPhaseDom();
         clearAutoAdvanceTimer();
@@ -2916,7 +2992,7 @@
       btn.onclick = () => {
         ensureLessonAudioCtx();
         const url = btn.dataset.playUrl;
-        if (url && url === localMirrorBlobUrl && lastMirrorBlob) {
+        if (!isIOSDevice && url && url === localMirrorBlobUrl && lastMirrorBlob) {
           return playBlobViaWebAudio(lastMirrorBlob, url);
         }
         return playUrlAsync(url);
@@ -2970,6 +3046,21 @@
     if (state.callActive) {
       stopLiveCall(false);
     }
+  }
+
+  if (typeof document !== "undefined") {
+    const primeIosAudioOnce = () => {
+      unlockSharedAudioEl();
+      if (!isIOSDevice) {
+        ensureLessonTtsCtx(24000);
+      }
+      if (sharedAudioUnlocked) {
+        document.removeEventListener("touchstart", primeIosAudioOnce, true);
+        document.removeEventListener("click", primeIosAudioOnce, true);
+      }
+    };
+    document.addEventListener("touchstart", primeIosAudioOnce, { capture: true, passive: true });
+    document.addEventListener("click", primeIosAudioOnce, { capture: true, passive: true });
   }
 
   window.JP_SENSEI = {

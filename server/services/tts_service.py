@@ -227,6 +227,22 @@ async def synthesize_speech(
             "clean_text": clean_text,
         }
 
+    inflight = _INFLIGHT_STREAMS.get(cache_key)
+    if inflight is not None and inflight.task is not None:
+        try:
+            await inflight.task
+        except Exception:
+            pass
+        if wav_path.exists() and wav_path.stat().st_size > 44:
+            return {
+                "audio_url": f"/api/tts/cache/{wav_path.name}",
+                "file_path": str(wav_path),
+                "cache_hit": True,
+                "model_used": primary_model,
+                "bytes": wav_path.stat().st_size,
+                "clean_text": clean_text,
+            }
+
     segments = split_bilingual_tts_segments(clean_text, lang=lang)
     client, should_close = _get_http_client()
     try:
