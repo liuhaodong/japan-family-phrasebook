@@ -32,9 +32,11 @@ from server.db import (
     finish_session,
     get_recent_step_turns,
     get_session,
+    list_favorite_sentences,
     list_lesson_progress,
     list_session_turns,
     list_weaknesses,
+    record_favorite_practice,
     record_weakness_improvement,
     upsert_lesson_progress,
     upsert_weakness,
@@ -1150,6 +1152,98 @@ async def create_guided_lesson(
     due_cards = (list_cards(user_id, due_only=True, limit=4) or list_cards(user_id, due_only=False, limit=3)) if include_review else []
     due_snapshot = [{"surface": c["surface"], "meaning_cn": c.get("meaning_cn", "")} for c in due_cards]
 
+    if curriculum_mode == "favorites":
+        favs = list_favorite_sentences(user_id, limit=25)
+        if not favs:
+            raise ValueError("你还没有收藏练习句，先在私教课中点击 ☆ 收藏几句再来重练吧。")
+
+        focus_fav_id = ""
+        if lesson_id and str(lesson_id).startswith("fav:"):
+            focus_fav_id = str(lesson_id)[4:].strip()
+        if focus_fav_id:
+            favs.sort(key=lambda item: 0 if item.get("id") == focus_fav_id else 1)
+
+        raw_steps = []
+        for idx, fav in enumerate(favs):
+            jp = strip_furigana_parens(fav.get("jp") or "")
+            if not jp:
+                continue
+            src_label = fav.get("lesson_title") or fav.get("level") or "收藏句"
+            raw_steps.append(
+                {
+                    "stage": "CONTROLLED_DRILL",
+                    "stageLabel": f"收藏第 {idx + 1} 句",
+                    "hideTarget": False,
+                    "targetJp": jp,
+                    "targetCn": fav.get("cn") or "",
+                    "cueCn": f"重点复练收藏句（来源：{src_label}）",
+                    "tipCn": fav.get("tip_cn") or "注意音调起伏、长音促音与句尾收音。",
+                    "teacherPrompt": f"来复练你收藏的第{idx + 1}句。{jp}",
+                }
+            )
+
+        steps = _normalize_authored_steps(raw_steps)
+        if not steps:
+            raise ValueError("你还没有有效的收藏练习句。")
+
+        first_fav = favs[0]
+        lesson_meta = {
+            "curriculumMode": "favorites",
+            "lessonId": "favorites_deck",
+            "grammarId": "",
+            "title": "⭐ 收藏常练句专项",
+            "subtitle": f"共 {len(steps)} 句个人收藏重点复练",
+            "level": first_fav.get("level") or jlpt_target,
+            "grammarFocus": first_fav.get("grammar_focus") or "重点句型与语音巩固",
+            "blackboard": None,
+            "textbook": None,
+            "aiGenerated": False,
+            "totalSteps": len(steps),
+        }
+        lesson_plan = {
+            "curriculumMode": "favorites",
+            "lessonId": "favorites_deck",
+            "lessonMeta": lesson_meta,
+            "jlptTarget": lesson_meta["level"],
+            "weaknessesSnapshot": weaknesses,
+            "dueCardsSnapshot": due_snapshot,
+            "steps": steps,
+        }
+        session_id = create_session(
+            user_id=user_id,
+            mode="favorites",
+            scenario_id="favorites_deck",
+            persona=lesson_meta["title"],
+            lesson_plan=lesson_plan,
+        )
+        opening_audio_url = ""
+        if api_key and not defer_opening_tts and steps and (steps[0].get("teacherPromptTts") or steps[0].get("teacherPrompt")):
+            try:
+                tts = await synthesize_speech(
+                    steps[0].get("teacherPromptTts") or steps[0]["teacherPrompt"],
+                    api_key=api_key,
+                    voice=voice,
+                    model=TTS_FAST_MODEL,
+                )
+                opening_audio_url = tts["audio_url"]
+            except Exception:
+                opening_audio_url = ""
+
+        return {
+            "sessionId": session_id,
+            "lessonMeta": lesson_meta,
+            "scenario": {
+                "id": "favorites_deck",
+                "title": lesson_meta["title"],
+                "icon": "⭐",
+                "summary": lesson_meta["subtitle"],
+            },
+            "weaknesses": weaknesses,
+            "dueCards": due_snapshot,
+            "steps": steps,
+            "openingAudioUrl": opening_audio_url,
+        }
+
     if curriculum_mode in ("sensei_syllabus", "custom_topic", "grammar_point"):
         progress_map = list_lesson_progress(user_id)
         unit: Optional[Dict[str, Any]] = None
@@ -1893,6 +1987,10 @@ async def evaluate_sensei_turn(
     if lesson_id:
         is_lesson_done = step_index >= max(0, (total_steps or 6) - 1) and decision in ("pass", "advance")
         upsert_lesson_progress(user_id=user_id, lesson_id=lesson_id, score=overall_score, completed=is_lesson_done)
+
+    record_favorite_practice(user_id=user_id, jp=clean_target, score=overall_score)
+    if better_jp and better_jp != clean_target:
+        record_favorite_practice(user_id=user_id, jp=better_jp, score=overall_score)
 
     return response_payload
 

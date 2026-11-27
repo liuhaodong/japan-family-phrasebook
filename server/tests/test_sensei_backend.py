@@ -1662,3 +1662,105 @@ def test_quiet_speech_and_short_phrase_with_silence_pass_and_gain_boost():
     assert analyze_audio_speech_activity(silent_wav, "silent.wav", "audio/wav")["has_speech"] is False
     click_wav = _make_audible_wav(duration_sec=0.1)
     assert analyze_audio_speech_activity(click_wav, "click.wav", "audio/wav")["has_speech"] is False
+
+
+@pytest.mark.asyncio
+async def test_favorite_sentences_crud_and_practice_mode(isolated_env):
+    client = TestClient(app)
+    # 1. Save two favorite sentences & verify deduplication on (user_id, jp)
+    r1 = client.post(
+        "/api/favorites",
+        json={
+            "user_id": "haodong",
+            "jp": "予約（よやく）をお願（ねが）いできますか。",
+            "cn": "请问可以预订吗？",
+            "tip_cn": "注意 よやく 音调",
+            "lesson_title": "预约与询问",
+            "level": "N4",
+            "grammar_focus": "〜ていただけますか",
+        },
+    )
+    assert r1.status_code == 200
+    fav1 = r1.json()["favorite"]
+    assert fav1["jp"] == "予約をお願いできますか。"
+    assert len(fav1["tokens"]) >= 3
+
+    r1_dup = client.post(
+        "/api/favorites",
+        json={"user_id": "haodong", "jp": "予約をお願いできますか。", "cn": "更新释义"},
+    )
+    assert r1_dup.status_code == 200
+    assert r1_dup.json()["favorite"]["id"] == fav1["id"]
+
+    r2 = client.post(
+        "/api/favorites",
+        json={
+            "user_id": "haodong",
+            "jp": "子ども用の椅子をお借りできますか。",
+            "cn": "请问能借用一下儿童椅吗？",
+            "level": "N3",
+        },
+    )
+    assert r2.status_code == 200
+    fav2 = r2.json()["favorite"]
+
+    # 2. List favorites includes both tokenized items
+    list_res = client.get("/api/favorites", params={"user_id": "haodong"})
+    assert list_res.status_code == 200
+    assert list_res.json()["count"] == 2
+
+    # 3. Start instant AI Sensei re-practice lesson starting from fav2 via lesson_id="fav:<id2>"
+    session_info = await sensei_engine.create_guided_lesson(
+        user_id="haodong",
+        curriculum_mode="favorites",
+        lesson_id=f"fav:{fav2['id']}",
+        api_key=None,
+    )
+    assert session_info["lessonMeta"]["curriculumMode"] == "favorites"
+    assert len(session_info["steps"]) == 2
+    assert session_info["steps"][0]["targetJp"] == "子ども用の椅子をお借りできますか。"
+    assert session_info["steps"][0]["hideTarget"] is False
+
+    # 4. Completing a practice turn updates practice_count and last_score in favorites
+    sample_wav = _make_audible_wav()
+    with patch(
+        "server.services.sensei_engine._call_gemini_json",
+        AsyncMock(
+            return_value={
+                "noSpeech": False,
+                "heardJp": "子ども用の椅子をお借りできますか。",
+                "teacherSpokenScript": "这遍非常自然！子ども用の椅子をお借りできますか。",
+                "overallScore": 94,
+                "pitchScore": 92,
+                "grammarScore": 96,
+                "rhythmScore": 93,
+                "politenessScore": 95,
+                "betterJp": "子ども用の椅子をお借りできますか。",
+                "praiseCn": "敬语非常得体",
+                "actionTipCn": "句尾继续收得自然轻柔",
+                "issues": [],
+                "extractedVocab": [],
+                "_modelUsed": "gemini-4-hydrogen",
+            }
+        ),
+    ):
+        await sensei_engine.evaluate_sensei_turn(
+            session_id=session_info["sessionId"],
+            user_id="haodong",
+            step_index=0,
+            stage="CONTROLLED_DRILL",
+            target_jp="子ども用の椅子をお借りできますか。",
+            attempt=1,
+            audio_bytes=sample_wav,
+            api_key="test-key",
+        )
+
+    after_list = client.get("/api/favorites", params={"user_id": "haodong"}).json()["favorites"]
+    updated_fav2 = next(f for f in after_list if f["id"] == fav2["id"])
+    assert updated_fav2["practice_count"] == 1
+    assert updated_fav2["last_score"] == 94
+
+    # 5. Delete favorite
+    del_res = client.delete(f"/api/favorites/{fav1['id']}", params={"user_id": "haodong"})
+    assert del_res.status_code == 200
+    assert client.get("/api/favorites", params={"user_id": "haodong"}).json()["count"] == 1

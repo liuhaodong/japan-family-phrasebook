@@ -67,6 +67,7 @@
     mirrorPhase: "", // "" | "user_mirror_eval" | "user_mirror" | "teacher_explain" | "ready_retry" | "auto_next"
     lastTurnResult: null,
     turnHistory: [],
+    favorites: [],
     lastStepAttemptCtx: null,
     consolidatingFull: false,
     followupAnswer: null,
@@ -557,7 +558,7 @@
         state.jlptTarget = activeUser.jlpt_target || state.jlptTarget;
         state.voice = activeUser.preferred_voice || state.voice;
       }
-      await loadSyllabus();
+      await Promise.all([loadSyllabus(), loadFavorites()]);
     } catch {
       state.backendOnline = false;
       state.healthChecked = true;
@@ -574,6 +575,84 @@
         state.selectedLessonId = res.recommendedLesson.id;
       }
     } catch {}
+  }
+
+  function normalizeFavJp(jp) {
+    return String(jp || "")
+      .replace(/[（(][^()（）]+[）)]/g, "")
+      .replace(/\s+/g, "")
+      .trim();
+  }
+
+  function findFavoriteByJp(jp) {
+    const key = normalizeFavJp(jp);
+    if (!key) return null;
+    return (state.favorites || []).find((f) => normalizeFavJp(f.jp) === key) || null;
+  }
+
+  async function loadFavorites() {
+    try {
+      const res = await apiJson(`/api/favorites?user_id=${encodeURIComponent(state.userId)}`);
+      state.favorites = res.favorites || [];
+    } catch {}
+  }
+
+  async function toggleFavoriteSentence(payload) {
+    const rawJp = String(payload?.jp || "")
+      .replace(/[（(][^()（）]+[）)]/g, "")
+      .trim();
+    if (!rawJp) return;
+    const existing = findFavoriteByJp(rawJp);
+    try {
+      if (existing) {
+        await apiJson(
+          `/api/favorites/${encodeURIComponent(existing.id)}?user_id=${encodeURIComponent(state.userId)}`,
+          { method: "DELETE" }
+        );
+        state.favorites = (state.favorites || []).filter((f) => f.id !== existing.id);
+        showToast("已从常练收藏中移除");
+      } else {
+        const res = await apiJson("/api/favorites", {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: state.userId,
+            jp: rawJp,
+            cn: payload?.cn || "",
+            reading: payload?.reading || "",
+            tip_cn: payload?.tipCn || "",
+            lesson_title: payload?.lessonTitle || "",
+            level: payload?.level || state.jlptTarget || "N4",
+            grammar_focus: payload?.grammarFocus || "",
+          }),
+        });
+        if (res && res.favorite) {
+          state.favorites = [
+            res.favorite,
+            ...(state.favorites || []).filter((f) => f.id !== res.favorite.id),
+          ];
+        }
+        showToast("⭐ 已收藏该句，可随时在「收藏常练句」重练");
+      }
+      renderView();
+    } catch (err) {
+      showToast(`❌ 收藏操作失败：${err.message}`);
+    }
+  }
+
+  async function startFavoritesPractice(singleFavId = "") {
+    if (!state.healthChecked) {
+      await initBackend(false);
+    }
+    const senseiNavBtn = document.getElementById("mode-btn-sensei");
+    if (senseiNavBtn && !senseiNavBtn.classList.contains("active")) {
+      senseiNavBtn.click();
+    }
+    state.subTab = "lesson";
+    state.drawerOpen = false;
+    await startGuidedLesson({
+      curriculumMode: "favorites",
+      lessonId: singleFavId ? `fav:${singleFavId}` : "",
+    });
   }
 
   const KANJI_CHAR_RE = /[\u4e00-\u9fff\u3400-\u4dbf々〆ヵヶ]/;
@@ -2380,12 +2459,14 @@
   // ==================== Notebook (FSRS + Weaknesses) & Stories ====================
   async function loadNotebookData() {
     try {
-      const [mem, cards] = await Promise.all([
+      const [mem, cards, favRes] = await Promise.all([
         apiJson(`/api/memory?user_id=${encodeURIComponent(state.userId)}`),
         apiJson(`/api/srs/cards?user_id=${encodeURIComponent(state.userId)}`),
+        apiJson(`/api/favorites?user_id=${encodeURIComponent(state.userId)}`).catch(() => ({ favorites: state.favorites })),
       ]);
       state.memoryData = mem;
       state.srsCards = cards.cards || [];
+      state.favorites = favRes?.favorites || [];
       const nowIso = new Date().toISOString();
       state.reviewQueue = state.srsCards.filter((c) => !c.next_due || c.next_due <= nowIso);
       if (state.reviewQueue.length === 0) {
@@ -2760,6 +2841,11 @@
             <button type="button" class="sensei-mini-btn" data-jump-level="N5">N5 地基 (13课)</button>
             <button type="button" class="sensei-mini-btn" data-jump-level="N4">N4 进阶 (12课)</button>
             <button type="button" class="sensei-mini-btn" data-jump-level="N3">N3 中级 (15课)</button>
+            ${
+              (state.favorites || []).length
+                ? `<button type="button" class="sensei-mini-btn sensei-fav-btn active" id="sensei-hero-fav-btn">★ 复练收藏句 (${state.favorites.length})</button>`
+                : ""
+            }
           </div>
           <div class="sensei-hero-cta-row">
             <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0.55rem;">
@@ -2868,6 +2954,10 @@
                   <div class="focus-inline-audio">
                     <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.targetJp)}">${ico("speaker")} 标准示范</button>
                     ${step.teacherPrompt ? `<button type="button" class="sensei-mini-btn" data-tts-text="${escapeHtml(step.teacherPromptTts || step.teacherPrompt)}">老师讲解</button>` : ""}
+                    ${(() => {
+                      const isFav = Boolean(findFavoriteByJp(step.targetJp));
+                      return `<button type="button" class="sensei-mini-btn sensei-fav-btn ${isFav ? "active" : ""}" id="sensei-fav-step-btn">${isFav ? "★ 已收藏" : "☆ 收藏句子"}</button>`;
+                    })()}
                   </div>
                 </div>`
           }
@@ -3066,7 +3156,17 @@
           <div class="sensei-diff-col">
             <div class="sensei-diff-lbl">标准示范读法</div>
             <div class="sensei-diff-val">${renderDiffTokensHtml(res.targetDiff, res.betterTokens || res.targetTokens, res.betterJp || res.targetJp)}</div>
-            <button type="button" class="sensei-mini-btn" id="sensei-diag-teacher-play" ${res.teacherAudioUrl ? `data-play-url="${escapeHtml(res.teacherAudioUrl)}"` : `data-tts-text="${escapeHtml(res.teacherSpokenTts || res.teacherSpokenScript || res.betterJp || res.targetJp)}"`}>${ico("speaker")} 纠音示范</button>
+            <div style="display:flex;flex-wrap:wrap;gap:0.35rem;align-items:center;">
+              <button type="button" class="sensei-mini-btn" id="sensei-diag-teacher-play" ${res.teacherAudioUrl ? `data-play-url="${escapeHtml(res.teacherAudioUrl)}"` : `data-tts-text="${escapeHtml(res.teacherSpokenTts || res.teacherSpokenScript || res.betterJp || res.targetJp)}"`}>${ico("speaker")} 纠音示范</button>
+              ${
+                res.betterJp && (normalizeFavJp(res.betterJp) !== normalizeFavJp(res.targetJp) || res.stage === "FREE_OUTPUT")
+                  ? (() => {
+                      const fBetter = Boolean(findFavoriteByJp(res.betterJp));
+                      return `<button type="button" class="sensei-mini-btn sensei-fav-btn ${fBetter ? "active" : ""}" data-fav-diag="better">${fBetter ? "★ 已收藏示范" : "☆ 收藏示范句"}</button>`;
+                    })()
+                  : ""
+              }
+            </div>
           </div>
         </div>
 
@@ -3105,7 +3205,13 @@
             ? `<div class="sensei-native-upgrade">
                 <div class="sensei-native-upgrade-head">
                   <span>✨ 东京地道升级表达</span>
-                  <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(res.nativeUpgradeJp)}">${ico("speaker")} 听地道版</button>
+                  <div style="display:flex;gap:0.35rem;align-items:center;">
+                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(res.nativeUpgradeJp)}">${ico("speaker")} 听地道版</button>
+                    ${(() => {
+                      const fNat = Boolean(findFavoriteByJp(res.nativeUpgradeJp));
+                      return `<button type="button" class="sensei-mini-btn sensei-fav-btn ${fNat ? "active" : ""}" data-fav-diag="native">${fNat ? "★ 已收藏" : "☆ 收藏"}</button>`;
+                    })()}
+                  </div>
                 </div>
                 <div style="font-size:0.95rem;font-weight:700;line-height:1.95;">${renderTokensHtml(res.nativeUpgradeTokens, res.nativeUpgradeJp)}</div>
                 ${res.nativeUpgradeNoteCn ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.15rem;">${escapeHtml(res.nativeUpgradeNoteCn)}</div>` : ""}
@@ -3268,8 +3374,56 @@
     const mem = state.memoryData || {};
     const weaknesses = mem.weaknesses || [];
     const currentCard = state.reviewQueue[state.reviewIdx];
+    const favs = state.favorites || [];
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
+
+    const favCardHtml = `
+      <div class="sensei-card">
+        <div class="sensei-nb-head">
+          <div>
+            <h4>⭐ 我的收藏常练句</h4>
+            <p class="sensei-muted-note">已收藏 ${favs.length} 句 · 在私教跟读时点击 ☆ 即可存入，随时重点复练</p>
+          </div>
+          ${
+            favs.length
+              ? `<button type="button" class="sensei-btn primary" id="sensei-practice-all-favs-btn" ${state.isGeneratingLesson ? "disabled" : ""}>🎯 全部用 AI 私教重练</button>`
+              : ""
+          }
+        </div>
+        ${
+          favs.length === 0
+            ? `<div class="sensei-empty-chat">暂无收藏句。练习过程中点击目标句或老师推荐说法旁的「☆ 收藏句子」，就可以单独建本反复跟读纠音。</div>`
+            : `<div class="sensei-fav-list">
+                ${favs
+                  .map(
+                    (f) => `<div class="sensei-fav-item">
+                      <div class="sensei-fav-item-top">
+                        <div style="min-width:0;flex:1;">
+                          <div class="sensei-fav-item-jp">${renderTokensHtml(f.tokens, f.jp)}</div>
+                          ${f.cn ? `<div class="sensei-fav-item-cn">${escapeHtml(f.cn)}</div>` : ""}
+                        </div>
+                        <div class="sensei-fav-item-actions">
+                          <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(f.jp)}" title="标准示范">${ico("speaker")}</button>
+                          <button type="button" class="sensei-mini-btn sensei-fav-btn active" data-practice-fav="${escapeHtml(f.id)}">🎙️ 重练</button>
+                          <button type="button" class="sensei-mini-btn" data-del-fav="${escapeHtml(f.id)}" aria-label="删除收藏">✕</button>
+                        </div>
+                      </div>
+                      <div class="sensei-fav-item-meta">
+                        ${f.level ? `<span class="sensei-badge">${escapeHtml(f.level)}</span>` : ""}
+                        ${f.lesson_title ? `<span>来源：${escapeHtml(f.lesson_title)}</span>` : ""}
+                        <span>已复练 ${Number(f.practice_count || 0)} 次${Number(f.last_score || 0) > 0 ? ` · 最高 ${f.last_score} 分` : ""}</span>
+                      </div>
+                    </div>`
+                  )
+                  .join("")}
+              </div>`
+        }
+      </div>
+    `;
 
     return `
+      ${favCardHtml}
+
       <div class="sensei-card">
         <div class="sensei-nb-head">
           <div>
@@ -3591,6 +3745,11 @@
                 <button type="button" class="ui-seg-btn ${state.curriculumMode === "custom_topic" ? "active" : ""}" data-curmode="custom_topic">自由命题</button>
               </div>
               ${courseBody}
+              ${
+                (state.favorites || []).length
+                  ? `<button type="button" class="sensei-btn ghost sensei-fav-btn active" id="sensei-drawer-fav-btn" style="margin-top:0.65rem;width:100%;">★ 复练我的收藏句 (${state.favorites.length} 句)</button>`
+                  : ""
+              }
             </div>
 
             <div class="ui-drawer-section">
@@ -3911,7 +4070,8 @@
         if (u) state.jlptTarget = u.jlpt_target || state.jlptTarget;
         state.selectedLessonId = "";
         state.memoryData = null;
-        await loadSyllabus();
+        state.favorites = [];
+        await Promise.all([loadSyllabus(), loadFavorites()]);
         if (notebookContainerEl && notebookContainerEl.style.display !== "none") await loadNotebookData();
         else if (state.subTab === "story") await loadStories();
         else renderView();
@@ -4276,6 +4436,75 @@
         });
       };
     });
+
+    const favStepBtn = root.querySelector("#sensei-fav-step-btn");
+    if (favStepBtn) {
+      favStepBtn.onclick = () => {
+        const step = currentLessonStep();
+        const meta = state.lessonSession?.lessonMeta || {};
+        if (!step || !step.targetJp) return;
+        toggleFavoriteSentence({
+          jp: step.targetJp,
+          cn: step.targetCn || "",
+          tipCn: step.tipCn || "",
+          lessonTitle: meta.title || "",
+          level: meta.level || state.jlptTarget || "N4",
+          grammarFocus: meta.grammarFocus || "",
+        });
+      };
+    }
+    root.querySelectorAll("[data-fav-diag]").forEach((btn) => {
+      btn.onclick = () => {
+        const res = state.lastTurnResult;
+        const meta = state.lessonSession?.lessonMeta || {};
+        const step = currentLessonStep();
+        if (!res) return;
+        if (btn.dataset.favDiag === "native" && res.nativeUpgradeJp) {
+          toggleFavoriteSentence({
+            jp: res.nativeUpgradeJp,
+            cn: res.nativeUpgradeNoteCn || step?.targetCn || "",
+            tipCn: res.nativeUpgradeNoteCn || "",
+            lessonTitle: meta.title || "",
+            level: res.jlptLevel || meta.level || state.jlptTarget || "N4",
+            grammarFocus: meta.grammarFocus || "",
+          });
+        } else if (btn.dataset.favDiag === "better" && res.betterJp) {
+          toggleFavoriteSentence({
+            jp: res.betterJp,
+            cn: step?.targetCn || "",
+            tipCn: res.actionTipCn || res.grammarNote || "",
+            lessonTitle: meta.title || "",
+            level: res.jlptLevel || meta.level || state.jlptTarget || "N4",
+            grammarFocus: meta.grammarFocus || "",
+          });
+        }
+      };
+    });
+    const heroFavBtn = root.querySelector("#sensei-hero-fav-btn");
+    if (heroFavBtn) heroFavBtn.onclick = () => startFavoritesPractice("");
+    const drawerFavBtn = root.querySelector("#sensei-drawer-fav-btn");
+    if (drawerFavBtn) drawerFavBtn.onclick = () => startFavoritesPractice("");
+    const allFavBtn = root.querySelector("#sensei-practice-all-favs-btn");
+    if (allFavBtn) allFavBtn.onclick = () => startFavoritesPractice("");
+    root.querySelectorAll("[data-practice-fav]").forEach((btn) => {
+      btn.onclick = () => startFavoritesPractice(btn.dataset.practiceFav || "");
+    });
+    root.querySelectorAll("[data-del-fav]").forEach((btn) => {
+      btn.onclick = async () => {
+        const fid = btn.dataset.delFav;
+        if (!fid) return;
+        try {
+          await apiJson(`/api/favorites/${encodeURIComponent(fid)}?user_id=${encodeURIComponent(state.userId)}`, {
+            method: "DELETE",
+          });
+          state.favorites = (state.favorites || []).filter((f) => f.id !== fid);
+          showToast("已删除该收藏句");
+          renderView();
+        } catch (err) {
+          showToast(`❌ 删除失败：${err.message}`);
+        }
+      };
+    });
   }
 
   if (typeof document !== "undefined") {
@@ -4324,6 +4553,7 @@
     render,
     renderNotebook,
     startGrammarLesson,
+    startFavoritesPractice,
     stopAll,
     initBackend,
   };

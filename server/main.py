@@ -31,7 +31,10 @@ from server.config import (
     verify_passcode,
 )
 from server.db import (
+    add_favorite_sentence,
+    delete_favorite_sentence,
     init_db,
+    list_favorite_sentences,
     list_lesson_progress,
     list_recent_sessions,
     list_session_turns,
@@ -41,7 +44,7 @@ from server.db import (
 )
 from server.services.audio_utils import media_type_for_filename
 from server.services.curriculum_loader import get_scenario, list_all_grammar, list_scenarios, load_curriculum
-from server.services.jp_tokenizer import define_word, tokenize_sentence
+from server.services.jp_tokenizer import define_word, strip_furigana_parens, tokenize_sentence
 from server.services.live_relay import handle_live_websocket
 from server.services.sensei_engine import (
     answer_sensei_followup,
@@ -143,6 +146,17 @@ class SenseiAskRequest(BaseModel):
     grammar_note: str = ""
     action_tip: str = ""
     coach_model: Optional[str] = None
+
+
+class FavoriteSentenceRequest(BaseModel):
+    user_id: str = "haodong"
+    jp: str
+    cn: str = ""
+    reading: str = ""
+    tip_cn: str = ""
+    lesson_title: str = ""
+    level: str = "N4"
+    grammar_focus: str = ""
 
 
 class TTSRequest(BaseModel):
@@ -297,22 +311,25 @@ async def api_start_lesson(
     verify_passcode(x_app_passcode)
     init_db()
     api_key = resolve_api_key(x_gemini_api_key, required=False) or None
-    return await create_guided_lesson(
-        user_id=body.user_id,
-        scenario_id=body.scenario_id,
-        lesson_type=body.lesson_type,
-        jlpt_target=body.jlpt_target,
-        voice=body.voice,
-        curriculum_mode=body.curriculum_mode,
-        lesson_id=body.lesson_id,
-        grammar_id=body.grammar_id,
-        custom_topic=body.custom_topic,
-        ai_generate=body.ai_generate,
-        defer_opening_tts=body.defer_opening_tts,
-        coach_model=body.coach_model,
-        include_review=body.include_review,
-        api_key=api_key,
-    )
+    try:
+        return await create_guided_lesson(
+            user_id=body.user_id,
+            scenario_id=body.scenario_id,
+            lesson_type=body.lesson_type,
+            jlpt_target=body.jlpt_target,
+            voice=body.voice,
+            curriculum_mode=body.curriculum_mode,
+            lesson_id=body.lesson_id,
+            grammar_id=body.grammar_id,
+            custom_topic=body.custom_topic,
+            ai_generate=body.ai_generate,
+            defer_opening_tts=body.defer_opening_tts,
+            coach_model=body.coach_model,
+            include_review=body.include_review,
+            api_key=api_key,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.post("/api/sensei/lesson/extend")
@@ -614,6 +631,51 @@ async def api_import_srs(
     init_db()
     count = import_legacy_items(user_id=body.user_id, items=body.items)
     return {"imported": count}
+
+
+@app.get("/api/favorites")
+async def api_list_favorites(user_id: str = Query("haodong")) -> Dict[str, Any]:
+    init_db()
+    favs = list_favorite_sentences(user_id=user_id, limit=100)
+    enriched = [{**f, "tokens": tokenize_sentence(f["jp"])} for f in favs]
+    return {"favorites": enriched, "count": len(enriched)}
+
+
+@app.post("/api/favorites")
+async def api_add_favorite(
+    body: FavoriteSentenceRequest,
+    x_app_passcode: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
+    init_db()
+    clean_jp = strip_furigana_parens(body.jp or "").strip()
+    if not clean_jp:
+        raise HTTPException(status_code=400, detail="日语句子不能为空。")
+    row = add_favorite_sentence(
+        user_id=body.user_id,
+        jp=clean_jp,
+        cn=body.cn,
+        reading=body.reading,
+        tip_cn=body.tip_cn,
+        lesson_title=body.lesson_title,
+        level=body.level,
+        grammar_focus=body.grammar_focus,
+    )
+    return {"favorite": {**row, "tokens": tokenize_sentence(row["jp"])}}
+
+
+@app.delete("/api/favorites/{fav_id}")
+async def api_delete_favorite(
+    fav_id: str,
+    user_id: str = Query("haodong"),
+    x_app_passcode: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
+    init_db()
+    deleted = delete_favorite_sentence(user_id=user_id, fav_id=fav_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="收藏句子不存在。")
+    return {"ok": True, "deleted": True}
 
 
 @app.get("/api/memory")

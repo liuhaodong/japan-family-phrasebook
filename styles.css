@@ -59,7 +59,6 @@ body.dark-mode {
 html {
   scroll-behavior: smooth;
   font-size: 16px;
-  height: 100%;
   background-color: var(--bg-main);
 }
 
@@ -70,9 +69,8 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   padding-bottom: 60px;
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: auto;
 }
 
 .learning-view-wrapper,
@@ -1488,7 +1486,7 @@ body.dark-mode .mode-tab.active {
 
 @media (max-width: 768px) {
   body {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
   .app-mode-switcher {
     display: none !important;
@@ -1500,21 +1498,21 @@ body.dark-mode .mode-tab.active {
     position: fixed;
     left: 0;
     right: 0;
+    top: auto;
     bottom: 0;
     width: 100%;
-    z-index: 65;
-    transform: translateZ(0);
+    z-index: 90;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    background: rgba(250, 248, 244, 0.94);
+    background: rgba(250, 248, 244, 0.97);
     -webkit-backdrop-filter: blur(18px);
     backdrop-filter: blur(18px);
     border-top: 1px solid var(--border-color);
-    padding: 0.28rem 0.25rem calc(0.28rem + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -2px 14px rgba(24, 25, 28, 0.05);
+    padding: 0.3rem 0.25rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -2px 14px rgba(24, 25, 28, 0.06);
   }
   body.dark-mode .mobile-bottom-nav {
-    background: rgba(25, 28, 34, 0.94);
+    background: rgba(25, 28, 34, 0.97);
   }
   .mnav-btn {
     display: flex;
@@ -7504,4 +7502,65 @@ body.dark-mode .sensei-issue-tag.critical {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.42rem 0.58rem;
+}
+
+/* 11. Favorite Practice Sentences & Bottom Clearance (v40) */
+.sensei-diagnosis-card {
+  margin-bottom: 1rem;
+}
+.sensei-fav-btn.active {
+  border-color: rgba(217, 119, 6, 0.52);
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  font-weight: 700;
+}
+body.dark-mode .sensei-fav-btn.active {
+  border-color: rgba(251, 191, 36, 0.48);
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
+.sensei-fav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.58rem;
+  margin-top: 0.72rem;
+}
+.sensei-fav-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.sensei-fav-item-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+.sensei-fav-item-jp {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.9;
+  color: var(--text-primary);
+}
+.sensei-fav-item-cn {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.sensei-fav-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+.sensei-fav-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  flex-shrink: 0;
 }

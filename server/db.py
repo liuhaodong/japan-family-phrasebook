@@ -144,6 +144,24 @@ def init_db(db_path: Optional[Path] = None) -> None:
                 last_studied_at TEXT NOT NULL,
                 PRIMARY KEY(user_id, lesson_id)
             );
+
+            CREATE TABLE IF NOT EXISTS favorite_sentences (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                jp TEXT NOT NULL,
+                cn TEXT DEFAULT '',
+                reading TEXT DEFAULT '',
+                tip_cn TEXT DEFAULT '',
+                lesson_title TEXT DEFAULT '',
+                level TEXT DEFAULT 'N4',
+                grammar_focus TEXT DEFAULT '',
+                practice_count INTEGER DEFAULT 0,
+                last_score INTEGER DEFAULT 0,
+                created_at TEXT NOT NULL,
+                UNIQUE(user_id, jp)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_fav_user ON favorite_sentences(user_id, created_at DESC);
             """
         )
 
@@ -622,3 +640,103 @@ def upsert_lesson_progress(
             (user_id, clean_lid),
         ).fetchone()
         return dict(row) if row else {}
+
+
+def list_favorite_sentences(
+    user_id: str,
+    limit: int = 100,
+    db_path: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    with get_conn(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM favorite_sentences
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+
+def add_favorite_sentence(
+    user_id: str,
+    jp: str,
+    cn: str = "",
+    reading: str = "",
+    tip_cn: str = "",
+    lesson_title: str = "",
+    level: str = "N4",
+    grammar_focus: str = "",
+    db_path: Optional[Path] = None,
+) -> Dict[str, Any]:
+    clean_jp = (jp or "").strip()
+    if not clean_jp:
+        raise ValueError("日语句子不能为空。")
+    now = utc_now_iso()
+    fid = f"fav_{uuid.uuid4().hex[:10]}"
+    with get_conn(db_path) as conn:
+        conn.execute(
+            """
+            INSERT INTO favorite_sentences (
+                id, user_id, jp, cn, reading, tip_cn, lesson_title, level, grammar_focus, practice_count, last_score, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+            ON CONFLICT(user_id, jp) DO UPDATE SET
+                cn = CASE WHEN excluded.cn != '' THEN excluded.cn ELSE favorite_sentences.cn END,
+                reading = CASE WHEN excluded.reading != '' THEN excluded.reading ELSE favorite_sentences.reading END,
+                tip_cn = CASE WHEN excluded.tip_cn != '' THEN excluded.tip_cn ELSE favorite_sentences.tip_cn END,
+                lesson_title = CASE WHEN excluded.lesson_title != '' THEN excluded.lesson_title ELSE favorite_sentences.lesson_title END,
+                level = CASE WHEN excluded.level != '' THEN excluded.level ELSE favorite_sentences.level END,
+                grammar_focus = CASE WHEN excluded.grammar_focus != '' THEN excluded.grammar_focus ELSE favorite_sentences.grammar_focus END
+            """,
+            (fid, user_id, clean_jp, cn or "", reading or "", tip_cn or "", lesson_title or "", level or "N4", grammar_focus or "", now),
+        )
+        row = conn.execute(
+            "SELECT * FROM favorite_sentences WHERE user_id = ? AND jp = ?",
+            (user_id, clean_jp),
+        ).fetchone()
+        return dict(row) if row else {}
+
+
+def delete_favorite_sentence(
+    user_id: str,
+    fav_id: Optional[str] = None,
+    jp: Optional[str] = None,
+    db_path: Optional[Path] = None,
+) -> bool:
+    with get_conn(db_path) as conn:
+        if fav_id:
+            cur = conn.execute(
+                "DELETE FROM favorite_sentences WHERE user_id = ? AND id = ?",
+                (user_id, fav_id),
+            )
+            return cur.rowcount > 0
+        if jp:
+            cur = conn.execute(
+                "DELETE FROM favorite_sentences WHERE user_id = ? AND jp = ?",
+                (user_id, jp.strip()),
+            )
+            return cur.rowcount > 0
+        return False
+
+
+def record_favorite_practice(
+    user_id: str,
+    jp: str,
+    score: int = 0,
+    db_path: Optional[Path] = None,
+) -> None:
+    clean_jp = (jp or "").strip()
+    if not clean_jp:
+        return
+    with get_conn(db_path) as conn:
+        conn.execute(
+            """
+            UPDATE favorite_sentences
+            SET practice_count = COALESCE(practice_count, 0) + 1,
+                last_score = MAX(COALESCE(last_score, 0), ?)
+            WHERE user_id = ? AND jp = ?
+            """,
+            (int(score), user_id, clean_jp),
+        )
