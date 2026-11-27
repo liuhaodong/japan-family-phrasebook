@@ -40,12 +40,13 @@ from server.db import (
     update_user_prefs,
 )
 from server.services.audio_utils import media_type_for_filename
-from server.services.curriculum_loader import get_scenario, list_scenarios, load_curriculum
+from server.services.curriculum_loader import get_scenario, list_all_grammar, list_scenarios, load_curriculum
 from server.services.jp_tokenizer import define_word, tokenize_sentence
 from server.services.live_relay import handle_live_websocket
 from server.services.sensei_engine import (
     create_guided_lesson,
     evaluate_sensei_turn,
+    extend_guided_lesson,
     generate_session_report,
 )
 from server.services.srs_service import (
@@ -107,10 +108,27 @@ class LessonStartRequest(BaseModel):
     voice: str = DEFAULT_VOICE
     curriculum_mode: str = "travel_scenario"
     lesson_id: Optional[str] = None
+    grammar_id: Optional[str] = None
     custom_topic: Optional[str] = None
+    ai_generate: bool = True
     defer_opening_tts: bool = True
     coach_model: Optional[str] = None
     include_review: bool = False
+
+
+class LessonExtendRequest(BaseModel):
+    session_id: str
+    user_id: str = "haodong"
+    curriculum_mode: str = "sensei_syllabus"
+    lesson_title: str = ""
+    grammar_focus: str = ""
+    jlpt_target: str = "N4"
+    voice: str = DEFAULT_VOICE
+    existing_targets: List[str] = []
+    start_index: int = 0
+    scenario_id: Optional[str] = None
+    grammar_id: Optional[str] = None
+    coach_model: Optional[str] = None
 
 
 class TTSRequest(BaseModel):
@@ -233,6 +251,14 @@ async def api_get_syllabus(
     return get_syllabus_overview(progress_map=progress, jlpt_target=jlpt_target)
 
 
+@app.get("/api/grammar")
+async def api_list_grammar(
+    level: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+) -> Dict[str, Any]:
+    return {"grammar": list_all_grammar(level=level, query=q)}
+
+
 @app.post("/api/sensei/lesson/start")
 async def api_start_lesson(
     body: LessonStartRequest,
@@ -250,10 +276,38 @@ async def api_start_lesson(
         voice=body.voice,
         curriculum_mode=body.curriculum_mode,
         lesson_id=body.lesson_id,
+        grammar_id=body.grammar_id,
         custom_topic=body.custom_topic,
+        ai_generate=body.ai_generate,
         defer_opening_tts=body.defer_opening_tts,
         coach_model=body.coach_model,
         include_review=body.include_review,
+        api_key=api_key,
+    )
+
+
+@app.post("/api/sensei/lesson/extend")
+async def api_extend_lesson(
+    body: LessonExtendRequest,
+    x_gemini_api_key: Optional[str] = Header(default=None),
+    x_app_passcode: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
+    init_db()
+    api_key = resolve_api_key(x_gemini_api_key, required=True)
+    return await extend_guided_lesson(
+        session_id=body.session_id,
+        user_id=body.user_id,
+        curriculum_mode=body.curriculum_mode,
+        lesson_title=body.lesson_title,
+        grammar_focus=body.grammar_focus,
+        jlpt_target=body.jlpt_target,
+        voice=body.voice,
+        existing_targets=body.existing_targets,
+        start_index=body.start_index,
+        scenario_id=body.scenario_id,
+        grammar_id=body.grammar_id,
+        coach_model=body.coach_model,
         api_key=api_key,
     )
 
@@ -264,6 +318,7 @@ async def api_sensei_turn(
     session_id: str = Form(...),
     user_id: str = Form("haodong"),
     step_index: int = Form(0),
+    total_steps: int = Form(0),
     stage: str = Form("SHADOW_DRILL"),
     target_jp: str = Form(...),
     target_cn: str = Form(""),
@@ -288,6 +343,7 @@ async def api_sensei_turn(
             session_id=session_id,
             user_id=user_id,
             step_index=step_index,
+            total_steps=total_steps,
             stage=stage,
             target_jp=target_jp,
             target_cn=target_cn,

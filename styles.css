@@ -6662,11 +6662,12 @@ body.dark-mode .app-topbar {
   gap: 0.35rem;
 }
 .focus-progress-track {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.3rem;
+  display: flex;
+  gap: 0.24rem;
 }
 .focus-progress-seg {
+  flex: 1;
+  min-width: 0;
   height: 5px;
   border: none;
   border-radius: 999px;
@@ -6999,4 +7000,36 @@ body.dark-mode .app-topbar {
   border: 1px solid var(--border-color);
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
+}
+
+/* 8. Grammar AI Sensei & Flexible Lesson Extension */
+.focus-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding-top: 0.15rem;
+}
+.g-sensei-btn {
+  background: var(--bg-indigo-soft);
+  border-color: rgba(36, 59, 100, 0.24);
+  color: var(--accent-indigo);
+  font-weight: 700;
+}
+.g-sensei-btn:hover {
+  background: var(--accent-indigo);
+  border-color: var(--accent-indigo);
+  color: #ffffff;
+}
+.drawer-grammar-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+.drawer-grammar-pills {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
 }

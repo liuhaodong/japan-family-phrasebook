@@ -356,3 +356,74 @@ def get_grammar(level: Optional[str] = None) -> List[Dict[str, Any]]:
     if level:
         return [g for g in items if (g.get("level") or "").upper() == level.upper()]
     return items
+
+
+def list_all_grammar(
+    level: Optional[str] = None,
+    query: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Return normalized grammar points merged from core N5-N3 and video N4/N3 libraries."""
+    data = load_curriculum()
+    merged: List[Dict[str, Any]] = []
+
+    for g in data.get("grammar") or []:
+        merged.append(
+            {
+                "id": str(g.get("id") or ""),
+                "source": "core",
+                "level": str(g.get("level") or "N5").upper(),
+                "pattern": g.get("pattern") or "",
+                "reading": g.get("reading") or "",
+                "meaning": g.get("meaning") or "",
+                "formation": g.get("formation") or "",
+                "explanation": g.get("explanation") or "",
+                "tip": g.get("tip") or "",
+                "examples": g.get("dailyExamples") or g.get("examples") or [],
+                "quiz": g.get("quiz"),
+            }
+        )
+
+    for vg in data.get("videoGrammar") or []:
+        merged.append(
+            {
+                "id": str(vg.get("id") or ""),
+                "source": "video",
+                "level": str(vg.get("level") or "N4").upper(),
+                "pattern": vg.get("pattern") or "",
+                "reading": vg.get("reading") or "",
+                "meaning": vg.get("meaning") or "",
+                "formation": vg.get("formation") or "",
+                "explanation": vg.get("explanation") or vg.get("meaningEn") or "",
+                "tip": vg.get("tip") or "",
+                "examples": vg.get("examples") or vg.get("dailyExamples") or [],
+                "quiz": vg.get("quiz"),
+            }
+        )
+
+    lvl = (level or "").strip().upper()
+    if lvl and lvl != "ALL":
+        merged = [item for item in merged if item["level"] == lvl]
+
+    q = (query or "").strip().lower()
+    if q:
+        merged = [
+            item
+            for item in merged
+            if any(
+                q in (item.get(field) or "").lower()
+                for field in ("pattern", "reading", "meaning", "formation", "explanation", "tip")
+            )
+        ]
+
+    return merged
+
+
+def get_grammar_point(grammar_id: str) -> Optional[Dict[str, Any]]:
+    """Return a single normalized grammar point by ID across core and video libraries."""
+    target_id = str(grammar_id or "").strip()
+    if not target_id:
+        return None
+    for item in list_all_grammar():
+        if item["id"] == target_id:
+            return item
+    return None

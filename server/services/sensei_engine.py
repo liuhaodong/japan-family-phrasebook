@@ -36,7 +36,7 @@ from server.db import (
     upsert_weakness,
 )
 from server.services.audio_utils import analyze_audio_speech_activity, normalize_gemini_audio
-from server.services.curriculum_loader import get_grammar, get_scenario, get_verbs
+from server.services.curriculum_loader import get_grammar, get_grammar_point, get_scenario, get_verbs
 from server.services.jp_tokenizer import (
     has_kana,
     has_kanji,
@@ -408,14 +408,51 @@ async def _author_textbook_lesson(
     due_cards: List[Dict[str, Any]],
     coach_model: Optional[str],
     api_key: str,
+    grammar_point: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Use a Veteran Tokyo Sensei prompt to author a fresh 6-step everyday Japanese lesson."""
-    topic_title = custom_topic if curriculum_mode == "custom_topic" else (unit or {}).get("title", "日常口语进阶")
-    grammar_focus = custom_topic if curriculum_mode == "custom_topic" else (unit or {}).get("grammarFocus", "")
-    cn_pitfall = (unit or {}).get("cnPitfall", "避免中文语序与中式直译，突出日语助词与自然语调。")
-    key_patterns = ", ".join((unit or {}).get("keyPatterns") or [])
+    """Use a Veteran Tokyo Sensei prompt to author a flexible-length Japanese lesson."""
+    if curriculum_mode == "grammar_point" and grammar_point:
+        topic_title = f"{grammar_point.get('pattern', '')}（{grammar_point.get('meaning', '')}）"
+        grammar_focus = f"{grammar_point.get('pattern', '')} | {grammar_point.get('formation', '')}"
+        cn_pitfall = grammar_point.get("tip") or grammar_point.get("explanation") or "注意接续规则、助词搭配与语境区分。"
+        key_patterns = grammar_point.get("pattern") or ""
+        ref_examples = [
+            f"{strip_furigana_parens(ex.get('jp') or '')}（{ex.get('cn') or ''}）"
+            for ex in (grammar_point.get("examples") or [])[:3]
+            if ex.get("jp")
+        ]
+        grammar_block = (
+            "【指定精讲语法库知识点（必须围绕此知识点深度展开）】\n"
+            f"- 句型：{grammar_point.get('pattern', '')}（{grammar_point.get('level', jlpt_target)}）\n"
+            f"- 读音/拼读：{grammar_point.get('reading', '')}\n"
+            f"- 核心释义：{grammar_point.get('meaning', '')}\n"
+            f"- 接续规则：{grammar_point.get('formation', '')}\n"
+            f"- 精讲要点：{grammar_point.get('explanation', '')}\n"
+            f"- 避坑/区分贴士：{grammar_point.get('tip', '')}\n"
+            f"- 语法库参考例句（可作启发，也请拓展更多日常/家庭鲜活例句）：{'; '.join(ref_examples) or '围绕主题原创'}\n\n"
+        )
+        pacing_hint = (
+            "请像真正的 1 对 1 日语老师那样把这一条语法完全教透（不必凑固定时间，依据内容深度自主决定 6–12 步）：\n"
+            "1) 概念破冰 + 接续规则拆解（WARMUP / TEACH）；\n"
+            "2) 多角度用法对照（肯定/否定/委婉或近义区分 + 中文易错反例，TEACH / CONTROLLED_DRILL）；\n"
+            "3) 1–2 步口头接续变形反射（TRANSFORM_DRILL，给出词干让学员 1 秒脱口变形）；\n"
+            "4) 1–2 步家庭/生活情景造句（SUBSTITUTION_DRILL）；\n"
+            "5) 1–2 步私教真实自由问答（FREE_OUTPUT）。\n"
+        )
+    else:
+        topic_title = custom_topic if curriculum_mode == "custom_topic" else (unit or {}).get("title", "日常口语进阶")
+        grammar_focus = custom_topic if curriculum_mode == "custom_topic" else (unit or {}).get("grammarFocus", "")
+        cn_pitfall = (unit or {}).get("cnPitfall", "避免中文语序与中式直译，突出日语助词与自然语调。")
+        key_patterns = ", ".join((unit or {}).get("keyPatterns") or [])
+        grammar_block = ""
+        pacing_hint = (
+            "请根据本课知识密度与实战需求自主决定步骤数量（建议 6–10 步，较复杂的语法可展开到 8–12 步，不设 10 分钟限制），"
+            "自然涵盖：热身唤醒(WARMUP) → 核心精讲(TEACH) → 节奏镜子跟读(CONTROLLED_DRILL) → 1–2 步口头变形反射(TRANSFORM_DRILL) → "
+            "1–2 步情景造句(SUBSTITUTION_DRILL) → 1–2 步私教自由问答(FREE_OUTPUT)。\n"
+        )
+
     fresh_pair = random.sample(_VARIED_DAILY_SCENES, 2)
-    base_contexts = (unit or {}).get("everydayContexts") or ["咖啡馆日常", "朋友聊天", "职场茶水间", "周末生活"]
+    base_contexts = (unit or {}).get("everydayContexts") or ["咖啡馆日常", "朋友聊天", "职场茶水间", "家庭周末生活"]
     contexts = ", ".join(list(dict.fromkeys([*fresh_pair, *base_contexts]))[:4])
 
     weakness_str = ", ".join(w["pattern_key"] for w in weaknesses) or "暂无（本课聚焦新知识，无需旧错题热身）"
@@ -423,51 +460,54 @@ async def _author_textbook_lesson(
 
     prompt = (
         "你是一位拥有20年教龄、专精教授中国成年人日语的资深东京私教总监。\n"
-        "请脱离普通旅游观光模板，为学生原创编写一堂完整、鲜活、地道东京生活/工作向的「10分钟6步私教课教材」。\n\n"
+        "请为学生原创编写一堂完整、鲜活、地道东京生活/工作/家庭向的「深度私教口语教材」（不限 10 分钟，教透为止）。\n\n"
+        f"{grammar_block}"
         f"课程主题: {topic_title}\n"
         f"核心语法与音调焦点: {grammar_focus}\n"
         f"目标句型参考: {key_patterns or '围绕主题自然精选'}\n"
         f"中国学习者常见母语负迁移陷阱: {cn_pitfall}\n"
-        f"建议生活语境（不要写机场酒店打卡模板）: {contexts}\n"
+        f"建议生活语境: {contexts}\n"
         f"学生目标等级: {jlpt_target}\n"
         f"学生历史薄弱点: {weakness_str}\n"
         f"记忆本待复习生词（若自然顺畅可嵌入1个）: {due_str}\n\n"
+        f"{pacing_hint}\n"
         "【书写规范】targetJp、questionJp、blackboard 的日语例句必须使用东京日常规范日语（正常使用常用汉字与假名混排，如「新しい料理を作ってみます。」「店の席を予約しておきます。」），禁止写成全平假名！界面会自动在汉字上方标出假名。\n"
         "【口播规范】teacherPrompt 供语音朗读：请把中文引导与日语示范分成独立句子（先用纯中文说清要点加句号，不要在中文句子中间夹杂日语词，再另起一句给纯日语示范句），后端会自动把日语单独按假名发音，绝不串音。\n"
         "【语种锁定】全程仅限规范日语（汉字+平假名/片假名）与简体中文教学说明，严禁输出韩语（한글 / 한국어）或任何其他无关语种字符。\n\n"
-        "严格输出以下 JSON（steps 必须精确为 6 步，顺序为 WARMUP, TEACH, CONTROLLED_DRILL, TRANSFORM_DRILL, SUBSTITUTION_DRILL, FREE_OUTPUT）：\n"
+        "严格输出以下 JSON（steps 可为 6–12 步，可用阶段：WARMUP, TEACH, CONTROLLED_DRILL, TRANSFORM_DRILL, SUBSTITUTION_DRILL, FREE_OUTPUT）：\n"
         "{\n"
         '  "blackboard": {\n'
         '    "titleCn": "简练黑板标题（20字内）",\n'
         '    "grammarPoint": "本课主攻文法/发音点",\n'
-        '    "formulaJp": "清晰结构公式",\n'
+        '    "formulaJp": "清晰接续或结构公式",\n'
         '    "cnPitfallCn": "一句话讲透中国人为什么容易说错",\n'
         '    "contrastBadJp": "典型中式直译错句（日语）",\n'
         '    "contrastGoodJp": "东京母语者地道说法（日语）",\n'
         '    "contrastNoteCn": "对照点拨（25字内）"\n'
         "  },\n"
-        "  \"steps\": [\n"
-        '    {"stage": "WARMUP", "stageLabel": "1. 热身唤醒", "hideTarget": false, "targetJp": "规范日语句子(含常用汉字)", "targetCn": "中文翻译", "cueCn": "老师练习指引", "tipCn": "发音/记忆小贴士", "teacherPrompt": "纯中文开场引导加句号。随后另起一句给出纯日语示范句"},\n'
-        '    {"stage": "TEACH", "stageLabel": "2. 核心精讲", "hideTarget": false, "targetJp": "规范日语核心例句(含常用汉字)", "targetCn": "中文翻译", "cueCn": "用法点拨", "tipCn": "对比技巧", "teacherPrompt": "纯中文讲解要点加句号(不夹日语词)。随后另起一句给纯日语示范句"},\n'
+        '  "steps": [\n'
+        '    {"stage": "WARMUP", "stageLabel": "1. 概念热身", "hideTarget": false, "targetJp": "规范日语句子(含常用汉字)", "targetCn": "中文翻译", "cueCn": "老师练习指引", "tipCn": "发音/记忆小贴士", "teacherPrompt": "纯中文开场引导加句号。随后另起一句给出纯日语示范句"},\n'
+        '    {"stage": "TEACH", "stageLabel": "2. 核心精讲", "hideTarget": false, "targetJp": "规范日语核心例句(含常用汉字)", "targetCn": "中文翻译", "cueCn": "用法与接续点拨", "tipCn": "对比技巧", "teacherPrompt": "纯中文讲解要点加句号(不夹日语词)。随后另起一句给纯日语示范句"},\n'
         '    {"stage": "CONTROLLED_DRILL", "stageLabel": "3. 节奏镜子", "hideTarget": false, "targetJp": "另一句地道日常日语(含常用汉字)", "targetCn": "中文翻译", "cueCn": "注意哪两个音拍/助词", "tipCn": "细节提示", "teacherPrompt": "纯中文引导重点加句号。随后另起一句给纯日语示范句"},\n'
         '    {"stage": "TRANSFORM_DRILL", "stageLabel": "4. 口头变形反射", "hideTarget": true, "targetJp": "标准变形后日语整句(含常用汉字)", "targetCn": "中文目标意思", "cueCn": "给出原形/基础词，要求1秒口头变成今天的目标句型", "tipCn": "提示关键字", "teacherPrompt": "纯中文出题引导(不直接念出日语答案)"},\n'
-        '    {"stage": "SUBSTITUTION_DRILL", "stageLabel": "5. 情景造句", "hideTarget": true, "targetJp": "标准日语表达(含常用汉字)", "targetCn": "中文情景需求", "cueCn": "真实生活情景（如和同事聊咖啡/周末），请直接用日语说出来", "tipCn": "提示重点词", "teacherPrompt": "纯中文情景出题(不剧透答案)"},\n'
+        '    {"stage": "SUBSTITUTION_DRILL", "stageLabel": "5. 情景造句", "hideTarget": true, "targetJp": "标准日语表达(含常用汉字)", "targetCn": "中文情景需求", "cueCn": "真实生活情景，请直接用日语说出来", "tipCn": "提示重点词", "teacherPrompt": "纯中文情景出题(不剧透答案)"},\n'
         '    {"stage": "FREE_OUTPUT", "stageLabel": "6. 私教自由问答", "hideTarget": true, "questionJp": "老师用今天句型向学生提的1个真实日语问题(含常用汉字)", "questionCn": "问题中文意思", "targetJp": "一种自然参考答法（规范日语）", "targetCn": "参考答法中文", "cueCn": "请用自己的真实情况用日语回答老师提问，尽量用上今天学到的表达！", "tipCn": "可替换词汇提示", "teacherPrompt": "纯中文提示加句号。随后另起一句以纯日语发出提问"}\n'
         "  ]\n"
         "}"
     )
 
     models = list(AUTHOR_MODELS)
-    return await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.6, timeout_sec=16.0)
+    return await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.6, timeout_sec=24.0)
 
 
-def _normalize_authored_steps(raw_steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def _normalize_authored_steps(raw_steps: List[Dict[str, Any]], start_index: int = 0) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
-    for idx, st in enumerate(raw_steps):
+    for st in raw_steps:
         target_jp = strip_furigana_parens(strip_foreign_hangul(st.get("targetJp") or ""))
         question_jp = strip_furigana_parens(strip_foreign_hangul(st.get("questionJp") or ""))
         if not target_jp:
             continue
+        idx = start_index + len(normalized)
         stage = st.get("stage") or "CONTROLLED_DRILL"
         hide_target = bool(st.get("hideTarget", stage in ("TRANSFORM_DRILL", "SUBSTITUTION_DRILL", "FREE_OUTPUT")))
         prompt_raw = strip_foreign_hangul(st.get("teacherPrompt") or "")
@@ -491,6 +531,149 @@ def _normalize_authored_steps(raw_steps: List[Dict[str, Any]]) -> List[Dict[str,
             }
         )
     return normalized
+
+
+_TRAVEL_TWISTS = [
+    "临时为6岁半 Jinny 和2岁半 Jaycie 询问儿童餐具、儿童椅或推车停放位置",
+    "遇到满座/排队/时间变动，需要礼貌询问替代方案并协商时间",
+    "孩子临时想要少冰/少盐/清淡或过敏确认，需要礼貌补充沟通",
+    "推着婴儿车在车站/百货寻找无障碍电梯并确认准确路线",
+    "酒店或餐厅核对预约姓名与35天长假行程中的行李寄存需求",
+    "与热情友好的日本店员或当地家长顺便寒暄两句来自旧金山与带娃日常",
+    "结账时确认支付方式、打包分装或是否需要小票/免税手续",
+    "对方用敬语很快说了一长句时，礼貌请对方放慢一点并再次确认关键信息",
+]
+
+
+async def _author_travel_dialogue_lesson(
+    *,
+    scenario: Dict[str, Any],
+    lesson_type: str,
+    jlpt_target: str,
+    weaknesses: List[Dict[str, Any]],
+    due_cards: List[Dict[str, Any]],
+    api_key: str,
+) -> Dict[str, Any]:
+    """Author a fresh, multi-turn AI family travel dialogue textbook tailored to Haodong's family."""
+    phrases = list(scenario.get("phrases") or [])
+    sampled = random.sample(phrases, min(len(phrases), 4)) if phrases else []
+    seed_lines = [
+        f"{strip_furigana_parens(p.get('jp') or '')}（{p.get('cn') or ''}）"
+        for p in sampled
+        if p.get("jp")
+    ]
+    twist_pair = random.sample(_TRAVEL_TWISTS, 2)
+    weakness_str = ", ".join(w["pattern_key"] for w in weaknesses) or "暂无"
+    due_str = ", ".join(f"{c['surface']}({c.get('meaning_cn', '')})" for c in due_cards) or "暂无"
+
+    mode_note = (
+        "专注声学镜子发音打磨：选 6 步高实用家庭现场句，每步强化节奏、促音与敬语尾音。"
+        if lesson_type == "pronunciation_drill"
+        else "专注动词与句型口头替换反射：设计 6–8 步高密度替换+情景反应训练，多用 hideTarget=true。"
+        if lesson_type == "substitution_drill"
+        else "完整 AI 场景连续对话实战（建议 7–10 步，随剧情自然收束，不受 10 分钟限制）：用一条连贯的真实家庭对话主线，从进店/开口破冰 → 提出家庭需求 → 应对突发小变化 → 礼貌确认与道谢收尾。对话轮次里，请在 questionJp 写出对方日本店员/当地人的真实台词（供学员听懂接话），targetJp 写一家人的自然地道回应！"
+    )
+
+    prompt = (
+        "你是一位专注实战场景的东京资深日语私教，请为下面这个家庭定制「全新一次生成的家庭旅行情景对话教材」（不要照搬固定例句，每次重新编排鲜活对话）。\n\n"
+        "【家庭画像】刘浩东（Google SWE 经理）与太太 Sherry，带 6岁半姐姐 Jinny 和 2岁半妹妹 Jaycie，从旧金山出发，2026年底至2027年初赴日本 35 晚长假（东京高轮、轻井泽滑雪、银座、福冈由布院）。\n"
+        f"【场景名称】{scenario.get('title', '日本旅行实战')}\n"
+        f"【场景背景】{scenario.get('summary', '')}\n"
+        f"【对方角色设定】{scenario.get('persona', '友好的东京现场工作人员')}\n"
+        f"【本轮随机剧情微调（务必自然融入对话中）】{twist_pair[0]}；可选支线：{twist_pair[1]}\n"
+        f"【手册参考底句（供词汇启发，请重新创作自然多轮对话）】{'; '.join(seed_lines) or '围绕主题原创'}\n"
+        f"【学生目标水平】{jlpt_target} | 历史薄弱点：{weakness_str} | 记忆本复习词：{due_str}\n"
+        f"【训练模式要求】{mode_note}\n\n"
+        "【书写规范】targetJp、questionJp、blackboard 的日语例句必须使用东京日常规范日语（汉字与假名自然混排），禁止全平假名。\n"
+        "【口播规范】teacherPrompt 供语音朗读：中文引导与日语示范分开写，中文句子中间不夹日语词（先纯中文加句号，再另起一句给纯日语示范句）。\n"
+        "【语种锁定】全程仅限规范日语与简体中文，严禁输出韩语（한글 / 한국어）。\n\n"
+        "严格输出以下 JSON（steps 为 6–10 步，可用阶段：WARMUP, TEACH, CONTROLLED_DRILL, TRANSFORM_DRILL, SUBSTITUTION_DRILL, FREE_OUTPUT）：\n"
+        "{\n"
+        '  "blackboard": {\n'
+        '    "titleCn": "本场场景要点（20字内）",\n'
+        '    "grammarPoint": "本场景最核心的礼貌表达或敬语攻略",\n'
+        '    "formulaJp": "核心套句公式",\n'
+        '    "cnPitfallCn": "一句点破中国家长在此场景最容易踩的坑",\n'
+        '    "contrastBadJp": "生硬直译说法（日语）",\n'
+        '    "contrastGoodJp": "地道高情商日式表达（日语）",\n'
+        '    "contrastNoteCn": "对比说明（25字内）"\n'
+        "  },\n"
+        '  "steps": [\n'
+        '    {"stage": "WARMUP", "stageLabel": "1. 开场破冰", "hideTarget": false, "questionJp": "对方先说的话(如无可留空)", "questionCn": "对方中文意思", "targetJp": "规范日语句子", "targetCn": "中文翻译", "cueCn": "场景提示", "tipCn": "口语/礼貌细节", "teacherPrompt": "纯中文引导加句号。随后另起一句给出纯日语示范句"}\n'
+        "  ]\n"
+        "}"
+    )
+
+    models = list(AUTHOR_MODELS)
+    return await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.72, timeout_sec=24.0)
+
+
+def _build_offline_grammar_fallback(grammar_point: Dict[str, Any]) -> Dict[str, Any]:
+    pattern = strip_foreign_hangul(grammar_point.get("pattern") or "核心语法")
+    meaning = strip_foreign_hangul(grammar_point.get("meaning") or "")
+    formation = strip_foreign_hangul(grammar_point.get("formation") or "")
+    explanation = strip_foreign_hangul(grammar_point.get("explanation") or "")
+    tip = strip_foreign_hangul(grammar_point.get("tip") or explanation or "注意日语接续与助词位置。")
+    examples = grammar_point.get("examples") or []
+    ex0 = examples[0] if len(examples) > 0 else {"jp": "日本語の勉強は毎日少しずつ続けています。", "cn": "日语学习每天都在一点点坚持。"}
+    ex1 = examples[1] if len(examples) > 1 else ex0
+    ex0_jp = strip_furigana_parens(ex0.get("jp") or "")
+    ex1_jp = strip_furigana_parens(ex1.get("jp") or "")
+
+    bb = {
+        "titleCn": f"{pattern} · 离线精讲",
+        "grammarPoint": f"{pattern}（{meaning}）",
+        "formulaJp": formation or pattern,
+        "cnPitfallCn": tip,
+        "contrastBadJp": "",
+        "contrastGoodJp": ex0_jp,
+        "contrastNoteCn": meaning,
+    }
+    raw_steps = [
+        {
+            "stage": "WARMUP",
+            "stageLabel": "1. 句型初识",
+            "hideTarget": False,
+            "targetJp": ex0_jp,
+            "targetCn": ex0.get("cn") or meaning,
+            "cueCn": f"重点体会「{pattern}」在句中的位置与含义（{meaning}）。",
+            "tipCn": f"接续方式：{formation or pattern}",
+            "teacherPrompt": f"今天我们来攻克语法「{pattern}」，意思是{meaning}。先跟我读第一句。{ex0_jp}",
+        },
+        {
+            "stage": "TEACH",
+            "stageLabel": "2. 例句巩固",
+            "hideTarget": False,
+            "targetJp": ex1_jp,
+            "targetCn": ex1.get("cn") or meaning,
+            "cueCn": explanation or tip,
+            "tipCn": tip,
+            "teacherPrompt": f"注意这个句型的接续和语气，再跟着读一遍例句。{ex1_jp}",
+        },
+        {
+            "stage": "SUBSTITUTION_DRILL",
+            "stageLabel": "3. 脱口造句",
+            "hideTarget": True,
+            "targetJp": ex0_jp,
+            "targetCn": ex0.get("cn") or meaning,
+            "cueCn": f"不要看文字，尝试用「{pattern}」直接说出这句话的意思：{ex0.get('cn') or meaning}",
+            "tipCn": tip,
+            "teacherPrompt": "合上提示，试着用刚才学到的句型自己直接说出来。",
+        },
+        {
+            "stage": "FREE_OUTPUT",
+            "stageLabel": "4. 自由运用",
+            "hideTarget": True,
+            "questionJp": ex1_jp,
+            "questionCn": ex1.get("cn") or "试着用这个句型造一句贴近你生活的话。",
+            "targetJp": ex0_jp,
+            "targetCn": ex0.get("cn") or meaning,
+            "cueCn": f"结合你自己的生活或日本旅行场景，用「{pattern}」说一句话。",
+            "tipCn": tip,
+            "teacherPrompt": "最后一步自由发挥，用今天学的语法点造一句自己的话，说给我听吧。",
+        },
+    ]
+    return {"blackboard": bb, "steps": _normalize_authored_steps(raw_steps)}
 
 
 def _build_offline_syllabus_fallback(unit: Optional[Dict[str, Any]], custom_topic: str) -> Dict[str, Any]:
@@ -559,128 +742,15 @@ def _build_offline_syllabus_fallback(unit: Optional[Dict[str, Any]], custom_topi
     return {"blackboard": bb, "steps": _normalize_authored_steps(raw_steps)}
 
 
-async def create_guided_lesson(
-    user_id: str,
-    scenario_id: str = "1",
-    lesson_type: str = "guided_10min",
-    jlpt_target: str = "N4",
-    voice: str = DEFAULT_VOICE,
-    curriculum_mode: str = "travel_scenario",
-    lesson_id: Optional[str] = None,
-    custom_topic: Optional[str] = None,
-    defer_opening_tts: bool = True,
-    coach_model: Optional[str] = None,
-    include_review: bool = False,
-    api_key: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Create a Veteran Sensei textbook lesson (syllabus / custom topic) or travel scenario drill."""
-    weaknesses = list_weaknesses(user_id, limit=3) if include_review else []
-    due_cards = (list_cards(user_id, due_only=True, limit=4) or list_cards(user_id, due_only=False, limit=3)) if include_review else []
-    due_snapshot = [{"surface": c["surface"], "meaning_cn": c.get("meaning_cn", "")} for c in due_cards]
-
-    if curriculum_mode in ("sensei_syllabus", "custom_topic"):
-        progress_map = list_lesson_progress(user_id)
-        unit: Optional[Dict[str, Any]] = None
-        if curriculum_mode == "sensei_syllabus":
-            unit = get_syllabus_lesson(lesson_id)
-            if not unit:
-                overview = get_syllabus_overview(progress_map, jlpt_target=jlpt_target)
-                rec = overview.get("recommendedLesson")
-                unit = get_syllabus_lesson(rec["id"] if rec else "S01_mora_minimal_pairs")
-
-        clean_custom = (custom_topic or "").strip()
-        authored: Optional[Dict[str, Any]] = None
-        if api_key:
-            try:
-                authored = await _author_textbook_lesson(
-                    user_id=user_id,
-                    curriculum_mode=curriculum_mode,
-                    unit=unit,
-                    custom_topic=clean_custom,
-                    jlpt_target=jlpt_target,
-                    weaknesses=weaknesses,
-                    due_cards=due_cards,
-                    coach_model=coach_model,
-                    api_key=api_key,
-                )
-            except Exception as exc:
-                print(f"[sensei] AI textbook authoring fallback: {exc}")
-                authored = None
-
-        if authored and authored.get("steps"):
-            steps = _normalize_authored_steps(authored["steps"])
-            blackboard = _sanitize_no_hangul(dict(authored.get("blackboard") or (unit or {}).get("blackboard") or {}))
-        else:
-            fb = _build_offline_syllabus_fallback(unit, clean_custom)
-            steps = fb["steps"]
-            blackboard = _sanitize_no_hangul(dict(fb["blackboard"] or {}))
-
-        if blackboard.get("contrastBadJp"):
-            blackboard["contrastBadTokens"] = tokenize_sentence(blackboard["contrastBadJp"])
-        if blackboard.get("contrastGoodJp"):
-            blackboard["contrastGoodTokens"] = tokenize_sentence(blackboard["contrastGoodJp"])
-
-        resolved_lid = (unit or {}).get("id") if curriculum_mode == "sensei_syllabus" else f"custom_{uuid.uuid4().hex[:6]}"
-        lesson_meta = {
-            "curriculumMode": curriculum_mode,
-            "lessonId": resolved_lid,
-            "title": f"自选专题：{clean_custom}" if curriculum_mode == "custom_topic" else (unit or {}).get("title", "私教体系课"),
-            "subtitle": "由东京私教总监结合你的薄弱项现场编写" if curriculum_mode == "custom_topic" else (unit or {}).get("subtitle", ""),
-            "level": jlpt_target if curriculum_mode == "custom_topic" else (unit or {}).get("level", jlpt_target),
-            "grammarFocus": clean_custom if curriculum_mode == "custom_topic" else (unit or {}).get("grammarFocus", ""),
-            "blackboard": blackboard,
-        }
-
-        lesson_plan = {
-            "curriculumMode": curriculum_mode,
-            "lessonId": resolved_lid,
-            "lessonMeta": lesson_meta,
-            "jlptTarget": jlpt_target,
-            "weaknessesSnapshot": weaknesses,
-            "dueCardsSnapshot": due_snapshot,
-            "steps": steps,
-        }
-        session_id = create_session(
-            user_id=user_id,
-            mode=curriculum_mode,
-            scenario_id=resolved_lid or "sensei_lesson",
-            persona=lesson_meta["title"],
-            lesson_plan=lesson_plan,
-        )
-
-        opening_audio_url = ""
-        if api_key and not defer_opening_tts and steps and (steps[0].get("teacherPromptTts") or steps[0].get("teacherPrompt")):
-            try:
-                tts = await synthesize_speech(
-                    steps[0].get("teacherPromptTts") or steps[0]["teacherPrompt"],
-                    api_key=api_key,
-                    voice=voice,
-                    model=TTS_FAST_MODEL,
-                )
-                opening_audio_url = tts["audio_url"]
-            except Exception:
-                opening_audio_url = ""
-
-        return {
-            "sessionId": session_id,
-            "lessonMeta": lesson_meta,
-            "scenario": {
-                "id": resolved_lid,
-                "title": lesson_meta["title"],
-                "icon": "👩‍🏫",
-                "summary": lesson_meta["subtitle"],
-            },
-            "weaknesses": weaknesses,
-            "dueCards": due_snapshot,
-            "steps": steps,
-            "openingAudioUrl": opening_audio_url,
-        }
-
-    # Travel scenario mode (preserved cleanly)
-    scenario = get_scenario(scenario_id)
-    if not scenario:
-        scenario = get_scenario("1") or get_scenario("daily_konbini")
-
+def _build_offline_travel_steps(
+    *,
+    scenario: Dict[str, Any],
+    lesson_type: str,
+    jlpt_target: str,
+    weaknesses: List[Dict[str, Any]],
+    due_cards: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    """Deterministic offline travel scenario builder used when no API key is configured or authoring fails."""
     verbs = get_verbs(limit=60)
     grammar_list = get_grammar(jlpt_target if jlpt_target in ("N5", "N4", "N3") else None)
 
@@ -840,15 +910,211 @@ async def create_guided_lesson(
 
     for st in steps:
         st["teacherPromptTts"] = prepare_tts_bilingual_script(st.get("teacherPrompt") or "", [st.get("targetJp") or ""])
+    return steps
+
+
+async def create_guided_lesson(
+    user_id: str,
+    scenario_id: str = "1",
+    lesson_type: str = "guided_10min",
+    jlpt_target: str = "N4",
+    voice: str = DEFAULT_VOICE,
+    curriculum_mode: str = "travel_scenario",
+    lesson_id: Optional[str] = None,
+    grammar_id: Optional[str] = None,
+    custom_topic: Optional[str] = None,
+    ai_generate: bool = True,
+    defer_opening_tts: bool = True,
+    coach_model: Optional[str] = None,
+    include_review: bool = False,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Create a Veteran Sensei textbook lesson (syllabus / grammar point / custom topic / AI travel dialogue)."""
+    weaknesses = list_weaknesses(user_id, limit=3) if include_review else []
+    due_cards = (list_cards(user_id, due_only=True, limit=4) or list_cards(user_id, due_only=False, limit=3)) if include_review else []
+    due_snapshot = [{"surface": c["surface"], "meaning_cn": c.get("meaning_cn", "")} for c in due_cards]
+
+    if curriculum_mode in ("sensei_syllabus", "custom_topic", "grammar_point"):
+        progress_map = list_lesson_progress(user_id)
+        unit: Optional[Dict[str, Any]] = None
+        grammar_point: Optional[Dict[str, Any]] = None
+        if curriculum_mode == "sensei_syllabus":
+            unit = get_syllabus_lesson(lesson_id)
+            if not unit:
+                overview = get_syllabus_overview(progress_map, jlpt_target=jlpt_target)
+                rec = overview.get("recommendedLesson")
+                unit = get_syllabus_lesson(rec["id"] if rec else "S01_mora_minimal_pairs")
+        elif curriculum_mode == "grammar_point":
+            grammar_point = get_grammar_point(grammar_id or "")
+
+        clean_custom = (custom_topic or "").strip()
+        if curriculum_mode == "grammar_point" and not grammar_point and not clean_custom:
+            clean_custom = "N4/N5 核心语法精讲"
+
+        authored: Optional[Dict[str, Any]] = None
+        if api_key and ai_generate:
+            try:
+                authored = await _author_textbook_lesson(
+                    user_id=user_id,
+                    curriculum_mode=curriculum_mode if (curriculum_mode != "grammar_point" or grammar_point) else "custom_topic",
+                    unit=unit,
+                    custom_topic=clean_custom,
+                    jlpt_target=(grammar_point or {}).get("level") or jlpt_target,
+                    weaknesses=weaknesses,
+                    due_cards=due_cards,
+                    coach_model=coach_model,
+                    api_key=api_key,
+                    grammar_point=grammar_point,
+                )
+            except Exception as exc:
+                print(f"[sensei] AI textbook authoring fallback: {exc}")
+                authored = None
+
+        if authored and authored.get("steps"):
+            steps = _normalize_authored_steps(authored["steps"])
+            default_bb = (unit or {}).get("blackboard") or {}
+            blackboard = _sanitize_no_hangul(dict(authored.get("blackboard") or default_bb))
+        elif curriculum_mode == "grammar_point" and grammar_point:
+            fb = _build_offline_grammar_fallback(grammar_point)
+            steps = fb["steps"]
+            blackboard = _sanitize_no_hangul(dict(fb["blackboard"] or {}))
+        else:
+            fb = _build_offline_syllabus_fallback(unit, clean_custom)
+            steps = fb["steps"]
+            blackboard = _sanitize_no_hangul(dict(fb["blackboard"] or {}))
+
+        if blackboard.get("contrastBadJp"):
+            blackboard["contrastBadTokens"] = tokenize_sentence(blackboard["contrastBadJp"])
+        if blackboard.get("contrastGoodJp"):
+            blackboard["contrastGoodTokens"] = tokenize_sentence(blackboard["contrastGoodJp"])
+
+        if curriculum_mode == "sensei_syllabus":
+            resolved_lid = (unit or {}).get("id")
+            meta_title = (unit or {}).get("title", "私教体系课")
+            meta_sub = (unit or {}).get("subtitle", "")
+            meta_lvl = (unit or {}).get("level", jlpt_target)
+            meta_focus = (unit or {}).get("grammarFocus", "")
+        elif curriculum_mode == "grammar_point" and grammar_point:
+            resolved_lid = f"grammar_{grammar_point['id']}"
+            meta_title = f"语法精讲：{grammar_point.get('pattern', '')}"
+            meta_sub = grammar_point.get("meaning") or "语法库专项深度精讲"
+            meta_lvl = grammar_point.get("level") or jlpt_target
+            meta_focus = f"{grammar_point.get('pattern', '')}（{grammar_point.get('meaning', '')}）"
+        else:
+            resolved_lid = f"custom_{uuid.uuid4().hex[:6]}"
+            meta_title = f"自选专题：{clean_custom}"
+            meta_sub = "由东京私教总监结合你的薄弱项现场编写"
+            meta_lvl = jlpt_target
+            meta_focus = clean_custom
+
+        lesson_meta = {
+            "curriculumMode": curriculum_mode,
+            "lessonId": resolved_lid,
+            "grammarId": (grammar_point or {}).get("id") or grammar_id or "",
+            "title": meta_title,
+            "subtitle": meta_sub,
+            "level": meta_lvl,
+            "grammarFocus": meta_focus,
+            "blackboard": blackboard,
+            "aiGenerated": bool(authored and authored.get("steps")),
+            "totalSteps": len(steps),
+        }
+
+        lesson_plan = {
+            "curriculumMode": curriculum_mode,
+            "lessonId": resolved_lid,
+            "lessonMeta": lesson_meta,
+            "jlptTarget": jlpt_target,
+            "weaknessesSnapshot": weaknesses,
+            "dueCardsSnapshot": due_snapshot,
+            "steps": steps,
+        }
+        session_id = create_session(
+            user_id=user_id,
+            mode=curriculum_mode,
+            scenario_id=resolved_lid or "sensei_lesson",
+            persona=lesson_meta["title"],
+            lesson_plan=lesson_plan,
+        )
+
+        opening_audio_url = ""
+        if api_key and not defer_opening_tts and steps and (steps[0].get("teacherPromptTts") or steps[0].get("teacherPrompt")):
+            try:
+                tts = await synthesize_speech(
+                    steps[0].get("teacherPromptTts") or steps[0]["teacherPrompt"],
+                    api_key=api_key,
+                    voice=voice,
+                    model=TTS_FAST_MODEL,
+                )
+                opening_audio_url = tts["audio_url"]
+            except Exception:
+                opening_audio_url = ""
+
+        return {
+            "sessionId": session_id,
+            "lessonMeta": lesson_meta,
+            "scenario": {
+                "id": resolved_lid,
+                "title": lesson_meta["title"],
+                "icon": "👩‍🏫",
+                "summary": lesson_meta["subtitle"],
+            },
+            "weaknesses": weaknesses,
+            "dueCards": due_snapshot,
+            "steps": steps,
+            "openingAudioUrl": opening_audio_url,
+        }
+
+    # Travel scenario mode (AI-authored fresh family dialogue when api_key + ai_generate; static offline fallback otherwise)
+    scenario = get_scenario(scenario_id)
+    if not scenario:
+        scenario = get_scenario("1") or get_scenario("daily_konbini")
+
+    authored_travel: Optional[Dict[str, Any]] = None
+    if api_key and ai_generate:
+        try:
+            authored_travel = await _author_travel_dialogue_lesson(
+                scenario=scenario,
+                lesson_type=lesson_type,
+                jlpt_target=jlpt_target,
+                weaknesses=weaknesses,
+                due_cards=due_cards,
+                api_key=api_key,
+            )
+        except Exception as exc:
+            print(f"[sensei] AI travel dialogue authoring fallback: {exc}")
+            authored_travel = None
+
+    travel_blackboard: Optional[Dict[str, Any]] = None
+    if authored_travel and authored_travel.get("steps"):
+        steps = _normalize_authored_steps(authored_travel["steps"])
+        raw_bb = authored_travel.get("blackboard")
+        if raw_bb:
+            travel_blackboard = _sanitize_no_hangul(dict(raw_bb))
+            if travel_blackboard.get("contrastBadJp"):
+                travel_blackboard["contrastBadTokens"] = tokenize_sentence(travel_blackboard["contrastBadJp"])
+            if travel_blackboard.get("contrastGoodJp"):
+                travel_blackboard["contrastGoodTokens"] = tokenize_sentence(travel_blackboard["contrastGoodJp"])
+    else:
+        steps = _build_offline_travel_steps(
+            scenario=scenario,
+            lesson_type=lesson_type,
+            jlpt_target=jlpt_target,
+            weaknesses=weaknesses,
+            due_cards=due_cards,
+        )
 
     lesson_meta = {
         "curriculumMode": "travel_scenario",
         "lessonId": "",
+        "grammarId": "",
         "title": scenario["title"],
         "subtitle": scenario.get("summary", ""),
         "level": jlpt_target,
-        "grammarFocus": "",
-        "blackboard": None,
+        "grammarFocus": (travel_blackboard or {}).get("grammarPoint", ""),
+        "blackboard": travel_blackboard,
+        "aiGenerated": bool(authored_travel and authored_travel.get("steps")),
+        "totalSteps": len(steps),
     }
     lesson_plan = {
         "scenarioId": scenario["id"],
@@ -897,11 +1163,81 @@ async def create_guided_lesson(
     }
 
 
+async def extend_guided_lesson(
+    *,
+    session_id: str,
+    user_id: str,
+    curriculum_mode: str = "sensei_syllabus",
+    lesson_title: str = "",
+    grammar_focus: str = "",
+    jlpt_target: str = "N4",
+    voice: str = DEFAULT_VOICE,
+    existing_targets: Optional[List[str]] = None,
+    start_index: int = 0,
+    scenario_id: Optional[str] = None,
+    grammar_id: Optional[str] = None,
+    coach_model: Optional[str] = None,
+    api_key: str,
+) -> Dict[str, Any]:
+    """Generate 3-4 deeper continuation steps for any active lesson so study continues as long as needed."""
+    prior_list = [strip_furigana_parens(t) for t in (existing_targets or []) if t][-8:]
+    gp = get_grammar_point(grammar_id or "") if grammar_id else None
+    sc = get_scenario(scenario_id or "") if scenario_id else None
+    extra_ctx = ""
+    if gp:
+        extra_ctx += (
+            f"语法知识点：{gp.get('pattern', '')}（{gp.get('meaning', '')}）｜"
+            f"接续：{gp.get('formation', '')}｜提示：{gp.get('tip', '')}\n"
+        )
+    if sc:
+        extra_ctx += f"场景设定：{sc.get('title', '')}（{sc.get('persona', '')}）\n"
+
+    already_str = "；".join(prior_list) or "（刚开始）"
+    start_num = max(1, start_index + 1)
+
+    prompt = (
+        "你是一位拥有20年教龄的东京资深日语私教，学生已经练完本课前面几步，还想继续深入加练！\n"
+        f"模式：{curriculum_mode} | 课题：{lesson_title or grammar_focus or '日常日语进阶'} | 重点：{grammar_focus or '自然表达'} | 目标等级：{jlpt_target}\n"
+        f"{extra_ctx}"
+        f"【已经练过的句子（严禁重复或只改一个词敷衍）】：{already_str}\n\n"
+        f"请继续往后编写 3–4 步难度递增的进阶操练（步骤编号从第 {start_num} 步开始：第 {start_num}. 细微辨析/新语境 → 情景对答/角色升级 → 自由表达或近义区别），\n"
+        "若是旅行场景请在 questionJp 中写出店员/日本当地人自然的新一句回应（如追问细节、提供选项或善意提醒），targetJp 写刘浩东一家人的得体回答。\n"
+        "【书写规范】targetJp、questionJp 使用东京规范日语（常用汉字与假名混排）。\n"
+        "【口播规范】teacherPrompt 先用纯中文说清要求加句号，不夹日语词，如给示范再另起一句纯日语。\n"
+        "【语种锁定】全程仅限规范日语与简体中文，严禁输出韩语（한글 / 한국어）。\n\n"
+        '严格输出 JSON：{"steps": ['
+        '{"stage":"CONTROLLED_DRILL|TRANSFORM_DRILL|SUBSTITUTION_DRILL|FREE_OUTPUT",'
+        f'"stageLabel":"{start_num}. 进阶拓展",'
+        '"hideTarget":true,'
+        '"questionJp":"可选对方台词或提问(无则留空)",'
+        '"questionCn":"对方中文意思",'
+        '"targetJp":"规范日语句子",'
+        '"targetCn":"中文翻译",'
+        '"cueCn":"进阶指引",'
+        '"tipCn":"关键提示",'
+        '"teacherPrompt":"纯中文引导加句号。可选另起一句纯日语"}'
+        "]}"
+    )
+
+    data = _sanitize_no_hangul(
+        await _call_gemini_json(
+            parts=[{"text": prompt}],
+            models=list(AUTHOR_MODELS),
+            api_key=api_key,
+            temperature=0.65,
+            timeout_sec=20.0,
+        )
+    )
+    steps = _normalize_authored_steps(data.get("steps") or [], start_index=start_index)
+    return {"sessionId": session_id, "steps": steps}
+
+
 async def evaluate_sensei_turn(
     *,
     session_id: str,
     user_id: str,
     step_index: int,
+    total_steps: int = 0,
     stage: str,
     target_jp: str,
     target_cn: str = "",
@@ -1185,7 +1521,7 @@ async def evaluate_sensei_turn(
     )
 
     if lesson_id:
-        is_lesson_done = step_index >= 5 and decision in ("pass", "advance")
+        is_lesson_done = step_index >= max(0, (total_steps or 6) - 1) and decision in ("pass", "advance")
         upsert_lesson_progress(user_id=user_id, lesson_id=lesson_id, score=overall_score, completed=is_lesson_done)
 
     return response_payload

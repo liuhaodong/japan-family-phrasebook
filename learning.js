@@ -1234,6 +1234,7 @@
             <span class="imp-pill imp-${g.importance}" title="日常实用重要度">${starsStr} ${escapeHtml(g.importanceLabel)}</span>
           </div>
           <div class="phrase-status-btns">
+            <button type="button" class="icon-btn g-sensei-btn" data-sensei-grammar="${g.id}" title="让 AI 私教像真人老师一样精讲并带练这个语法点">🎓 AI精讲</button>
             <button type="button" class="icon-btn g-quiz-toggle-btn" data-gid="${g.id}">🧩 ${quizOpen ? "收起小测" : "随堂小测"}</button>
             <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-gstar="${g.id}">${isStar ? "⭐" : "☆"}</button>
             <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-gmaster="${g.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
@@ -1346,6 +1347,7 @@
             }
           </div>
           <div class="phrase-status-btns">
+            <button type="button" class="icon-btn g-sensei-btn" data-sensei-grammar="${vg.id}" title="让 AI 私教像真人老师一样精讲并带练这个语法点">🎓 AI精讲</button>
             <button type="button" class="icon-btn g-quiz-toggle-btn" data-gid="${vg.id}">🧩 ${quizOpen ? "收起小测" : "随堂小测"}</button>
             <button type="button" class="icon-btn ${isStar ? "starred-active" : ""}" data-gstar="${vg.id}">${isStar ? "⭐" : "☆"}</button>
             <button type="button" class="icon-btn ${isMast ? "mastered-active" : ""}" data-gmaster="${vg.id}">${isMast ? "✅ 已掌握" : "○ 掌握"}</button>
@@ -1917,6 +1919,15 @@
       b.onclick = function () { speakJapanese(this.dataset.jp, 0.78, this); };
     });
     bindQuickOralButtons(container);
+    container.querySelectorAll(".g-sensei-btn").forEach((b) => {
+      b.onclick = () => {
+        const gid = b.dataset.senseiGrammar;
+        switchAppMode("sensei");
+        if (window.JP_SENSEI && typeof window.JP_SENSEI.startGrammarLesson === "function") {
+          window.JP_SENSEI.startGrammarLesson(gid);
+        }
+      };
+    });
     container.querySelectorAll(".g-quiz-toggle-btn").forEach((b) => {
       b.onclick = () => {
         const gid = b.dataset.gid;

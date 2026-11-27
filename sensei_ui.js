@@ -36,8 +36,11 @@
     users: [],
     scenarios: [],
     syllabus: null,
-    curriculumMode: "sensei_syllabus", // sensei_syllabus | custom_topic | travel_scenario
+    curriculumMode: "sensei_syllabus", // sensei_syllabus | grammar_point | custom_topic | travel_scenario
     selectedLessonId: "",
+    selectedGrammarId: "",
+    grammarLevelFilter: "all",
+    grammarQuery: "",
     customTopic: "",
     selectedScenarioId: "1",
     lessonType: "guided_10min",
@@ -46,6 +49,7 @@
     // Guided Lesson state
     lessonSession: null,
     isGeneratingLesson: false,
+    isExtendingLesson: false,
     lessonStepIdx: 0,
     attempt: 1,
     drillChunkJp: "",
@@ -1020,6 +1024,33 @@
     }
   }
 
+  function getAllGrammarItems() {
+    const core = (typeof window !== "undefined" && window.JP_GRAMMAR_LIST) || [];
+    const video = (typeof window !== "undefined" && window.JP_VIDEO_GRAMMAR) || [];
+    const out = [];
+    for (const g of core) {
+      out.push({
+        id: g.id,
+        source: "core",
+        level: (g.level || "N5").toUpperCase(),
+        pattern: g.pattern || "",
+        reading: g.reading || "",
+        meaning: g.meaning || "",
+      });
+    }
+    for (const vg of video) {
+      out.push({
+        id: vg.id,
+        source: "video",
+        level: (vg.level || "N4").toUpperCase(),
+        pattern: vg.pattern || "",
+        reading: vg.reading || "",
+        meaning: vg.meaning || "",
+      });
+    }
+    return out;
+  }
+
   async function startGuidedLesson(opts = {}) {
     ensureLessonAudioCtx();
     clearAutoAdvanceTimer();
@@ -1029,34 +1060,48 @@
 
     const mode = opts.curriculumMode || state.curriculumMode;
     const lessonId = opts.lessonId !== undefined ? opts.lessonId : state.selectedLessonId;
+    const grammarId = opts.grammarId !== undefined ? opts.grammarId : state.selectedGrammarId;
     const customTopic = opts.customTopic !== undefined ? opts.customTopic : state.customTopic;
+    const scenarioId = opts.scenarioId !== undefined ? opts.scenarioId : state.selectedScenarioId;
+    const aiGenerate = opts.aiGenerate !== undefined ? Boolean(opts.aiGenerate) : true;
+    const resolvedGrammarId = grammarId || getAllGrammarItems()[0]?.id || "";
     if (mode === "custom_topic" && !(customTopic || "").trim()) {
       showToast("请先输入或点选一个想学的主题");
+      return;
+    }
+    if (mode === "grammar_point" && !resolvedGrammarId) {
+      showToast("未找到可选语法知识点");
       return;
     }
 
     state.curriculumMode = mode;
     if (lessonId) state.selectedLessonId = lessonId;
+    if (resolvedGrammarId) state.selectedGrammarId = resolvedGrammarId;
+    if (scenarioId) state.selectedScenarioId = scenarioId;
     state.isGeneratingLesson = true;
     renderView();
 
     showToast(
       mode === "travel_scenario"
-        ? "正在编排情景私教课..."
-        : "👩‍🏫 老师正在结合你的记忆本与弱点现场编写今日原创教材..."
+        ? "正在为你们一家现编家庭旅行对话教材..."
+        : mode === "grammar_point"
+        ? "正在围绕该语法点编写老师精讲与递进操练..."
+        : "老师正在结合你的记忆本与弱点现场编写原创教材..."
     );
     try {
       const data = await apiJson("/api/sensei/lesson/start", {
         method: "POST",
         body: JSON.stringify({
           user_id: state.userId,
-          scenario_id: state.selectedScenarioId,
+          scenario_id: scenarioId || state.selectedScenarioId,
           lesson_type: state.lessonType,
           jlpt_target: state.jlptTarget,
           voice: state.voice,
           curriculum_mode: mode,
           lesson_id: lessonId || null,
+          grammar_id: resolvedGrammarId || null,
           custom_topic: (customTopic || "").trim() || null,
+          ai_generate: aiGenerate,
           defer_opening_tts: true,
           coach_model: state.coachModel || null,
           include_review: state.includeReview,
@@ -1084,6 +1129,96 @@
       state.isGeneratingLesson = false;
       renderView();
       showToast(`❌ 开课失败：${err.message}`);
+    }
+  }
+
+  async function startGrammarLesson(grammarId) {
+    if (!grammarId) return;
+    if (!state.healthChecked) {
+      await initBackend(false);
+    }
+    state.subTab = "lesson";
+    state.drawerOpen = false;
+    state.curriculumMode = "grammar_point";
+    state.selectedGrammarId = grammarId;
+    if (!state.backendOnline) {
+      renderView();
+      return;
+    }
+    await startGuidedLesson({ curriculumMode: "grammar_point", grammarId });
+  }
+
+  async function regenerateCurrentLesson() {
+    const meta = state.lessonSession?.lessonMeta || {};
+    const mode = meta.curriculumMode || state.curriculumMode;
+    await startGuidedLesson({
+      curriculumMode: mode,
+      lessonId: meta.lessonId || state.selectedLessonId,
+      grammarId: meta.grammarId || state.selectedGrammarId,
+      customTopic: mode === "custom_topic" ? meta.grammarFocus || state.customTopic : undefined,
+      scenarioId: state.lessonSession?.scenario?.id || state.selectedScenarioId,
+      aiGenerate: true,
+    });
+  }
+
+  async function extendCurrentLesson() {
+    if (state.isExtendingLesson || !state.lessonSession) return;
+    ensureLessonAudioCtx();
+    clearAutoAdvanceTimer();
+    const seq = ++turnChoreographySeq;
+    if (state.isRecordingTurn) cancelLessonRecording();
+    stopSimpleAudio();
+
+    const meta = state.lessonSession.lessonMeta || {};
+    const steps = state.lessonSession.steps || [];
+    state.isExtendingLesson = true;
+    renderView();
+    showToast("老师正在根据本课内容继续加编进阶练习...");
+    try {
+      const data = await apiJson("/api/sensei/lesson/extend", {
+        method: "POST",
+        body: JSON.stringify({
+          session_id: state.lessonSession.sessionId,
+          user_id: state.userId,
+          curriculum_mode: meta.curriculumMode || state.curriculumMode,
+          lesson_title: meta.title || state.lessonSession.scenario?.title || "",
+          grammar_focus: meta.grammarFocus || "",
+          jlpt_target: meta.level || state.jlptTarget,
+          voice: state.voice,
+          existing_targets: steps.map((s) => s.targetJp).filter(Boolean),
+          start_index: steps.length,
+          scenario_id: state.lessonSession.scenario?.id || state.selectedScenarioId,
+          grammar_id: meta.grammarId || state.selectedGrammarId || null,
+          coach_model: state.coachModel || null,
+        }),
+      });
+      state.isExtendingLesson = false;
+      if (seq !== turnChoreographySeq) return;
+      const newSteps = data.steps || [];
+      if (!newSteps.length) {
+        renderView();
+        showToast("暂未生成新的加练步骤，请重试");
+        return;
+      }
+      const firstNewIdx = steps.length;
+      state.lessonSession.steps = [...steps, ...newSteps];
+      state.lessonStepIdx = firstNewIdx;
+      state.attempt = 1;
+      state.drillChunkJp = "";
+      state.drillChunkTokens = [];
+      state.peekHint = false;
+      state.lastTurnResult = null;
+      const step = state.lessonSession.steps[firstNewIdx];
+      state.mirrorPhase = step && step.teacherPrompt ? "teacher_explain" : "";
+      renderView();
+      if (step && (step.teacherPromptTts || step.teacherPrompt)) {
+        await playTextTts(step.teacherPromptTts || step.teacherPrompt);
+      }
+      await maybeAutoOpenMic(seq);
+    } catch (err) {
+      state.isExtendingLesson = false;
+      renderView();
+      showToast(`❌ 继续加练失败：${err.message}`);
     }
   }
 
@@ -1630,6 +1765,7 @@
       fd.append("session_id", state.lessonSession.sessionId);
       fd.append("user_id", state.userId);
       fd.append("step_index", String(step.stepIndex));
+      fd.append("total_steps", String((state.lessonSession?.steps || []).length));
       fd.append("stage", step.stage);
       fd.append("target_jp", step.targetJp);
       fd.append("target_cn", step.targetCn || "");
@@ -2387,13 +2523,13 @@
           <div class="focus-cue">${escapeHtml(step.cueCn)}</div>
 
           ${
-            isFreeOutput && step.questionJp
+            step.questionJp
               ? `<div class="sensei-free-q">
-                  <div class="sensei-free-q-lbl">老师向你提问（请用自己的话直接回答）</div>
+                  <div class="sensei-free-q-lbl">${isFreeOutput ? "老师向你提问（请用自己的话直接回答）" : "对方说（请听清并自然回应）"}</div>
                   <div class="sensei-jp-line">${renderTokensHtml(step.questionTokens, step.questionJp)}</div>
                   ${step.questionCn ? `<div class="sensei-cn-line">${escapeHtml(step.questionCn)}</div>` : ""}
                   <div class="sensei-target-actions">
-                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.questionJp)}">${ico("speaker")} 重听提问</button>
+                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(step.questionJp)}">${ico("speaker")} ${isFreeOutput ? "重听提问" : "重听对方说"}</button>
                   </div>
                 </div>`
               : ""
@@ -2470,6 +2606,15 @@
           }
         </div>
 
+        <div class="focus-footer-links">
+          <button type="button" class="sensei-link-btn" id="sensei-regen-lesson-btn" ${state.isGeneratingLesson || state.isExtendingLesson ? "disabled" : ""}>
+            ${state.isGeneratingLesson ? "正在重新生成..." : "🔄 重新 AI 生成教材"}
+          </button>
+          <button type="button" class="sensei-link-btn" id="sensei-extend-lesson-btn" ${state.isExtendingLesson || state.isGeneratingLesson ? "disabled" : ""}>
+            ${state.isExtendingLesson ? "正在加编练习..." : "➕ 继续深入加练"}
+          </button>
+        </div>
+
         ${res ? renderTurnDiagnosisCard(res) : ""}
       </div>
     `;
@@ -2536,8 +2681,10 @@
         }
 
         ${
-          (passed || advanced) && state.lessonSession && state.lessonStepIdx < state.lessonSession.steps.length - 1
-            ? `<div style="margin-top:0.75rem;"><button type="button" class="sensei-btn primary" id="sensei-pass-next-btn">进入下一步 ${ico("chevronRight")}</button></div>`
+          (passed || advanced) && state.lessonSession
+            ? state.lessonStepIdx < state.lessonSession.steps.length - 1
+              ? `<div style="margin-top:0.75rem;"><button type="button" class="sensei-btn primary" id="sensei-pass-next-btn">进入下一步 ${ico("chevronRight")}</button></div>`
+              : `<div style="margin-top:0.75rem;"><button type="button" class="sensei-btn primary" id="sensei-pass-extend-btn" ${state.isExtendingLesson ? "disabled" : ""}>${state.isExtendingLesson ? "正在加编练习..." : "➕ 继续深入加练"}</button></div>`
             : ""
         }
       </div>
@@ -2850,6 +2997,46 @@
           ${state.isGeneratingLesson ? "正在现场备课..." : "开始选定课程"}
         </button>
       `;
+    } else if (state.curriculumMode === "grammar_point") {
+      const allGrammar = getAllGrammarItems();
+      const lvlFilter = (state.grammarLevelFilter || "all").toUpperCase();
+      const qFilter = (state.grammarQuery || "").trim().toLowerCase();
+      const filteredGrammar = allGrammar.filter((g) => {
+        if (lvlFilter !== "ALL" && g.level !== lvlFilter) return false;
+        if (qFilter) {
+          const hay = `${g.pattern} ${g.reading} ${g.meaning}`.toLowerCase();
+          if (!hay.includes(qFilter)) return false;
+        }
+        return true;
+      });
+      const activeGid = filteredGrammar.some((g) => g.id === state.selectedGrammarId)
+        ? state.selectedGrammarId
+        : filteredGrammar[0]?.id || "";
+      const grammarOptions = filteredGrammar.length
+        ? filteredGrammar
+            .map(
+              (g) =>
+                `<option value="${escapeHtml(g.id)}" ${g.id === activeGid ? "selected" : ""}>[${escapeHtml(g.level)}] ${escapeHtml(g.pattern)} — ${escapeHtml(g.meaning)}</option>`
+            )
+            .join("")
+        : `<option value="">未匹配到语法条目</option>`;
+      courseBody = `
+        <div class="drawer-grammar-toolbar">
+          <div class="drawer-grammar-pills">
+            ${["all", "N5", "N4", "N3"]
+              .map(
+                (lvl) =>
+                  `<button type="button" class="sensei-mini-btn ${(state.grammarLevelFilter || "all") === lvl ? "active" : ""}" data-glevel="${lvl}">${lvl === "all" ? `全部 (${allGrammar.length})` : lvl}</button>`
+              )
+              .join("")}
+          </div>
+          <input type="text" id="sensei-grammar-search" class="sensei-input" style="width:100%;" placeholder="搜语法关键词（如：ている、てもいい、はず、わけ）..." value="${escapeHtml(state.grammarQuery || "")}" />
+        </div>
+        <select id="sensei-grammar-select" class="sensei-select">${grammarOptions}</select>
+        <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson || !filteredGrammar.length ? "disabled" : ""}>
+          ${state.isGeneratingLesson ? "正在编写语法私教课..." : "开始 AI 语法精讲"}
+        </button>
+      `;
     } else if (state.curriculumMode === "custom_topic") {
       const chips = [
         "彻底搞懂 あげる / もらう / くれる 的视角",
@@ -2873,12 +3060,12 @@
         <select id="sensei-scenario-select" class="sensei-select">${scenarioOptions}</select>
         <label class="sensei-lbl" style="margin-top:0.6rem;">训练模式</label>
         <select id="sensei-lesson-type-select" class="sensei-select">
-          <option value="guided_10min" ${state.lessonType === "guided_10min" ? "selected" : ""}>完整 10 分钟私教课</option>
+          <option value="guided_10min" ${state.lessonType === "guided_10min" ? "selected" : ""}>完整 AI 场景对话课（现编教材）</option>
           <option value="pronunciation_drill" ${state.lessonType === "pronunciation_drill" ? "selected" : ""}>专注声学镜子发音过关</option>
           <option value="substitution_drill" ${state.lessonType === "substitution_drill" ? "selected" : ""}>动词槽位口头替换操练</option>
         </select>
         <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson ? "disabled" : ""}>
-          开始场景私教课
+          ${state.isGeneratingLesson ? "正在编排家庭场景对话..." : "AI 生成家庭场景对话课"}
         </button>
       `;
     }
@@ -2894,9 +3081,10 @@
             <div class="ui-drawer-section">
               <div class="ui-drawer-sec-title">切换课程</div>
               <div class="ui-segmented" style="width:100%;margin-bottom:0.75rem;">
-                <button type="button" class="ui-seg-btn ${state.curriculumMode === "sensei_syllabus" ? "active" : ""}" data-curmode="sensei_syllabus">体系 16 课</button>
-                <button type="button" class="ui-seg-btn ${state.curriculumMode === "custom_topic" ? "active" : ""}" data-curmode="custom_topic">自由命题</button>
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "sensei_syllabus" ? "active" : ""}" data-curmode="sensei_syllabus">体系大纲</button>
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "grammar_point" ? "active" : ""}" data-curmode="grammar_point">语法库</button>
                 <button type="button" class="ui-seg-btn ${state.curriculumMode === "travel_scenario" ? "active" : ""}" data-curmode="travel_scenario">旅行场景</button>
+                <button type="button" class="ui-seg-btn ${state.curriculumMode === "custom_topic" ? "active" : ""}" data-curmode="custom_topic">自由命题</button>
               </div>
               ${courseBody}
             </div>
@@ -3264,6 +3452,41 @@
     });
     const lessonSel = root.querySelector("#sensei-lesson-select");
     if (lessonSel) lessonSel.onchange = () => { state.selectedLessonId = lessonSel.value; };
+    const grammarSel = root.querySelector("#sensei-grammar-select");
+    if (grammarSel) grammarSel.onchange = () => { state.selectedGrammarId = grammarSel.value; };
+    root.querySelectorAll("[data-glevel]").forEach((btn) => {
+      btn.onclick = () => {
+        state.grammarLevelFilter = btn.dataset.glevel || "all";
+        renderView();
+      };
+    });
+    const grammarSearch = root.querySelector("#sensei-grammar-search");
+    if (grammarSearch) {
+      grammarSearch.oninput = () => {
+        state.grammarQuery = grammarSearch.value;
+        const gSel = root.querySelector("#sensei-grammar-select");
+        if (!gSel) return;
+        const allG = getAllGrammarItems();
+        const lvlFilter = (state.grammarLevelFilter || "all").toUpperCase();
+        const q = (state.grammarQuery || "").trim().toLowerCase();
+        const matches = allG.filter((g) => {
+          if (lvlFilter !== "ALL" && g.level !== lvlFilter) return false;
+          if (q) return `${g.pattern} ${g.reading} ${g.meaning}`.toLowerCase().includes(q);
+          return true;
+        });
+        gSel.innerHTML = matches.length
+          ? matches
+              .map(
+                (g) =>
+                  `<option value="${escapeHtml(g.id)}" ${g.id === state.selectedGrammarId ? "selected" : ""}>[${escapeHtml(g.level)}] ${escapeHtml(g.pattern)} — ${escapeHtml(g.meaning)}</option>`
+              )
+              .join("")
+          : `<option value="">未匹配到语法条目</option>`;
+        state.selectedGrammarId = gSel.value;
+        const startBtn = root.querySelector("#sensei-start-lesson-btn");
+        if (startBtn) startBtn.disabled = state.isGeneratingLesson || !matches.length;
+      };
+    }
     const customInput = root.querySelector("#sensei-custom-topic-input");
     if (customInput) customInput.oninput = () => { state.customTopic = customInput.value; };
     root.querySelectorAll("[data-quick-topic]").forEach((btn) => {
@@ -3305,6 +3528,10 @@
     const startLessonBtn = root.querySelector("#sensei-start-lesson-btn");
     if (startLessonBtn) {
       startLessonBtn.onclick = () => {
+        if (state.curriculumMode === "grammar_point") {
+          const gSel = root.querySelector("#sensei-grammar-select");
+          if (gSel && gSel.value) state.selectedGrammarId = gSel.value;
+        }
         state.drawerOpen = false;
         startGuidedLesson();
       };
@@ -3328,6 +3555,12 @@
     if (nextBtn) nextBtn.onclick = () => advanceLessonStep(1);
     const passNextBtn = root.querySelector("#sensei-pass-next-btn");
     if (passNextBtn) passNextBtn.onclick = () => advanceLessonStep(1);
+    const regenBtn = root.querySelector("#sensei-regen-lesson-btn");
+    if (regenBtn) regenBtn.onclick = regenerateCurrentLesson;
+    const extendBtn = root.querySelector("#sensei-extend-lesson-btn");
+    if (extendBtn) extendBtn.onclick = extendCurrentLesson;
+    const passExtendBtn = root.querySelector("#sensei-pass-extend-btn");
+    if (passExtendBtn) passExtendBtn.onclick = extendCurrentLesson;
 
     root.querySelectorAll("[data-jump-step]").forEach((btn) => {
       btn.onclick = () => {
@@ -3470,6 +3703,7 @@
   window.JP_SENSEI = {
     render,
     renderNotebook,
+    startGrammarLesson,
     stopAll,
     initBackend,
   };

@@ -1216,3 +1216,117 @@ async def test_silent_audio_blocked_by_acoustic_gate_and_model_no_speech_guard(i
     assert r_empty["noSpeech"] is True
     assert r_empty["decision"] == "no_speech"
     assert r_empty["overallScore"] == 0
+
+
+@pytest.mark.asyncio
+async def test_grammar_point_travel_ai_authoring_and_extend_lesson(isolated_env):
+    from server.services import curriculum_loader
+
+    # 1. Unified grammar catalog merges core N5-N3 + video N4/N3 & powers GET /api/grammar
+    all_grammar = curriculum_loader.list_all_grammar()
+    ids = {g["id"] for g in all_grammar}
+    assert "g-n5-01" in ids and "vn4-01" in ids
+
+    client = TestClient(app)
+    res_n4 = client.get("/api/grammar", params={"level": "N4"})
+    assert res_n4.status_code == 200
+    n4_items = res_n4.json()["grammar"]
+    assert n4_items and all(item["level"] == "N4" for item in n4_items)
+
+    # 2. Grammar library AI lesson authoring supports flexible >6 step length & injects formation context
+    captured_prompts = []
+    grammar_8_steps = {
+        "blackboard": {
+            "titleCn": "は vs が 核心精讲",
+            "grammarPoint": "〜は / 〜が",
+            "formulaJp": "名詞＋は / 名詞＋が",
+            "cnPitfallCn": "好恶对象「好き」前面一定要用 が！",
+            "contrastBadJp": "私は寿司を好きです。",
+            "contrastGoodJp": "私は寿司が好きです。",
+            "contrastNoteCn": "好き前面不用 を",
+        },
+        "steps": [
+            {"stage": "WARMUP", "stageLabel": f"{i + 1}. 步", "hideTarget": i >= 4, "targetJp": f"日本語の文その{i + 1}です。", "targetCn": f"第{i + 1}句", "cueCn": "提示", "tipCn": "贴士", "teacherPrompt": "跟我读一句。"}
+            for i in range(8)
+        ],
+    }
+
+    async def _mock_author(parts, **kwargs):
+        captured_prompts.append(parts[0]["text"])
+        return grammar_8_steps
+
+    with patch("server.services.sensei_engine._call_gemini_json", side_effect=_mock_author):
+        res_gp = await sensei_engine.create_guided_lesson(
+            user_id="haodong",
+            curriculum_mode="grammar_point",
+            grammar_id="g-n5-01",
+            api_key="test-key",
+        )
+    assert res_gp["lessonMeta"]["curriculumMode"] == "grammar_point"
+    assert res_gp["lessonMeta"]["grammarId"] == "g-n5-01"
+    assert len(res_gp["steps"]) == 8
+    assert "名词 ＋ は" in captured_prompts[-1]
+
+    # 3. Family travel scenario AI authoring creates fresh multi-turn dialogue with questionTokens + blackboard
+    travel_8_steps = {
+        "blackboard": {
+            "titleCn": "亲子餐厅对话策略",
+            "grammarPoint": "〜ていただけますか",
+            "formulaJp": "子ども用の椅子をお借りできますか。",
+            "cnPitfallCn": "直接要儿童椅用お借りできますか最自然。",
+            "contrastBadJp": "子どもの椅子をください。",
+            "contrastGoodJp": "子ども用の椅子をお借りできますか。",
+            "contrastNoteCn": "用借比给更委婉",
+        },
+        "steps": [
+            {
+                "stage": "CONTROLLED_DRILL" if i < 5 else "FREE_OUTPUT",
+                "stageLabel": f"{i + 1}. 对话轮",
+                "hideTarget": i >= 4,
+                "questionJp": "いらっしゃいませ！何名様でしょうか。",
+                "questionCn": "欢迎光临！请问几位？",
+                "targetJp": f"大人二人と子ども二人です。{i + 1}。",
+                "targetCn": "两大两小。",
+                "cueCn": "自然回应",
+                "tipCn": "清晰报人数",
+                "teacherPrompt": "听店员问话后自然回答。大人二人と子ども二人です。",
+            }
+            for i in range(8)
+        ],
+    }
+
+    with patch("server.services.sensei_engine._call_gemini_json", AsyncMock(return_value=travel_8_steps)):
+        res_tr = await sensei_engine.create_guided_lesson(
+            user_id="haodong",
+            curriculum_mode="travel_scenario",
+            scenario_id="1",
+            api_key="test-key",
+        )
+    assert res_tr["lessonMeta"]["curriculumMode"] == "travel_scenario"
+    assert res_tr["lessonMeta"]["aiGenerated"] is True
+    assert res_tr["lessonMeta"]["blackboard"]["grammarPoint"] == "〜ていただけますか"
+    assert len(res_tr["steps"]) == 8
+    assert len(res_tr["steps"][0]["questionTokens"]) >= 2
+
+    # 4. extend_guided_lesson appends contiguous stepIndex [8, 9, 10]
+    ext_payload = {
+        "steps": [
+            {"stage": "TRANSFORM_DRILL", "stageLabel": "9. 加练变形", "hideTarget": True, "targetJp": "水もお願いできますか。", "targetCn": "能顺便来点水吗？", "cueCn": "拓展点单", "tipCn": "礼貌请求", "teacherPrompt": "试试追加请求。"},
+            {"stage": "SUBSTITUTION_DRILL", "stageLabel": "10. 情景加练", "hideTarget": True, "targetJp": "子ども用のスプーンをいただけますか。", "targetCn": "可以给我儿童勺子吗？", "cueCn": "向店员要勺子", "tipCn": "いただけますか", "teacherPrompt": "直接开口说说看。"},
+            {"stage": "FREE_OUTPUT", "stageLabel": "11. 自由收尾", "hideTarget": True, "questionJp": "お会計はご一緒でよろしいですか。", "questionCn": "一起结账可以吗？", "targetJp": "はい、一緒にお願いします。", "targetCn": "好的，一起结。", "cueCn": "自然回答店员", "tipCn": "一緒にお願いします", "teacherPrompt": "回复店员的结账确认。はい、一緒にお願いします。"},
+        ]
+    }
+    with patch("server.services.sensei_engine._call_gemini_json", AsyncMock(return_value=ext_payload)):
+        ext_res = await sensei_engine.extend_guided_lesson(
+            session_id=res_tr["sessionId"],
+            user_id="haodong",
+            curriculum_mode="travel_scenario",
+            lesson_title="初见破冰",
+            grammar_focus="〜ていただけますか",
+            existing_targets=[s["targetJp"] for s in res_tr["steps"]],
+            start_index=8,
+            scenario_id="1",
+            api_key="test-key",
+        )
+    assert [s["stepIndex"] for s in ext_res["steps"]] == [8, 9, 10]
+    assert all(len(s["tokens"]) >= 2 and s["teacherPromptTts"] for s in ext_res["steps"])
