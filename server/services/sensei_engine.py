@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import difflib
 import json
 import random
 import re
@@ -29,13 +30,20 @@ from server.db import (
     add_turn,
     create_session,
     finish_session,
+    get_recent_step_turns,
+    get_session,
     list_lesson_progress,
     list_session_turns,
     list_weaknesses,
+    record_weakness_improvement,
     upsert_lesson_progress,
     upsert_weakness,
 )
-from server.services.audio_utils import analyze_audio_speech_activity, normalize_gemini_audio
+from server.services.audio_utils import (
+    analyze_audio_speech_activity,
+    format_acoustic_summary_for_prompt,
+    normalize_gemini_audio,
+)
 from server.services.curriculum_loader import get_grammar, get_grammar_point, get_scenario, get_verbs
 from server.services.jp_tokenizer import (
     has_kana,
@@ -174,6 +182,71 @@ def _extract_json_text(raw: str) -> Dict[str, Any]:
         return json.loads(repaired, strict=False)
 
 
+_PUNCT_STRIP_RE = re.compile(r"[\s。、！？!?.,・「」『』（）()]+")
+
+
+def compute_token_diff(
+    heard_tokens: List[Dict[str, Any]],
+    target_tokens: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Compute token-level red-pen alignment between student's heard words and target words."""
+    def _prep(tokens: List[Dict[str, Any]]) -> tuple[List[Dict[str, Any]], List[str], List[int]]:
+        copied: List[Dict[str, Any]] = []
+        keys: List[str] = []
+        idx_map: List[int] = []
+        for idx, tok in enumerate(tokens or []):
+            t = dict(tok)
+            surf = str(t.get("surface") or "")
+            norm = _PUNCT_STRIP_RE.sub("", surf).strip()
+            if not norm:
+                t["status"] = "punct"
+                copied.append(t)
+                continue
+            key = (t.get("reading") or norm).strip()
+            t["status"] = "match"
+            copied.append(t)
+            keys.append(key)
+            idx_map.append(idx)
+        return copied, keys, idx_map
+
+    h_out, h_keys, h_map = _prep(heard_tokens)
+    t_out, t_keys, t_map = _prep(target_tokens)
+
+    if not h_keys and not t_keys:
+        return {"heardDiff": h_out, "targetDiff": t_out, "matchRatio": 1.0}
+    if not h_keys or not t_keys:
+        for i in h_map:
+            h_out[i]["status"] = "extra"
+        for j in t_map:
+            t_out[j]["status"] = "missing"
+        return {"heardDiff": h_out, "targetDiff": t_out, "matchRatio": 0.0}
+
+    matcher = difflib.SequenceMatcher(None, h_keys, t_keys)
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            for i in range(i1, i2):
+                h_out[h_map[i]]["status"] = "match"
+            for j in range(j1, j2):
+                t_out[t_map[j]]["status"] = "match"
+        elif tag == "replace":
+            for i in range(i1, i2):
+                h_out[h_map[i]]["status"] = "sub"
+            for j in range(j1, j2):
+                t_out[t_map[j]]["status"] = "sub"
+        elif tag == "delete":
+            for i in range(i1, i2):
+                h_out[h_map[i]]["status"] = "extra"
+        elif tag == "insert":
+            for j in range(j1, j2):
+                t_out[t_map[j]]["status"] = "missing"
+
+    return {
+        "heardDiff": h_out,
+        "targetDiff": t_out,
+        "matchRatio": round(matcher.ratio(), 2),
+    }
+
+
 def compute_repeat_decision(
     overall_score: int,
     issues: List[Dict[str, Any]],
@@ -181,10 +254,13 @@ def compute_repeat_decision(
     drill_chunk_jp: str,
     target_jp: str,
     pass_threshold: int = 88,
+    was_chunk_drill: bool = False,
 ) -> str:
-    """Deterministic Repeat-Until-Good state transition rule."""
+    """Deterministic Repeat-Until-Good + Chunk-to-Full Consolidation transition rule."""
     has_critical = any((it.get("severity") == "critical") for it in (issues or []))
     if overall_score >= pass_threshold and not has_critical:
+        if was_chunk_drill and attempt < 3:
+            return "consolidate_full"
         return "pass"
     if attempt >= 3:
         return "advance"
@@ -294,11 +370,12 @@ async def _call_gemini_json(
     per_model_timeouts: Optional[Dict[str, float]] = None,
     on_script_ready: Optional[Callable[[str], None]] = None,
     hedge_after_sec: Optional[float] = None,
+    thinking_level: str = "LOW",
 ) -> Dict[str, Any]:
     gen_cfg: Dict[str, Any] = {
         "temperature": temperature,
         "responseMimeType": "application/json",
-        "thinkingConfig": {"thinkingLevel": "LOW"},
+        "thinkingConfig": {"thinkingLevel": thinking_level},
     }
     if max_output_tokens:
         gen_cfg["maxOutputTokens"] = max_output_tokens
@@ -1403,9 +1480,13 @@ async def evaluate_sensei_turn(
     lesson_id: Optional[str] = None,
     grammar_focus: str = "",
     question_jp: str = "",
+    jlpt_target: str = "",
+    previous_heard_jp: str = "",
+    previous_issues_summary: str = "",
+    previous_score: Optional[int] = None,
     api_key: str,
 ) -> Dict[str, Any]:
-    """Evaluate student audio with Gemini 4 Hydrogen/selected coach + Repeat-Until-Good state machine."""
+    """Evaluate student audio with Veteran Tokyo Sensei rubric, attempt memory, acoustic prosody & token diff."""
     t0 = time.perf_counter()
     norm_bytes, audio_mime, audio_ext = normalize_gemini_audio(
         audio_bytes, filename=audio_filename, content_type=content_type
@@ -1421,6 +1502,16 @@ async def evaluate_sensei_turn(
     audio_stats = analyze_audio_speech_activity(
         norm_bytes, filename=audio_filename, content_type=audio_mime
     )
+
+    resolved_jlpt = (jlpt_target or "").strip().upper()
+    if resolved_jlpt not in ("N5", "N4", "N3", "N2", "N1"):
+        lesson_obj = get_syllabus_lesson(lesson_id) if lesson_id else None
+        sess_obj = get_session(session_id) if not lesson_obj else None
+        resolved_jlpt = (
+            ((lesson_obj or {}).get("level") or ((sess_obj or {}).get("lesson_plan") or {}).get("jlptTarget") or "N4")
+            .strip()
+            .upper()
+        )
 
     async def _build_no_speech_payload(reason_cn: str, spoken_cn: str, model_used: str) -> Dict[str, Any]:
         teacher_url = ""
@@ -1440,10 +1531,13 @@ async def evaluate_sensei_turn(
             "attempt": attempt,
             "decision": "no_speech",
             "noSpeech": True,
+            "consolidatingFull": False,
+            "jlptLevel": resolved_jlpt,
             "overallScore": 0,
             "pitchScore": 0,
             "grammarScore": 0,
             "rhythmScore": 0,
+            "politenessScore": 0,
             "heardJp": "",
             "betterJp": clean_target,
             "betterTokens": target_tokens,
@@ -1451,10 +1545,21 @@ async def evaluate_sensei_turn(
             "drillChunkJp": "",
             "drillChunkTokens": [],
             "drillChunkReading": "",
+            "pitchNotation": "",
             "pitchNote": reason_cn,
             "grammarNote": "",
             "praiseCn": "",
+            "progressNoteCn": "",
+            "actionTipCn": "",
+            "pragmaticNoteCn": "",
+            "nativeUpgradeJp": "",
+            "nativeUpgradeTokens": [],
+            "nativeUpgradeNoteCn": "",
+            "resolvedWeaknesses": [],
             "issues": [],
+            "heardDiff": [],
+            "targetDiff": [],
+            "matchRatio": 0.0,
             "teacherSpokenScript": spoken_cn,
             "teacherSpokenTts": spoken_cn,
             "teacherAudioUrl": teacher_url,
@@ -1474,37 +1579,109 @@ async def evaluate_sensei_turn(
             "acoustic-gate",
         )
 
+    prev_heard = (previous_heard_jp or "").strip()
+    prev_score = previous_score
+    prev_issues = (previous_issues_summary or "").strip()
+    if attempt >= 2 and not prev_heard:
+        for rt in reversed(get_recent_step_turns(session_id, step_index, limit=2)):
+            r_heard = (rt.get("transcript_jp") or (rt.get("correction") or {}).get("heardJp") or "").strip()
+            if r_heard:
+                prev_heard = r_heard
+                corr = rt.get("correction") or {}
+                if prev_score is None:
+                    prev_score = corr.get("overallScore")
+                if not prev_issues:
+                    prev_issues = "；".join(
+                        f"{it.get('patternKey') or it.get('type', '')}:{it.get('detailCn', '')}"
+                        for it in (corr.get("issues") or [])[:2]
+                        if it.get("detailCn") or it.get("patternKey")
+                    )
+                break
+
+    active_weaknesses = list_weaknesses(user_id, limit=3)
+    weakness_lines = [
+        f"{w['pattern_key']}({w.get('note_cn', '')[:24]})"
+        for w in active_weaknesses
+        if w.get("pattern_key")
+    ]
+    acoustic_hint = format_acoustic_summary_for_prompt(audio_stats, len(jp_to_kana(active_target)))
+
+    if resolved_jlpt == "N5":
+        level_rule = "【当前级别 N5 地基校准】重点把关音拍饱满度（长音拖满2拍、促音っ闭嘴停1拍）、清浊音区别、以及です/ます基本结尾清晰度；温柔明确，打好开口底子。"
+    elif resolved_jlpt == "N3":
+        level_rule = "【当前级别 N3 实战进阶】请用东京职场/日常自然度标尺评判！除发音声调外，重点审视助词精准度、句间自然衔接、缓冲垫词（〜んですが、〜ていただけませんか等）与语气委婉得体度；即便过关，也请尽量在 nativeUpgradeJp 给出一句更像东京当地人的地道升级表达。"
+    else:
+        level_rule = "【当前级别 N4 进阶校准】重点把关て形/ない形/可能态等活用变形、核心助词（は/が/に/で/を）搭配、长短促音及整句语流连贯性；若能更自然请顺手给出 nativeUpgradeJp。"
+
     if stage == "FREE_OUTPUT":
         stage_rule = (
-            f"1. 这是【自由问答】环节。老师刚才问：{question_jp or cue_cn or target_cn}。本课焦点：{grammar_focus or '自然得体'}。"
-            f"学生可以用自己的话回答，不需要跟参考答案一模一样！只要答对问题语义、语法基本正确、尽量用上本课语法且发音清晰，就应判>=85分通过；并在 betterJp 给出更地道的东京润色。\n"
+            f"1. 这是【自由问答】环节。老师刚才问：{question_jp or cue_cn or target_cn}。本课焦点：{grammar_focus or '自然得体'}。\n"
+            "权重：语义切题与目标语法运用 35% + 助词/活用准确 25% + 语境礼貌得体度 20% + 发音音调 20%。\n"
+            "学生可以用自己的话回答，不必逐字照搬参考答案！只要语义切题、语法正确、语气得体且发音清晰，总分应>=85过关，并在 betterJp 给出更地道的润色。\n"
         )
         pass_threshold = 85
     elif stage in ("TRANSFORM_DRILL", "SUBSTITUTION_DRILL"):
         stage_rule = (
-            f"1. 这是【口头变形/情景造句】环节。语法焦点：{grammar_focus or cue_cn}。"
-            "只要学生日语语法正确、达成目标表达（即使换了等效礼貌词或同义词汇）且发音清晰即判>=88分通过。\n"
+            f"1. 这是【口头变形/情景造句】环节。语法焦点：{grammar_focus or cue_cn}。\n"
+            "权重：目标语法与语义达成 35% + 助词/活用 25% + 得体度 20% + 发音拍感 20%。\n"
+            "只要日语活用正确、达成目标表达（即使换了等效礼貌词或同义词汇）且发音清晰即可>=88过关。\n"
         )
         pass_threshold = 88
     else:
         stage_rule = (
-            "1. 真实听出促音っ、长音ー、清浊音、高低音调(アクセント)、ら/つ/ん与句尾ます/です；出现明显吞音/平读/助词错时总分<85；\n"
+            "1. 这是【语音镜像跟读/精讲】环节。\n"
+            "权重：音素清晰度(送气/ら行/清浊音) 25% + 日语拍感(促音っ/长音ー/拨音ん) 25% + 高低音调(アクセント) 25% + 语流连贯 15% + 完整度 10%。\n"
+            "出现明显吞音、促音没停顿、长音念短、中文式平板腔或助词读错时总分必须<85。\n"
         )
         pass_threshold = 88
 
+    was_chunk_drill = bool(drill_chunk_jp and len(strip_furigana_parens(drill_chunk_jp)) < len(clean_target))
+    prev_block = ""
+    if prev_heard:
+        prev_block = (
+            f"\n【本句上一次尝试对比（第{max(1, attempt - 1)}次）】学生上次读成：「{prev_heard}」（{prev_score or '-'}分；上次问题：{prev_issues or '需顺畅'}）。"
+            "【纵向比较硬规则】：务必听出这次与上次的差异！在 progressNoteCn 里先具体肯定他哪一点改好了（若没改善则直说），再遵守「每次最多抓 1–2 个最优先纠错点」原则，切忌同时丢一堆错。\n"
+        )
+    weakness_block = ""
+    if weakness_lines:
+        weakness_block = (
+            f"\n【学生历史高频老毛病档案】：{'；'.join(weakness_lines)}。"
+            "若本轮再犯请温柔点破；若学生在本句需要用到该知识点且这次做对了，请在 resolvedWeaknesses 中原样输出对应标签名以示攻克。\n"
+        )
+    acoustic_block = f"\n【客观声学物理参考】：{acoustic_hint}\n" if acoustic_hint else ""
+    consolidation_hint = (
+        "\n【注意】学生本轮刚在单练拆词！若读准请先表扬该词已读稳，并邀请带着感觉读完整句。\n"
+        if was_chunk_drill
+        else ""
+    )
+
     prompt = (
-        "你是严格但温暖的东京母语级日语私教（中文教学），听学生录音做精准音调与语法纠音。\n"
-        f"阶段:{stage} | 第{attempt}次 | 参考目标:{clean_target} | 本轮片段:{active_target} | 语义:{cue_cn or target_cn}\n"
-        "规则：\n"
-        "0. 【反幻觉铁律】：必须先真实倾听音频！先输出 noSpeech 与逐字如实听写的 heardJp，严禁照抄参考目标脑补学生没读出的词！若音频为静音、环境杂音、咳嗽/按键声、完全听不清或未说日语，必须设 \"noSpeech\": true、\"heardJp\": \"\"、四项分数全为 0、praiseCn/issues/drillChunkJp 留空，并在 teacherSpokenScript 坦诚说「刚才没听清你的声音，请靠近麦克风再读一遍」，绝不可编造好评或音调分析！若只读了一部分或说错词，必须如实听写并在总分大幅扣分（<50分）。\n"
+        "你是一位拥有20年教龄的东京资深日语1对1私教（面向中国家庭学员），兼具音乐般敏锐的听辨力与极其落地的教学表达。\n"
+        f"阶段:{stage} | 第{attempt}次尝试 | 参考目标:{clean_target} | 本轮应读片段:{active_target} | 语义:{cue_cn or target_cn}\n"
+        f"{level_rule}\n"
+        "【评分锚点（严禁敷衍给分）】95–100:准母语级音调拍感与得体度；88–94:清晰准确过关(可有1处极轻微尾音微瑕)；75–87:能听懂但有明显中文腔(平读/送气过重/长短促音不足)或小错；60–74:关键助词活用错误或卡顿过多；<60:严重漏词/念错/答非所问。\n"
+        "核心规则：\n"
+        "0. 【反幻觉铁律】：先真实倾听音频！先输出 noSpeech 与逐字如实听写的 heardJp，严禁照抄参考目标脑补学生没读出的词！若音频为静音、环境杂音、咳嗽/按键声、完全听不清或未说日语，必须设 \"noSpeech\": true、\"heardJp\": \"\"、五项分数全为 0、评价字段留空，并在 teacherSpokenScript 坦诚说「刚才没听清你的声音，请你靠近麦克风再读一遍」，绝不可编造分析！若只读了一部分或说错词，必须如实听写并在总分大幅扣分（<50分）。\n"
         f"{stage_rule}"
-        f"2. heardJp、betterJp、drillChunkJp 使用规范日语汉字与假名（如「予約」「新しい料理」），界面会自动标假名；全程严禁输出韩语（한글 / 한국어）或将日语误转写为韩文。\n"
-        f"3. 先输出 teacherSpokenScript（20–50字）：前半句用纯中文点评（指代某词用中文意思或「这个词/前半句」，不要在中文句中夹日语词），句号收尾；后半句另起一句给纯日语示范（如「发音很清晰，预约这个词音调偏平，跟我读一遍。予約。」）。禁英文/罗马音/星号/括号/箭头；若总分>={pass_threshold}且无严重问题，issues/drillChunkJp/grammarNote 留空以提速。\n"
-        "返回精简JSON（每条说明25字内，issues<=2，extractedVocab<=2）：\n"
-        '{"noSpeech":false,"heardJp":"逐字如实听写(静音/听不清必须留空)","teacherSpokenScript":"纯中日口语台词","overallScore":0,"pitchScore":0,"grammarScore":0,"rhythmScore":0,'
-        '"betterJp":"地道目标句","drillChunkJp":"需单练词块(过关留空)",'
-        '"drillChunkReading":"如 ちか↓く(勿用反斜杠)","pitchNote":"音调简评","grammarNote":"语法简评","praiseCn":"亮点",'
-        '"issues":[{"type":"pitch|sokuon|long_vowel|voicing|consonant|ending|particle|grammar","severity":"critical|minor","patternKey":"短标签","detailCn":"原因"}],'
+        f"{prev_block}{weakness_block}{acoustic_block}{consolidation_hint}"
+        "2. heardJp、betterJp、drillChunkJp、nativeUpgradeJp 使用规范日语汉字与假名（界面自动标假名）；全程严禁输出韩语（한글 / 한국어）。\n"
+        "3. 【双通道反馈规范】：\n"
+        "   - 语音通道 teacherSpokenScript（严格放在第3个字段，25–55字）：保持口播干脆！前半句纯中文点出1个最关键的夸奖+核心建议（句中不夹日语词，句号收尾），后半句另起一句纯日语示范（例：「这次促音憋得很好，句尾再收干脆一点就满分。切手を貼って、すぐに出します。」）。禁止英文/罗马音/括号/星号。\n"
+        "   - 文本红笔卡字段请写出20年名师的干货：praiseCn 必须具体到某个词或某种语感；actionTipCn 必须给中国学习者一听就会的**口腔嘴型/憋气拍数/汉语四声类比动作处方**（例：き 后面闭嘴停满半拍再爆破 て；よ↑や↓く 第一拍低、や高、く掉下去）；pitchNotation 写出重点词高低音升降标注；若即使过关也有更地道的东京表达，请填 nativeUpgradeJp + nativeUpgradeNoteCn！\n"
+        "返回严格 JSON（字段顺序不可打乱，确保 noSpeech/heardJp/teacherSpokenScript 在最前）：\n"
+        '{"noSpeech":false,"heardJp":"逐字如实听写(静音/听不清必须留空)","teacherSpokenScript":"纯中文点评加句号。纯日语示范",'
+        '"overallScore":0,"pitchScore":0,"grammarScore":0,"rhythmScore":0,"politenessScore":0,'
+        '"betterJp":"标准地道目标句","drillChunkJp":"需单练的1个短词块(过关留空)","drillChunkReading":"如 ちか↓く(勿用反斜杠)",'
+        '"pitchNotation":"如 よ[や↓く]（重点词音调升降符号）",'
+        '"praiseCn":"具体夸到某个词或语感表现(35字内)",'
+        '"progressNoteCn":"对比上一次尝试的具体进步或变化(第1次留空)",'
+        '"actionTipCn":"给中文母语者的具体口腔动作/停顿拍数/声调类比处方(过关也可给微调建议，60字内)",'
+        '"pitchNote":"高低音与长短音诊断(45字内)","grammarNote":"助词/活用/句型讲解(45字内)",'
+        '"pragmaticNoteCn":"语境得体度/缓冲委婉度提醒(如无则留空)",'
+        '"nativeUpgradeJp":"可选：更像东京当地人的升级地道说法(已最地道可留空)",'
+        '"nativeUpgradeNoteCn":"为何升级版更地道(25字内)",'
+        '"resolvedWeaknesses":["若这次改掉了历史老毛病档案中的某项，填其patternKey"],'
+        '"issues":[{"type":"pitch|sokuon|long_vowel|voicing|consonant|ending|particle|grammar|keigo","severity":"critical|minor","patternKey":"短标签","detailCn":"具体原因与改法"}],'
         '"extractedVocab":[{"surface":"","lemma":"","reading":"","pitchAccent":"","meaningCn":"","jlpt":"N4"}]}'
     )
 
@@ -1538,16 +1715,17 @@ async def evaluate_sensei_turn(
         models=models,
         api_key=api_key,
         temperature=0.15,
-        timeout_sec=10.5,
+        timeout_sec=12.0,
         per_model_timeouts={
-            "gemini-4-hydrogen": 10.5,
-            "gemini-3-flash-preview": 11.5,
+            "gemini-4-hydrogen": 12.0,
+            "gemini-3-flash-preview": 12.5,
             "gemini-3.5-flash-lite": 9.0,
-            "gemini-4-neon": 12.0,
-            "gemini-4-argon": 12.0,
+            "gemini-4-neon": 16.0,
+            "gemini-4-argon": 14.0,
         },
         on_script_ready=_on_script_ready if defer_tts else None,
         hedge_after_sec=6.5 if (chosen_model == "gemini-4-hydrogen" and len(models) >= 2) else None,
+        thinking_level="MEDIUM" if chosen_model == "gemini-4-neon" else "LOW",
     )
 
     eval_data = _sanitize_no_hangul(eval_data)
@@ -1569,10 +1747,19 @@ async def evaluate_sensei_turn(
         drill_chunk_jp=drill_chunk,
         target_jp=active_target,
         pass_threshold=pass_threshold,
+        was_chunk_drill=was_chunk_drill,
     )
 
+    if decision == "consolidate_full":
+        drill_chunk = ""
+
     teacher_script = (eval_data.get("teacherSpokenScript") or "").strip()
-    if not teacher_script:
+    if decision == "consolidate_full":
+        if not teacher_script or "整句" not in teacher_script:
+            teacher_script = (
+                f"太好了，刚才那个词已经读稳了！现在带着刚才的感觉，把整句顺一遍。{jp_to_kana(clean_target)}"
+            )
+    elif not teacher_script:
         if decision == "pass":
             teacher_script = f"太棒了，这一句音调和节奏都很稳！{jp_to_kana(clean_target)}"
         elif drill_chunk:
@@ -1581,14 +1768,19 @@ async def evaluate_sensei_turn(
         else:
             teacher_script = f"我们再来顺一遍节奏，听我示范。{jp_to_kana(active_target)} 准备好再读一次。"
 
-    if decision == "advance" and attempt >= 3 and overall_score < 88:
+    if decision == "advance" and attempt >= 3 and overall_score < pass_threshold:
         teacher_script = (
             f"这几次已经明显比第一遍清楚多啦，刚才的问题我先帮你记在记忆本里。听一遍正确示范。{jp_to_kana(clean_target)} 我们先继续下一步。"
         )
 
+    better_jp = strip_furigana_parens(eval_data.get("betterJp") or "") or clean_target
+    native_upgrade_jp = strip_furigana_parens(eval_data.get("nativeUpgradeJp") or "")
+    if native_upgrade_jp == better_jp:
+        native_upgrade_jp = ""
+
     teacher_spoken_tts = prepare_tts_bilingual_script(
         teacher_script,
-        [*known_jp_hints, eval_data.get("betterJp") or "", drill_chunk],
+        [*known_jp_hints, better_jp, drill_chunk, native_upgrade_jp],
     )
 
     teacher_audio_url = ""
@@ -1603,22 +1795,31 @@ async def evaluate_sensei_turn(
     elif teacher_spoken_tts and teacher_spoken_tts not in prewarmed_scripts and getattr(_call_gemini_json, "__module__", "") == __name__:
         _on_script_ready(teacher_spoken_tts)
 
-    # Record recurring weaknesses when issues exist
-    if overall_score < 88:
+    resolved_weaknesses = [
+        str(k).strip() for k in (eval_data.get("resolvedWeaknesses") or []) if str(k).strip()
+    ]
+    if resolved_weaknesses and overall_score >= pass_threshold:
+        graduated_keys = record_weakness_improvement(user_id, resolved_weaknesses)
+        if graduated_keys:
+            resolved_weaknesses = graduated_keys
+
+    has_critical = any((it.get("severity") == "critical") for it in issues)
+    if overall_score < pass_threshold or has_critical:
         for it in issues[:3]:
             upsert_weakness(
                 user_id=user_id,
                 issue_type=it.get("type") or "pronunciation",
                 pattern_key=it.get("patternKey") or drill_chunk or clean_target[:16],
                 example_jp=clean_target,
-                note_cn=it.get("detailCn") or eval_data.get("pitchNote") or "",
+                note_cn=it.get("detailCn") or eval_data.get("actionTipCn") or eval_data.get("pitchNote") or "",
             )
 
-    better_jp = strip_furigana_parens(eval_data.get("betterJp") or "") or clean_target
     target_tokens = tokenize_sentence(clean_target)
     better_tokens = tokenize_sentence(better_jp)
-    heard_tokens = tokenize_sentence(eval_data.get("heardJp") or "")
+    heard_tokens = tokenize_sentence(heard_jp)
     drill_chunk_tokens = tokenize_sentence(drill_chunk) if drill_chunk else []
+    native_upgrade_tokens = tokenize_sentence(native_upgrade_jp) if native_upgrade_jp else []
+    token_diff = compute_token_diff(heard_tokens, better_tokens)
     eval_ms = int((time.perf_counter() - t0) * 1000)
 
     response_payload = {
@@ -1629,21 +1830,35 @@ async def evaluate_sensei_turn(
         "attempt": attempt,
         "decision": decision,
         "noSpeech": False,
+        "consolidatingFull": decision == "consolidate_full",
+        "jlptLevel": resolved_jlpt,
         "overallScore": overall_score,
-        "pitchScore": int(eval_data.get("pitchScore", overall_score)),
-        "grammarScore": int(eval_data.get("grammarScore", overall_score)),
-        "rhythmScore": int(eval_data.get("rhythmScore", overall_score)),
-        "heardJp": eval_data.get("heardJp") or "",
+        "pitchScore": int(max(0, min(100, eval_data.get("pitchScore", overall_score)))),
+        "grammarScore": int(max(0, min(100, eval_data.get("grammarScore", overall_score)))),
+        "rhythmScore": int(max(0, min(100, eval_data.get("rhythmScore", overall_score)))),
+        "politenessScore": int(max(0, min(100, eval_data.get("politenessScore", eval_data.get("grammarScore", overall_score))))),
+        "heardJp": heard_jp,
         "betterJp": better_jp,
         "betterTokens": better_tokens,
         "targetJp": clean_target,
         "drillChunkJp": drill_chunk,
         "drillChunkTokens": drill_chunk_tokens,
         "drillChunkReading": eval_data.get("drillChunkReading") or "",
+        "pitchNotation": eval_data.get("pitchNotation") or "",
         "pitchNote": eval_data.get("pitchNote") or "",
         "grammarNote": eval_data.get("grammarNote") or "",
         "praiseCn": eval_data.get("praiseCn") or "",
+        "progressNoteCn": eval_data.get("progressNoteCn") or "",
+        "actionTipCn": eval_data.get("actionTipCn") or "",
+        "pragmaticNoteCn": eval_data.get("pragmaticNoteCn") or "",
+        "nativeUpgradeJp": native_upgrade_jp,
+        "nativeUpgradeTokens": native_upgrade_tokens,
+        "nativeUpgradeNoteCn": eval_data.get("nativeUpgradeNoteCn") or "",
+        "resolvedWeaknesses": resolved_weaknesses,
         "issues": issues,
+        "heardDiff": token_diff["heardDiff"],
+        "targetDiff": token_diff["targetDiff"],
+        "matchRatio": token_diff["matchRatio"],
         "teacherSpokenScript": teacher_script,
         "teacherSpokenTts": teacher_spoken_tts,
         "teacherAudioUrl": teacher_audio_url,
@@ -1662,7 +1877,7 @@ async def evaluate_sensei_turn(
         speaker="student",
         stage=stage,
         target_jp=clean_target,
-        transcript_jp=eval_data.get("heardJp") or "",
+        transcript_jp=heard_jp,
         tokens=heard_tokens,
         correction=response_payload,
         audio_path=str(turn_audio_path),
@@ -1684,23 +1899,48 @@ async def evaluate_live_turn(
     transcript_user: str,
     last_ai_jp: str,
     scenario_title: str,
+    jlpt_target: str = "N4",
     api_key: str,
 ) -> Dict[str, Any]:
     """Track-2 asynchronous evaluation for Live Voice Call turns."""
+    clean_transcript = strip_foreign_hangul(transcript_user or "")
+    if audio_wav_bytes:
+        act = analyze_audio_speech_activity(audio_wav_bytes, filename="live.wav", content_type="audio/wav")
+        if act.get("analyzed") and not act.get("has_speech") and not clean_transcript:
+            return {
+                "noSpeech": True,
+                "score": 0,
+                "isNatural": False,
+                "heardJp": "",
+                "naturalJp": "",
+                "naturalReading": "",
+                "pitchTip": "",
+                "grammarTip": "",
+                "actionTipCn": "",
+                "politenessTip": "",
+                "issueType": "none",
+                "patternKey": "",
+                "extractedVocab": [],
+            }
+
     prompt = (
-        "你是日语私教双轨助教，正在实时旁听学生的日语通话并生成简洁气泡纠错卡片。\n"
-        f"当前场景: {scenario_title}\n"
+        "你是20年教龄的东京资深日语私教，正在实时旁听学生的日语通话并生成简洁高质量纠错卡。\n"
+        f"当前场景: {scenario_title} | 学生目标水平: {jlpt_target}\n"
         f"上一句 AI 说的日语: {last_ai_jp}\n"
-        f"本轮用户语音转写: {transcript_user or '（参考音频）'}\n\n"
-        "请基于音频和上下文快速评估：发音声调、助词语法、敬语得体度。返回严格 JSON：\n"
+        f"本轮用户语音转写: {clean_transcript or '（参考音频）'}\n\n"
+        "【评分锚点】95+:母语般自然；88-94:流畅得体仅轻微微瑕；75-87:可懂但有中文腔/平读或小错；<75:助词活用明显有误。\n"
+        "请真实基于音频与语境评估：发音声调、拍感、助词语法、敬语得体度。全程严禁输出韩语（한글 / 한국어）。返回严格 JSON：\n"
         "{\n"
+        '  "noSpeech": false,\n'
         '  "score": 88,\n'
         '  "isNatural": true,\n'
-        '  "heardJp": "精准还原用户说出的日语或中英夹杂句",\n'
-        '  "naturalJp": "更像东京当地人的自然说法（若原句已很地道则与原句一致）",\n'
+        '  "heardJp": "如实还原用户说出的日语或中英夹杂句",\n'
+        '  "naturalJp": "更像东京当地人的自然说法（若已很地道则与原句一致）",\n'
         '  "naturalReading": "naturalJp 的平假名",\n'
         '  "pitchTip": "最关键的一处发音/高低音提示（若无填无）",\n'
-        '  "grammarTip": "助词/活用/敬语微调建议（不超过35字中文）",\n'
+        '  "actionTipCn": "具体口腔动作/停顿拍数微调建议（不超过35字中文）",\n'
+        '  "grammarTip": "助词/活用微调建议（不超过35字中文）",\n'
+        '  "politenessTip": "语气得体/敬语委婉建议（若恰当留空）",\n'
         '  "issueType": "none|pitch|particle|keigo|sokuon|vocab",\n'
         '  "patternKey": "若需记入错题本写短标签如 は/が混淆；否则空字符串",\n'
         '  "extractedVocab": [{"surface": "", "lemma": "", "reading": "", "meaningCn": "", "jlpt": "N4"}]\n'
@@ -1728,8 +1968,8 @@ async def evaluate_live_turn(
             user_id=user_id,
             issue_type=data.get("issueType", "grammar"),
             pattern_key=data["patternKey"],
-            example_jp=data.get("naturalJp") or transcript_user,
-            note_cn=data.get("grammarTip") or data.get("pitchTip") or "",
+            example_jp=data.get("naturalJp") or clean_transcript,
+            note_cn=data.get("grammarTip") or data.get("actionTipCn") or data.get("pitchTip") or "",
         )
     return data
 
@@ -1765,26 +2005,33 @@ async def generate_session_report(
     summary_lines = []
     for t in turns:
         corr = t.get("correction") or {}
+        if corr.get("noSpeech"):
+            continue
+        issue_tags = ",".join(str(i.get("patternKey") or i.get("type", "")) for i in (corr.get("issues") or [])[:2])
         summary_lines.append(
-            f"[{t['speaker']}] jp={t.get('transcript_jp') or t.get('target_jp')} "
+            f"[{t['speaker']}|stage={t.get('stage') or '-'}|try={corr.get('attempt', 1)}] "
+            f"jp={t.get('transcript_jp') or t.get('target_jp')} "
             f"score={corr.get('overallScore', corr.get('score', '-'))} "
-            f"note={corr.get('pitchNote', corr.get('grammarTip', ''))}"
+            f"polite={corr.get('politenessScore', '-')} "
+            f"progress={corr.get('progressNoteCn', '')} "
+            f"issues=[{issue_tags}] note={corr.get('actionTipCn') or corr.get('pitchNote', corr.get('grammarTip', ''))}"
         )
 
-    transcript_block = "\n".join(summary_lines[-24:]) or "本场会话尚无完整口语轮次。"
+    transcript_block = "\n".join(summary_lines[-28:]) or "本场会话尚无完整口语轮次。"
     prompt = (
-        "请作为日语教学总监，为下面这场刚结束的 1 对 1 日语训练生成课后深度战报（严格 JSON）：\n"
+        "请作为20年教龄的东京日语教学总监，为下面这场刚结束的 1 对 1 日语训练生成课后深度战报（严格 JSON，严禁韩语）：\n"
         f"会话记录：\n{transcript_block}\n\n"
+        "请在 summaryCn / praiseHighlights 中特别点出学生在多轮重试（try=1→try=2）里的具体蜕变与突破！\n"
         "JSON Schema:\n"
         "{\n"
         '  "fluencyScore": 85,\n'
         '  "pitchScore": 82,\n'
         '  "keigoScore": 86,\n'
         '  "grammarScore": 84,\n'
-        '  "summaryCn": "2句鼓励且有干货的整体点评",\n'
-        '  "praiseHighlights": ["表现亮点1", "表现亮点2"],\n'
-        '  "topMistakes": [{"patternKey": "如 助词は/が", "detailCn": "错因与下回注意", "betterJp": "正确例句"}],\n'
-        '  "nextFocusCn": "明天10分钟私教课建议主攻方向"\n'
+        '  "summaryCn": "2–3句鼓励且有干货的整体点评（含第1遍到第2遍进步洞察）",\n'
+        '  "praiseHighlights": ["具体表现亮点1", "具体表现亮点2"],\n'
+        '  "topMistakes": [{"patternKey": "如 助词は/が", "detailCn": "错因与口腔/语法改法", "betterJp": "正确例句"}],\n'
+        '  "nextFocusCn": "明天私教课建议主攻方向"\n'
         "}"
     )
 
@@ -1805,3 +2052,82 @@ async def generate_session_report(
 
     finish_session(session_id=session_id, duration_sec=duration_sec, report=report)
     return report
+
+
+async def answer_sensei_followup(
+    *,
+    question_cn: str,
+    target_jp: str = "",
+    heard_jp: str = "",
+    better_jp: str = "",
+    grammar_focus: str = "",
+    jlpt_target: str = "N4",
+    pitch_note: str = "",
+    grammar_note: str = "",
+    action_tip: str = "",
+    coach_model: Optional[str] = None,
+    api_key: str,
+) -> Dict[str, Any]:
+    """Answer an ad-hoc student follow-up question in Veteran Tokyo Sensei persona."""
+    q_clean = strip_foreign_hangul((question_cn or "").strip())
+    if not q_clean:
+        raise ValueError("请输入想问老师的问题。")
+
+    chosen_model = (coach_model or "").strip()
+    if chosen_model not in _ALLOWED_COACH_MODELS:
+        chosen_model = COACH_MODEL
+    models = [chosen_model] + [m for m in [COACH_MODEL, *COACH_FALLBACK_MODELS] if m != chosen_model]
+
+    clean_target = strip_furigana_parens(target_jp)
+    clean_better = strip_furigana_parens(better_jp)
+    clean_heard = strip_furigana_parens(heard_jp)
+
+    prompt = (
+        "你是拥有20年教龄的东京日语私教，学生刚练习完下面这句话并提出了追问。\n"
+        f"目标级别：{jlpt_target} | 本课语法焦点：{grammar_focus or '日常表达'}\n"
+        f"目标句：{clean_target}\n"
+        f"学生刚才读成：{clean_heard or '（未记录）'}\n"
+        f"标准示范句：{clean_better or clean_target}\n"
+        f"刚才批改摘要：音调[{pitch_note}] | 语法[{grammar_note}] | 动作处方[{action_tip}]\n\n"
+        f"【学生追问】：{q_clean}\n\n"
+        "请用温柔、有条理的中文直接回答学生的疑惑（不超过120字），结合东京真实日常/旅行语境点透「为什么」或「怎么切换礼貌度」，并给出最多2个简短鲜活的双语对照例句。\n"
+        "【重要】：spokenSummaryCn 用于语音朗读：用20–45字纯中文口语先总结结论（句号收尾），如附日语短句必须另起一句写纯日语，全程严禁英文/罗马音/星号/韩语！\n"
+        '严格输出 JSON：{"answerCn":"清晰有深度的中文解答","spokenSummaryCn":"纯中文口播总结。可选纯日语短句","examples":[{"jp":"规范日语例句","cn":"中文意思与使用场景"}]}'
+    )
+
+    res = _sanitize_no_hangul(
+        await _call_gemini_json(
+            parts=[{"text": prompt}],
+            models=models,
+            api_key=api_key,
+            temperature=0.25,
+            timeout_sec=14.0,
+        )
+    )
+
+    examples_raw = (res.get("examples") or [])[:2]
+    examples: List[Dict[str, Any]] = []
+    jp_hints = [clean_target, clean_better]
+    for ex in examples_raw:
+        ex_jp = strip_furigana_parens(ex.get("jp") or "")
+        if not ex_jp:
+            continue
+        jp_hints.append(ex_jp)
+        examples.append(
+            {
+                "jp": ex_jp,
+                "cn": ex.get("cn") or "",
+                "tokens": tokenize_sentence(ex_jp),
+            }
+        )
+
+    spoken = (res.get("spokenSummaryCn") or "").strip() or (res.get("answerCn") or "")[:50]
+    spoken_tts = prepare_tts_bilingual_script(spoken, jp_hints)
+
+    return {
+        "answerCn": (res.get("answerCn") or "").strip(),
+        "examples": examples,
+        "spokenSummaryCn": spoken,
+        "spokenSummaryTts": spoken_tts,
+        "modelUsed": res.get("_modelUsed", chosen_model),
+    }

@@ -7265,3 +7265,243 @@ body.dark-mode .app-topbar {
   justify-content: flex-end;
   gap: 0.5rem;
 }
+
+/* 10. Veteran Tokyo Sensei Red-Pen Diagnosis Card, Prosody Sparkline & Follow-Up Q&A (v38) */
+.sensei-diagnosis-card.consolidate {
+  border-left: 5px solid #6366f1;
+}
+.sensei-dim-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+}
+@media (max-width: 520px) {
+  .sensei-dim-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sensei-dim-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.42rem 0.55rem;
+}
+.sensei-dim-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.sensei-dim-head strong {
+  font-size: 0.86rem;
+  color: var(--text-primary);
+}
+.sensei-dim-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(120, 125, 138, 0.18);
+  overflow: hidden;
+}
+.sensei-dim-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.sensei-dim-fill.good {
+  background: #10b981;
+}
+.sensei-dim-fill.mid {
+  background: #f59e0b;
+}
+.sensei-dim-fill.low {
+  background: #ef4444;
+}
+.sensei-progress-banner {
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px solid rgba(79, 70, 229, 0.24);
+  color: var(--accent-indigo);
+  border-radius: 10px;
+  padding: 0.48rem 0.72rem;
+  font-size: 0.81rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.sensei-praise-banner {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  color: #065f46;
+  border-radius: 10px;
+  padding: 0.46rem 0.72rem;
+  font-size: 0.81rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+body.dark-mode .sensei-praise-banner {
+  color: #6ee7b7;
+}
+.sensei-grad-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+.sensei-grad-pill {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+body.dark-mode .sensei-grad-pill {
+  color: #6ee7b7;
+}
+.sensei-acoustic-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0.35rem 0 0.4rem;
+  padding-top: 0.35rem;
+  border-top: 1px dashed var(--border-color);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.sensei-pitch-svg {
+  width: 96px;
+  height: 26px;
+  flex-shrink: 0;
+  display: block;
+}
+.sensei-tok.diff-sub {
+  background: rgba(239, 68, 68, 0.14);
+  border-bottom: 2px solid rgba(220, 38, 38, 0.65);
+}
+.sensei-tok.diff-extra {
+  background: rgba(245, 158, 11, 0.15);
+  text-decoration: line-through rgba(217, 119, 6, 0.7);
+}
+.sensei-tok.diff-missing {
+  background: rgba(99, 102, 241, 0.12);
+  border-bottom: 2px dashed rgba(79, 70, 229, 0.7);
+}
+.sensei-action-box {
+  background: rgba(245, 158, 11, 0.09);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 10px;
+  padding: 0.55rem 0.78rem;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin: 0.48rem 0;
+}
+.sensei-pitch-chip {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent-indigo);
+}
+.sensei-issue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0.45rem 0;
+}
+.sensei-issue-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.sensei-issue-tag {
+  flex-shrink: 0;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+.sensei-issue-tag.critical {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+}
+body.dark-mode .sensei-issue-tag {
+  color: #fcd34d;
+}
+body.dark-mode .sensei-issue-tag.critical {
+  color: #fca5a5;
+}
+.sensei-native-upgrade {
+  margin-top: 0.55rem;
+  background: var(--bg-subtle);
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: 12px;
+  padding: 0.6rem 0.78rem;
+}
+.sensei-native-upgrade-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--accent-indigo);
+  margin-bottom: 0.25rem;
+}
+.sensei-followup-box {
+  margin-top: 0.72rem;
+  padding-top: 0.68rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.sensei-followup-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.sensei-followup-form {
+  display: flex;
+  gap: 0.42rem;
+  align-items: center;
+}
+.sensei-followup-form input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  padding: 0.46rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+.sensei-followup-reply {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.68rem 0.82rem;
+  font-size: 0.83rem;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+.sensei-followup-ex {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.42rem 0.58rem;
+}

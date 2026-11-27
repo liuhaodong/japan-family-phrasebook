@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 import wave
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 _MEDIA_MIME_BY_EXT = {
     "wav": "audio/wav",
@@ -230,12 +230,96 @@ def _decode_to_mono_pcm16(raw_bytes: bytes) -> Tuple[array.array | None, int]:
     return None, 0
 
 
+def _estimate_f0_hz(window: Sequence[int], sr: int) -> Optional[float]:
+    """Estimate fundamental pitch (F0 in Hz) via fast normalized autocorrelation on decimated audio."""
+    if sr <= 0 or len(window) < 64:
+        return None
+    step = max(1, round(sr / 8000))
+    eff_sr = sr / float(step)
+    buf = window[::step]
+    n = len(buf)
+    if n < 64:
+        return None
+
+    mean_val = sum(buf) / n
+    centered = [float(x) - mean_val for x in buf]
+    energy = sum(v * v for v in centered) / n
+    # Require minimum voiced frame energy (above background floor)
+    if energy < (32768.0 * 0.008) ** 2:
+        return None
+
+    min_lag = max(2, int(eff_sr / 380.0))
+    max_lag = min(n // 2, int(eff_sr / 85.0))
+    if max_lag <= min_lag:
+        return None
+
+    corrs: List[Tuple[int, float]] = []
+    best_corr = 0.0
+    best_lag = 0
+    for lag in range(min_lag, max_lag + 1):
+        usable = n - lag
+        num = 0.0
+        e1 = 0.0
+        e2 = 0.0
+        for i in range(usable):
+            a = centered[i]
+            b = centered[i + lag]
+            num += a * b
+            e1 += a * a
+            e2 += b * b
+        denom = math.sqrt(e1 * e2)
+        corr = (num / denom) if denom > 1e-6 else 0.0
+        corrs.append((lag, corr))
+        if corr > best_corr:
+            best_corr = corr
+            best_lag = lag
+
+    if best_corr < 0.45 or best_lag <= 0:
+        return None
+    # Pick the earliest (highest-frequency) local peak >= 92% of global max to avoid subharmonic octave halving (2*T0 / 3*T0).
+    peak_thresh = max(0.45, best_corr * 0.92)
+    chosen_lag = best_lag
+    for idx, (lag, c) in enumerate(corrs):
+        if c < peak_thresh:
+            continue
+        prev_c = corrs[idx - 1][1] if idx > 0 else c
+        next_c = corrs[idx + 1][1] if idx + 1 < len(corrs) else c
+        if c >= prev_c and c >= next_c:
+            chosen_lag = lag
+            break
+    return eff_sr / float(chosen_lag)
+
+
+def format_acoustic_summary_for_prompt(audio_stats: Dict[str, Any], target_kana_len: int = 0) -> str:
+    """Format objective duration, speaking rate, pauses, and pitch movement for LLM prompt context."""
+    if not audio_stats or not audio_stats.get("analyzed") or not audio_stats.get("has_speech"):
+        return ""
+    active_ms = int(audio_stats.get("activeSpeechMs") or 0)
+    active_sec = active_ms / 1000.0
+    parts = [f"有效发声 {active_sec:.2f}s（总长 {audio_stats.get('durationSec', 0)}s）"]
+    if target_kana_len > 0 and active_ms > 300:
+        mora_per_sec = target_kana_len / active_sec
+        parts.append(f"估算语速约 {mora_per_sec:.1f} 拍/秒")
+    pause_cnt = int(audio_stats.get("internalPauseCount") or 0)
+    max_pause = int(audio_stats.get("maxInternalPauseMs") or 0)
+    if pause_cnt > 0:
+        parts.append(f"句中明显停顿 {pause_cnt} 次（最长 {max_pause}ms）")
+    else:
+        parts.append("句中连贯无长卡顿")
+    spread = float(audio_stats.get("pitchSpreadSemitones") or 0.0)
+    hz_range = audio_stats.get("pitchHzRange") or []
+    if spread > 0.0 and len(hz_range) == 2:
+        feel = "音高变化偏平" if spread < 2.5 else ("音高起伏适中" if spread <= 5.5 else "高低起伏较明显")
+        parts.append(f"基频跨度 {hz_range[0]}–{hz_range[1]}Hz（约 {spread:.1f} 半音，{feel}）")
+    return "；".join(parts) + "。"
+
+
 def analyze_audio_speech_activity(
     raw_bytes: bytes,
     filename: str = "",
     content_type: str = "",
 ) -> Dict[str, Any]:
-    """Deterministically detect silent, near-silent, or ultra-short recordings before LLM grading."""
+    """Deterministically detect silent/short audio and extract objective prosody telemetry."""
     samples, sample_rate = _decode_to_mono_pcm16(raw_bytes)
     if samples is None:
         return {
@@ -246,6 +330,12 @@ def analyze_audio_speech_activity(
             "peakDb": -120.0,
             "rmsDb": -120.0,
             "activeSpeechMs": 0,
+            "speechRatio": 0.0,
+            "internalPauseCount": 0,
+            "maxInternalPauseMs": 0,
+            "pitchHzRange": [],
+            "pitchSpreadSemitones": 0.0,
+            "pitchContour": [],
         }
     if len(samples) == 0:
         return {
@@ -256,6 +346,12 @@ def analyze_audio_speech_activity(
             "peakDb": -120.0,
             "rmsDb": -120.0,
             "activeSpeechMs": 0,
+            "speechRatio": 0.0,
+            "internalPauseCount": 0,
+            "maxInternalPauseMs": 0,
+            "pitchHzRange": [],
+            "pitchSpreadSemitones": 0.0,
+            "pitchContour": [],
         }
 
     duration_sec = len(samples) / float(sample_rate)
@@ -263,6 +359,7 @@ def analyze_audio_speech_activity(
     rms = math.sqrt(sum(s * s for s in samples) / len(samples)) / 32768.0
 
     frame_len = max(1, int(sample_rate * 0.02))
+    frame_ms = (frame_len / float(sample_rate)) * 1000.0
     frame_stats = []
     for i in range(0, len(samples), frame_len):
         chunk = samples[i : i + frame_len]
@@ -270,13 +367,60 @@ def analyze_audio_speech_activity(
             continue
         f_rms = math.sqrt(sum(s * s for s in chunk) / len(chunk)) / 32768.0
         f_peak = max(abs(s) for s in chunk) / 32768.0
-        frame_stats.append((f_rms, f_peak))
+        frame_stats.append((f_rms, f_peak, i))
 
-    sorted_rms = sorted(r for r, _ in frame_stats)
+    sorted_rms = sorted(r for r, _, _ in frame_stats)
     p20_rms = sorted_rms[len(sorted_rms) // 5] if len(sorted_rms) >= 5 else 0.0
     rms_thresh = max(0.008, min(0.035, p20_rms * 2.2))
-    active_frames = sum(1 for r, p in frame_stats if r >= rms_thresh and p >= 0.020)
-    active_speech_ms = int(round(active_frames * (frame_len / sample_rate) * 1000))
+    active_flags = [(r >= rms_thresh and p >= 0.020) for r, p, _ in frame_stats]
+    active_indices = [idx for idx, flag in enumerate(active_flags) if flag]
+    active_speech_ms = int(round(len(active_indices) * frame_ms))
+    speech_ratio = round(active_speech_ms / max(1.0, duration_sec * 1000.0), 2)
+
+    internal_pause_count = 0
+    max_internal_pause_ms = 0
+    if len(active_indices) >= 2:
+        first_act = active_indices[0]
+        last_act = active_indices[-1]
+        silent_run = 0
+        for fi in range(first_act, last_act + 1):
+            if not active_flags[fi]:
+                silent_run += 1
+            elif silent_run > 0:
+                pause_ms = int(round(silent_run * frame_ms))
+                if pause_ms >= 320:
+                    internal_pause_count += 1
+                    if pause_ms > max_internal_pause_ms:
+                        max_internal_pause_ms = pause_ms
+                silent_run = 0
+
+    pitch_hz_range: List[int] = []
+    pitch_spread_semitones = 0.0
+    pitch_contour: List[Optional[int]] = []
+    if active_indices:
+        n_slots = min(16, len(active_indices))
+        win_len = max(128, int(sample_rate * 0.025))
+        raw_f0: List[Optional[float]] = []
+        for s_idx in range(n_slots):
+            pick = active_indices[int(s_idx * (len(active_indices) - 1) / max(1, n_slots - 1))] if n_slots > 1 else active_indices[0]
+            center = frame_stats[pick][2] + frame_len // 2
+            w_start = max(0, center - win_len // 2)
+            w_end = min(len(samples), w_start + win_len)
+            raw_f0.append(_estimate_f0_hz(samples[w_start:w_end], sample_rate))
+        voiced_hz = [h for h in raw_f0 if h is not None]
+        if len(voiced_hz) >= 2:
+            sorted_hz = sorted(voiced_hz)
+            min_hz = sorted_hz[0]
+            max_hz = sorted_hz[-1]
+            p10 = sorted_hz[max(0, round(0.1 * (len(sorted_hz) - 1)))]
+            p90 = sorted_hz[min(len(sorted_hz) - 1, round(0.9 * (len(sorted_hz) - 1)))]
+            pitch_hz_range = [int(round(min_hz)), int(round(max_hz))]
+            pitch_spread_semitones = round(12.0 * math.log2(max(p90, 1.0) / max(p10, 1.0)), 1)
+            span_hz = max_hz - min_hz
+            pitch_contour = [
+                None if h is None else (50 if span_hz < 1.0 else int(round((h - min_hz) / span_hz * 100)))
+                for h in raw_f0
+            ]
 
     if duration_sec < 0.25:
         has_speech = False
@@ -301,4 +445,10 @@ def analyze_audio_speech_activity(
         "peakDb": peak_db,
         "rmsDb": rms_db,
         "activeSpeechMs": active_speech_ms,
+        "speechRatio": speech_ratio,
+        "internalPauseCount": internal_pause_count,
+        "maxInternalPauseMs": max_internal_pause_ms,
+        "pitchHzRange": pitch_hz_range,
+        "pitchSpreadSemitones": pitch_spread_semitones,
+        "pitchContour": pitch_contour,
     }

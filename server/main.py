@@ -44,6 +44,7 @@ from server.services.curriculum_loader import get_scenario, list_all_grammar, li
 from server.services.jp_tokenizer import define_word, tokenize_sentence
 from server.services.live_relay import handle_live_websocket
 from server.services.sensei_engine import (
+    answer_sensei_followup,
     create_guided_lesson,
     evaluate_sensei_turn,
     extend_guided_lesson,
@@ -128,6 +129,19 @@ class LessonExtendRequest(BaseModel):
     start_index: int = 0
     scenario_id: Optional[str] = None
     grammar_id: Optional[str] = None
+    coach_model: Optional[str] = None
+
+
+class SenseiAskRequest(BaseModel):
+    question_cn: str
+    target_jp: str = ""
+    heard_jp: str = ""
+    better_jp: str = ""
+    grammar_focus: str = ""
+    jlpt_target: str = "N4"
+    pitch_note: str = ""
+    grammar_note: str = ""
+    action_tip: str = ""
     coach_model: Optional[str] = None
 
 
@@ -346,6 +360,10 @@ async def api_sensei_turn(
     lesson_id: Optional[str] = Form(None),
     grammar_focus: str = Form(""),
     question_jp: str = Form(""),
+    jlpt_target: str = Form(""),
+    previous_heard_jp: str = Form(""),
+    previous_issues_summary: str = Form(""),
+    previous_score: Optional[int] = Form(None),
     x_gemini_api_key: Optional[str] = Header(default=None),
     x_app_passcode: Optional[str] = Header(default=None),
 ) -> Dict[str, Any]:
@@ -374,6 +392,38 @@ async def api_sensei_turn(
             lesson_id=lesson_id,
             grammar_focus=grammar_focus,
             question_jp=question_jp,
+            jlpt_target=jlpt_target,
+            previous_heard_jp=previous_heard_jp,
+            previous_issues_summary=previous_issues_summary,
+            previous_score=previous_score,
+            api_key=api_key,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/api/sensei/ask")
+async def api_sensei_ask(
+    body: SenseiAskRequest,
+    x_gemini_api_key: Optional[str] = Header(default=None),
+    x_app_passcode: Optional[str] = Header(default=None),
+) -> Dict[str, Any]:
+    verify_passcode(x_app_passcode)
+    api_key = resolve_api_key(x_gemini_api_key, required=True)
+    try:
+        return await answer_sensei_followup(
+            question_cn=body.question_cn,
+            target_jp=body.target_jp,
+            heard_jp=body.heard_jp,
+            better_jp=body.better_jp,
+            grammar_focus=body.grammar_focus,
+            jlpt_target=body.jlpt_target,
+            pitch_note=body.pitch_note,
+            grammar_note=body.grammar_note,
+            action_tip=body.action_tip,
+            coach_model=body.coach_model,
             api_key=api_key,
         )
     except ValueError as exc:

@@ -148,6 +148,9 @@ def init_db(db_path: Optional[Path] = None) -> None:
         )
 
         now = utc_now_iso()
+        wk_cols = {r["name"] for r in conn.execute("PRAGMA table_info(weakness_memory)").fetchall()}
+        if "mastered_streak" not in wk_cols:
+            conn.execute("ALTER TABLE weakness_memory ADD COLUMN mastered_streak INTEGER DEFAULT 0")
         for uid, name, jlpt in [
             ("haodong", "刘浩东", "N4"),
             ("sherry", "Sherry", "N5"),
@@ -374,10 +377,11 @@ def upsert_weakness(
     with get_conn(db_path) as conn:
         conn.execute(
             """
-            INSERT INTO weakness_memory (id, user_id, issue_type, pattern_key, example_jp, note_cn, occurrences, last_seen_at)
-            VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+            INSERT INTO weakness_memory (id, user_id, issue_type, pattern_key, example_jp, note_cn, occurrences, mastered_streak, last_seen_at)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?)
             ON CONFLICT(user_id, issue_type, pattern_key) DO UPDATE SET
                 occurrences = occurrences + 1,
+                mastered_streak = 0,
                 example_jp = CASE WHEN excluded.example_jp != '' THEN excluded.example_jp ELSE weakness_memory.example_jp END,
                 note_cn = CASE WHEN excluded.note_cn != '' THEN excluded.note_cn ELSE weakness_memory.note_cn END,
                 last_seen_at = excluded.last_seen_at
@@ -386,12 +390,86 @@ def upsert_weakness(
         )
 
 
+def record_weakness_improvement(
+    user_id: str,
+    pattern_keys: List[str],
+    db_path: Optional[Path] = None,
+) -> List[str]:
+    """Decrement occurrences and advance mastery streak when user fixes a logged weakness."""
+    cleaned = [(k or "").strip() for k in (pattern_keys or []) if (k or "").strip()]
+    if not cleaned:
+        return []
+    now = utc_now_iso()
+    matched: List[str] = []
+    with get_conn(db_path) as conn:
+        for key in cleaned:
+            rows = conn.execute(
+                """
+                SELECT id, pattern_key, occurrences, COALESCE(mastered_streak, 0) AS mastered_streak
+                FROM weakness_memory
+                WHERE user_id = ? AND occurrences > 0 AND LOWER(TRIM(pattern_key)) = LOWER(?)
+                """,
+                (user_id, key),
+            ).fetchall()
+            if not rows and len(key) >= 2:
+                rows = conn.execute(
+                    """
+                    SELECT id, pattern_key, occurrences, COALESCE(mastered_streak, 0) AS mastered_streak
+                    FROM weakness_memory
+                    WHERE user_id = ? AND occurrences > 0 AND (pattern_key LIKE ? OR ? LIKE '%' || pattern_key || '%')
+                    """,
+                    (user_id, f"%{key}%", key),
+                ).fetchall()
+            for r in rows:
+                new_streak = int(r["mastered_streak"]) + 1
+                new_occ = 0 if new_streak >= 2 else max(0, int(r["occurrences"]) - 1)
+                conn.execute(
+                    """
+                    UPDATE weakness_memory
+                    SET occurrences = ?, mastered_streak = ?, last_seen_at = ?
+                    WHERE id = ?
+                    """,
+                    (new_occ, new_streak, now, r["id"]),
+                )
+                if r["pattern_key"] not in matched:
+                    matched.append(r["pattern_key"])
+    return matched
+
+
+def get_recent_step_turns(
+    session_id: str,
+    step_index: int,
+    limit: int = 2,
+    db_path: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    """Return prior student attempts for the given step ordered oldest-first."""
+    low = step_index * 10
+    high = (step_index + 1) * 10
+    with get_conn(db_path) as conn:
+        rows = conn.execute(
+            """
+            SELECT * FROM call_turns
+            WHERE session_id = ? AND speaker = 'student' AND turn_index >= ? AND turn_index < ?
+            ORDER BY turn_index DESC, created_at DESC
+            LIMIT ?
+            """,
+            (session_id, low, high, limit),
+        ).fetchall()
+        out = []
+        for r in reversed(rows):
+            d = dict(r)
+            d["tokens"] = json.loads(d.get("tokens_json") or "[]")
+            d["correction"] = json.loads(d.get("correction_json") or "{}")
+            out.append(d)
+        return out
+
+
 def list_weaknesses(user_id: str, limit: int = 12, db_path: Optional[Path] = None) -> List[Dict[str, Any]]:
     with get_conn(db_path) as conn:
         rows = conn.execute(
             """
             SELECT * FROM weakness_memory
-            WHERE user_id = ?
+            WHERE user_id = ? AND occurrences > 0
             ORDER BY occurrences DESC, last_seen_at DESC
             LIMIT ?
             """,

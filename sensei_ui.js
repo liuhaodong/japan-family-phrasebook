@@ -67,6 +67,11 @@
     mirrorPhase: "", // "" | "user_mirror_eval" | "user_mirror" | "teacher_explain" | "ready_retry" | "auto_next"
     lastTurnResult: null,
     turnHistory: [],
+    lastStepAttemptCtx: null,
+    consolidatingFull: false,
+    followupAnswer: null,
+    followupLoading: false,
+    followupInput: "",
 
     // Live Call state
     callActive: false,
@@ -618,7 +623,15 @@
           return `<span class="sensei-tok-punct">${surf}</span>`;
         }
         const labelHtml = formatTokenRubyHtml(tk.surface, tk.reading || "");
-        return `<button type="button" class="sensei-tok ${tk.is_content_word ? "content" : "func"}"
+        const diffCls =
+          tk.status === "sub"
+            ? " diff-sub"
+            : tk.status === "extra"
+            ? " diff-extra"
+            : tk.status === "missing"
+            ? " diff-missing"
+            : "";
+        return `<button type="button" class="sensei-tok ${tk.is_content_word ? "content" : "func"}${diffCls}"
           data-tok-surface="${surf}"
           data-tok-lemma="${escapeHtml(tk.lemma || tk.surface)}"
           data-tok-reading="${escapeHtml(tk.reading || "")}"
@@ -626,6 +639,86 @@
           title="${escapeHtml(tk.reading ? tk.reading + (tk.meaning_cn ? " · " + tk.meaning_cn : "") : "点击查词")}">${labelHtml}</button>`;
       })
       .join("");
+  }
+
+  function renderDiffTokensHtml(diffItems, fallbackTokens, contextJp) {
+    const list = Array.isArray(diffItems) && diffItems.length ? diffItems : fallbackTokens;
+    return renderTokensHtml(list, contextJp);
+  }
+
+  function renderPitchSparklineHtml(audioStats) {
+    if (!audioStats || !audioStats.analyzed) return "";
+    const activeSec = ((audioStats.activeSpeechMs || 0) / 1000).toFixed(1);
+    const pauseCnt = Number(audioStats.internalPauseCount || 0);
+    const spread = Number(audioStats.pitchSpreadSemitones || 0);
+    const contour = Array.isArray(audioStats.pitchContour) ? audioStats.pitchContour : [];
+
+    const statsParts = [`发声 ${activeSec}s`];
+    if (pauseCnt > 0) {
+      statsParts.push(`停顿 ${pauseCnt}次`);
+    }
+    if (spread > 0) {
+      statsParts.push(`音高起伏 ${spread.toFixed(1)}半音`);
+    }
+
+    let svgHtml = "";
+    const validPts = contour
+      .map((v, i) => (typeof v === "number" ? { x: i, y: v } : null))
+      .filter(Boolean);
+    if (validPts.length >= 2) {
+      const denom = Math.max(1, contour.length - 1);
+      const ptsAttr = validPts
+        .map((p) => {
+          const x = (4 + (p.x / denom) * 88).toFixed(1);
+          const y = (22 - (p.y / 100) * 18).toFixed(1);
+          return `${x},${y}`;
+        })
+        .join(" ");
+      svgHtml = `<svg class="sensei-pitch-svg" viewBox="0 0 96 26" aria-label="声调起伏曲线">
+        <polyline fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${ptsAttr}" style="color:var(--accent-indigo);" />
+      </svg>`;
+    }
+
+    return `
+      <div class="sensei-acoustic-row">
+        <span>${escapeHtml(statsParts.join(" · "))}</span>
+        ${svgHtml}
+      </div>
+    `;
+  }
+
+  async function askSenseiFollowup(questionText) {
+    const q = (questionText || "").trim();
+    const res = state.lastTurnResult;
+    if (!q || !res || state.followupLoading) return;
+    const meta = state.lessonSession?.lessonMeta || {};
+    state.followupLoading = true;
+    state.followupInput = q;
+    renderView();
+    try {
+      const data = await apiJson("/api/sensei/ask", {
+        method: "POST",
+        body: JSON.stringify({
+          question_cn: q,
+          target_jp: res.targetJp || "",
+          heard_jp: res.heardJp || "",
+          better_jp: res.betterJp || "",
+          grammar_focus: meta.grammarFocus || "",
+          jlpt_target: res.jlptLevel || meta.level || state.jlptTarget || "N4",
+          pitch_note: res.pitchNote || "",
+          grammar_note: res.grammarNote || "",
+          action_tip: res.actionTipCn || "",
+          coach_model: state.coachModel || null,
+        }),
+      });
+      state.followupLoading = false;
+      state.followupAnswer = data;
+      renderView();
+    } catch (err) {
+      state.followupLoading = false;
+      renderView();
+      showToast(`❌ 追问老师失败：${err.message}`);
+    }
   }
 
   async function openWordLookup(surface, lemma, reading, contextJp) {
@@ -1120,6 +1213,11 @@
       state.peekHint = false;
       state.lastTurnResult = null;
       state.turnHistory = [];
+      state.lastStepAttemptCtx = null;
+      state.consolidatingFull = false;
+      state.followupAnswer = null;
+      state.followupLoading = false;
+      state.followupInput = "";
       state.mirrorPhase = data.openingAudioUrl || data.steps?.[0]?.teacherPrompt ? "teacher_explain" : "";
       renderView();
       if (data.openingAudioUrl) {
@@ -1211,6 +1309,11 @@
       state.drillChunkTokens = [];
       state.peekHint = false;
       state.lastTurnResult = null;
+      state.lastStepAttemptCtx = null;
+      state.consolidatingFull = false;
+      state.followupAnswer = null;
+      state.followupLoading = false;
+      state.followupInput = "";
       const step = state.lessonSession.steps[firstNewIdx];
       state.mirrorPhase = step && step.teacherPrompt ? "teacher_explain" : "";
       renderView();
@@ -1243,8 +1346,14 @@
     state.lessonStepIdx = next;
     state.attempt = 1;
     state.drillChunkJp = "";
+    state.drillChunkTokens = [];
     state.peekHint = false;
     state.lastTurnResult = null;
+    state.lastStepAttemptCtx = null;
+    state.consolidatingFull = false;
+    state.followupAnswer = null;
+    state.followupLoading = false;
+    state.followupInput = "";
     const step = steps[next];
     state.mirrorPhase = step && step.teacherPrompt ? "teacher_explain" : "";
     renderView();
@@ -1736,6 +1845,9 @@
     }, 28000);
 
     state.isEvaluatingTurn = true;
+    state.followupAnswer = null;
+    state.followupLoading = false;
+    state.followupInput = "";
     // Play user's own recording IMMEDIATELY (0ms wait) in parallel with Gemini diagnosis!
     state.mirrorPhase = state.mirrorPlayback ? "user_mirror_eval" : "";
     renderView();
@@ -1782,6 +1894,18 @@
       if (meta.lessonId) fd.append("lesson_id", meta.lessonId);
       if (meta.grammarFocus) fd.append("grammar_focus", meta.grammarFocus);
       if (step.questionJp) fd.append("question_jp", step.questionJp);
+      fd.append("jlpt_target", meta.level || state.jlptTarget || "N4");
+      if (state.lastStepAttemptCtx && state.lastStepAttemptCtx.stepIndex === step.stepIndex) {
+        if (state.lastStepAttemptCtx.heardJp) {
+          fd.append("previous_heard_jp", state.lastStepAttemptCtx.heardJp);
+        }
+        if (typeof state.lastStepAttemptCtx.overallScore === "number") {
+          fd.append("previous_score", String(state.lastStepAttemptCtx.overallScore));
+        }
+        if (state.lastStepAttemptCtx.issuesSummary) {
+          fd.append("previous_issues_summary", state.lastStepAttemptCtx.issuesSummary);
+        }
+      }
 
       const res = await apiJson("/api/sensei/turn", {
         method: "POST",
@@ -1797,6 +1921,15 @@
       const isNoSpeech = Boolean(res.noSpeech || res.decision === "no_speech");
       if (!isNoSpeech) {
         state.turnHistory.push(res);
+        state.lastStepAttemptCtx = {
+          stepIndex: step.stepIndex,
+          heardJp: res.heardJp || "",
+          overallScore: Number(res.overallScore || 0),
+          issuesSummary: (res.issues || [])
+            .map((it) => `${it.patternKey || it.type || ""}:${it.detailCn || ""}`)
+            .filter(Boolean)
+            .join("；"),
+        };
       }
       state.isEvaluatingTurn = false;
 
@@ -1805,14 +1938,22 @@
       } else if (res.decision === "retry_chunk" && res.drillChunkJp) {
         state.drillChunkJp = res.drillChunkJp;
         state.drillChunkTokens = res.drillChunkTokens || [];
+        state.consolidatingFull = false;
+        state.attempt += 1;
+      } else if (res.decision === "consolidate_full") {
+        state.drillChunkJp = "";
+        state.drillChunkTokens = [];
+        state.consolidatingFull = true;
         state.attempt += 1;
       } else if (res.decision === "retry_full") {
         state.drillChunkJp = "";
         state.drillChunkTokens = [];
+        state.consolidatingFull = false;
         state.attempt += 1;
       } else {
         state.drillChunkJp = "";
         state.drillChunkTokens = [];
+        state.consolidatingFull = false;
       }
 
       // Immediately prefetch TTS in parallel while local mirror finishes playing
@@ -1883,7 +2024,7 @@
         loadSyllabus();
       }
 
-      if ((res.decision === "retry_chunk" || res.decision === "retry_full") && state.autoReopenMic) {
+      if ((res.decision === "retry_chunk" || res.decision === "retry_full" || res.decision === "consolidate_full") && state.autoReopenMic) {
         await maybeAutoOpenMic(seq);
       } else if (
         (res.decision === "pass" || res.decision === "advance") &&
@@ -2680,7 +2821,7 @@
           </div>
           <div class="focus-progress-meta">
             <span>第 ${state.lessonStepIdx + 1} / ${steps.length} 步 · ${escapeHtml(step.stageLabel)}</span>
-            <span>第 ${state.attempt} 次尝试${state.drillChunkJp ? " · 拆词重练" : ""}</span>
+            <span>第 ${state.attempt} 次尝试${state.drillChunkJp ? " · 拆词重练" : state.consolidatingFull ? " · 合句验收" : ""}</span>
           </div>
         </div>
 
@@ -2791,11 +2932,22 @@
     const isNoSpeech = Boolean(res.noSpeech || res.decision === "no_speech");
     const passed = !isNoSpeech && res.decision === "pass";
     const advanced = !isNoSpeech && res.decision === "advance";
-    const badgeClass = isNoSpeech ? "warn" : passed ? "pass" : advanced ? "warn" : "retry";
+    const consolidated = !isNoSpeech && res.decision === "consolidate_full";
+    const badgeClass = isNoSpeech
+      ? "warn"
+      : passed
+      ? "pass"
+      : consolidated
+      ? "consolidate"
+      : advanced
+      ? "warn"
+      : "retry";
     const badgeText = isNoSpeech
       ? "未检测到清晰日语人声 · 请再试一次"
       : passed
       ? "过关 · 节奏与音调稳定"
+      : consolidated
+      ? "拆词已过关 · 回整句合练验收"
       : advanced
       ? "已记入错题 · 建议进入下一步"
       : res.decision === "retry_chunk"
@@ -2803,8 +2955,79 @@
       : "请听纠音示范再试一次";
     const scorePillText = isNoSpeech
       ? `未收音 · 请重读${res.audioStats && res.audioStats.analyzed ? ` · 峰值 ${res.audioStats.peakDb}dB` : ""}`
-      : `总分 ${res.overallScore} · 音调 ${res.pitchScore} · 语法 ${res.grammarScore}${res.evalMs ? ` · ${(res.evalMs / 1000).toFixed(1)}s` : ""}`;
+      : `总分 ${res.overallScore}${res.jlptLevel ? ` · ${res.jlptLevel}标尺` : ""}${res.evalMs ? ` · ${(res.evalMs / 1000).toFixed(1)}s` : ""}`;
     const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
+
+    const dimBar = (lbl, val) => {
+      const n = Number(val || 0);
+      const tone = n >= 88 ? "good" : n >= 75 ? "mid" : "low";
+      return `
+        <div class="sensei-dim-item">
+          <div class="sensei-dim-head"><span>${lbl}</span><strong>${n}</strong></div>
+          <div class="sensei-dim-bar"><div class="sensei-dim-fill ${tone}" style="width:${Math.max(4, Math.min(100, n))}%"></div></div>
+        </div>
+      `;
+    };
+
+    const issuesList = Array.isArray(res.issues) ? res.issues.filter((it) => it && (it.detailCn || it.patternKey)) : [];
+    const issueTypeMap = {
+      pitch: "音调",
+      sokuon: "促音",
+      long_vowel: "长音",
+      voicing: "浊音",
+      consonant: "辅音",
+      ending: "句尾",
+      particle: "助词",
+      grammar: "语法",
+      keigo: "得体",
+    };
+
+    const pitchBadge = res.pitchNotation || res.drillChunkReading || "";
+    const followupHtml = !isNoSpeech
+      ? `
+        <div class="sensei-followup-box">
+          <div style="font-size:0.78rem;font-weight:800;color:var(--text-muted);">❓ 对这句有疑问？直接追问私教老师</div>
+          <div class="sensei-followup-chips">
+            <button type="button" class="sensei-mini-btn" data-ask-quick="为什么这里要这样读/这样改？">为什么这样改</button>
+            <button type="button" class="sensei-mini-btn" data-ask-quick="这句话有更礼貌或更像日本本地人的说法吗？">换更地道/礼貌说法</button>
+            <button type="button" class="sensei-mini-btn" data-ask-quick="音调的高低转折怎么把握才不像中文腔？">怎么练准音调</button>
+          </div>
+          <div class="sensei-followup-form">
+            <input type="text" id="sensei-ask-input" value="${escapeHtml(state.followupInput || "")}" placeholder="比如：助词用に还是で？ / 还能怎么委婉拒绝？" ${state.followupLoading ? "disabled" : ""} />
+            <button type="button" class="sensei-btn ghost" id="sensei-ask-submit-btn" ${state.followupLoading ? "disabled" : ""}>
+              ${state.followupLoading ? "老师思考中..." : "问老师"}
+            </button>
+          </div>
+          ${
+            state.followupAnswer
+              ? `<div class="sensei-followup-reply">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+                    <strong style="color:var(--accent-indigo);">👩‍🏫 东京私教解答</strong>
+                    ${
+                      state.followupAnswer.spokenSummaryCn
+                        ? `<button type="button" class="sensei-mini-btn" data-tts-text="${escapeHtml(state.followupAnswer.spokenSummaryTts || state.followupAnswer.spokenSummaryCn)}">${ico("speaker")} 听老师回答</button>`
+                        : ""
+                    }
+                  </div>
+                  <div>${escapeHtml(state.followupAnswer.answerCn || "")}</div>
+                  ${(state.followupAnswer.examples || [])
+                    .map(
+                      (ex) => `
+                      <div class="sensei-followup-ex">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:0.4rem;">
+                          <div style="font-weight:700;">${renderTokensHtml(ex.tokens, ex.jp)}</div>
+                          <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(ex.jp)}">${ico("speaker")}</button>
+                        </div>
+                        <div style="font-size:0.76rem;color:var(--text-secondary);">${escapeHtml(ex.cn || "")}</div>
+                      </div>`
+                    )
+                    .join("")}
+                </div>`
+              : ""
+          }
+        </div>
+      `
+      : "";
 
     return `
       <div class="sensei-card sensei-diagnosis-card ${badgeClass}">
@@ -2813,25 +3036,83 @@
           <span class="sensei-score-pill" title="模型：${escapeHtml(res.modelUsed || "")}">${escapeHtml(scorePillText)}</span>
         </div>
 
+        ${
+          !isNoSpeech
+            ? `<div class="sensei-dim-grid">
+                ${dimBar("音调", res.pitchScore)}
+                ${dimBar("拍感", res.rhythmScore)}
+                ${dimBar("语法", res.grammarScore)}
+                ${dimBar("得体", res.politenessScore ?? res.grammarScore)}
+              </div>`
+            : ""
+        }
+
+        ${res.progressNoteCn ? `<div class="sensei-progress-banner">📈 较上次进步：${escapeHtml(res.progressNoteCn)}</div>` : ""}
+        ${res.praiseCn ? `<div class="sensei-praise-banner">👍 具体亮点：${escapeHtml(res.praiseCn)}</div>` : ""}
+        ${
+          (res.resolvedWeaknesses || []).length
+            ? `<div class="sensei-grad-badges">${res.resolvedWeaknesses
+                .map((k) => `<span class="sensei-grad-pill">🏆 攻克弱项：${escapeHtml(k)}</span>`)
+                .join("")}</div>`
+            : ""
+        }
+
         <div class="sensei-diff-grid">
           <div class="sensei-diff-col">
             <div class="sensei-diff-lbl">老师听到的你</div>
-            <div class="sensei-diff-val">${renderTokensHtml(res.heardTokens, res.heardJp || "（未识别出清晰日语）")}</div>
+            <div class="sensei-diff-val">${renderDiffTokensHtml(res.heardDiff, res.heardTokens, res.heardJp || "（未识别出清晰日语）")}</div>
+            ${renderPitchSparklineHtml(res.audioStats)}
             ${res.localMirrorUrl || res.userAudioUrl ? `<button type="button" class="sensei-mini-btn" data-play-url="${escapeHtml(res.localMirrorUrl || res.userAudioUrl)}">${ico("speaker")} 重听原声</button>` : ""}
           </div>
           <div class="sensei-diff-col">
             <div class="sensei-diff-lbl">标准示范读法</div>
-            <div class="sensei-diff-val">${renderTokensHtml(res.betterTokens || res.targetTokens, res.betterJp || res.targetJp)}</div>
+            <div class="sensei-diff-val">${renderDiffTokensHtml(res.targetDiff, res.betterTokens || res.targetTokens, res.betterJp || res.targetJp)}</div>
             <button type="button" class="sensei-mini-btn" id="sensei-diag-teacher-play" ${res.teacherAudioUrl ? `data-play-url="${escapeHtml(res.teacherAudioUrl)}"` : `data-tts-text="${escapeHtml(res.teacherSpokenTts || res.teacherSpokenScript || res.betterJp || res.targetJp)}"`}>${ico("speaker")} 纠音示范</button>
           </div>
         </div>
 
         <div class="sensei-teacher-speech">
-          <strong>老师点评：</strong>${escapeHtml(res.teacherSpokenScript)}
+          <strong>老师口播点评：</strong>${escapeHtml(res.teacherSpokenScript)}
         </div>
 
-        ${res.pitchNote ? `<div class="sensei-note-row"><strong>音调：</strong>${escapeHtml(res.pitchNote)}</div>` : ""}
+        ${
+          res.actionTipCn || pitchBadge
+            ? `<div class="sensei-action-box">
+                <strong>🎯 口腔动作处方：</strong>${escapeHtml(res.actionTipCn || res.pitchNote || "")}
+                ${pitchBadge ? `<span class="sensei-pitch-chip">音调 ${escapeHtml(pitchBadge)}</span>` : ""}
+              </div>`
+            : ""
+        }
+
+        ${
+          issuesList.length
+            ? `<div class="sensei-issue-list">${issuesList
+                .map(
+                  (it) => `<div class="sensei-issue-item">
+                    <span class="sensei-issue-tag ${it.severity === "critical" ? "critical" : ""}">${escapeHtml(it.patternKey || issueTypeMap[it.type] || "纠音")}</span>
+                    <span>${escapeHtml(it.detailCn || "")}</span>
+                  </div>`
+                )
+                .join("")}</div>`
+            : ""
+        }
+
+        ${res.pitchNote && res.actionTipCn && res.pitchNote !== res.actionTipCn ? `<div class="sensei-note-row"><strong>音调：</strong>${escapeHtml(res.pitchNote)}</div>` : ""}
         ${res.grammarNote ? `<div class="sensei-note-row"><strong>语法：</strong>${escapeHtml(res.grammarNote)}</div>` : ""}
+        ${res.pragmaticNoteCn ? `<div class="sensei-note-row"><strong>得体度：</strong>${escapeHtml(res.pragmaticNoteCn)}</div>` : ""}
+
+        ${
+          res.nativeUpgradeJp
+            ? `<div class="sensei-native-upgrade">
+                <div class="sensei-native-upgrade-head">
+                  <span>✨ 东京地道升级表达</span>
+                  <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(res.nativeUpgradeJp)}">${ico("speaker")} 听地道版</button>
+                </div>
+                <div style="font-size:0.95rem;font-weight:700;line-height:1.95;">${renderTokensHtml(res.nativeUpgradeTokens, res.nativeUpgradeJp)}</div>
+                ${res.nativeUpgradeNoteCn ? `<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.15rem;">${escapeHtml(res.nativeUpgradeNoteCn)}</div>` : ""}
+              </div>`
+            : ""
+        }
 
         ${
           (res.extractedVocab || []).length
@@ -2843,6 +3124,16 @@
                       `<button type="button" class="sensei-save-vocab-btn" data-save-diag-vocab="${i}">+ ${escapeHtml(v.surface || v.lemma)} (${escapeHtml(v.meaningCn || v.reading || "")})</button>`
                   )
                   .join("")}
+              </div>`
+            : ""
+        }
+
+        ${followupHtml}
+
+        ${
+          consolidated && state.lessonSession && state.lessonStepIdx < state.lessonSession.steps.length - 1
+            ? `<div style="margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.45rem;">
+                <button type="button" class="sensei-btn ghost" id="sensei-skip-consolidate-btn">跳过合练，直接下一步 ${ico("chevronRight")}</button>
               </div>`
             : ""
         }
@@ -3823,6 +4114,27 @@
     if (nextBtn) nextBtn.onclick = () => advanceLessonStep(1);
     const passNextBtn = root.querySelector("#sensei-pass-next-btn");
     if (passNextBtn) passNextBtn.onclick = () => advanceLessonStep(1);
+    const skipConsBtn = root.querySelector("#sensei-skip-consolidate-btn");
+    if (skipConsBtn) skipConsBtn.onclick = () => advanceLessonStep(1);
+    root.querySelectorAll("[data-ask-quick]").forEach((btn) => {
+      btn.onclick = () => askSenseiFollowup(btn.dataset.askQuick);
+    });
+    const askInput = root.querySelector("#sensei-ask-input");
+    if (askInput) {
+      askInput.oninput = () => {
+        state.followupInput = askInput.value;
+      };
+      askInput.onkeydown = (e) => {
+        if (e.key === "Enter" && !e.isComposing) {
+          e.preventDefault();
+          askSenseiFollowup(askInput.value);
+        }
+      };
+    }
+    const askSubmitBtn = root.querySelector("#sensei-ask-submit-btn");
+    if (askSubmitBtn) {
+      askSubmitBtn.onclick = () => askSenseiFollowup(askInput ? askInput.value : state.followupInput);
+    }
     const regenBtn = root.querySelector("#sensei-regen-lesson-btn");
     if (regenBtn) regenBtn.onclick = regenerateCurrentLesson;
     const extendBtn = root.querySelector("#sensei-extend-lesson-btn");

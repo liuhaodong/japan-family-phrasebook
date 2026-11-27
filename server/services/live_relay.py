@@ -269,8 +269,11 @@ async def handle_live_websocket(
                     transcript_user=transcript_copy,
                     last_ai_jp=last_ai_copy,
                     scenario_title=scenario_title,
+                    jlpt_target=jlpt_target,
                     api_key=api_key,
                 )
+                if evaluation.get("noSpeech"):
+                    return
                 natural_jp = evaluation.get("naturalJp") or transcript_copy
                 from server.db import update_turn_correction
 

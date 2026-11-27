@@ -265,13 +265,54 @@ async def test_repeat_until_good_audio_mirror_state_machine(isolated_env):
                 content_type="audio/webm;codecs=opus",
                 api_key="test-key",
             )
-            assert r2["decision"] == "pass"
+            assert r2["decision"] == "consolidate_full"
+            assert r2["consolidatingFull"] is True
+            assert r2["drillChunkJp"] == ""
             assert r2["teacherAudioUrl"] == ""
             assert r2["userAudioUrl"].endswith(".webm")
             mock_tts.assert_not_called()
             webm_res = client.get(r2["userAudioUrl"])
             assert webm_res.status_code == 200
             assert "audio/webm" in webm_res.headers["content-type"]
+
+        # Consolidation round (attempt=3 on full sentence) passing -> clean pass
+        with patch(
+            "server.services.sensei_engine._call_gemini_json",
+            AsyncMock(
+                return_value={
+                    "overallScore": 91,
+                    "pitchScore": 92,
+                    "grammarScore": 94,
+                    "rhythmScore": 90,
+                    "politenessScore": 90,
+                    "heardJp": "サンフランシスコの近くから来ました",
+                    "betterJp": "サンフランシスコの近くから来ました。",
+                    "drillChunkJp": "",
+                    "praiseCn": "整句连贯自然！",
+                    "progressNoteCn": "把「近く」的高低音放回整句后也非常稳",
+                    "actionTipCn": "句尾ます收得干脆利落。",
+                    "issues": [],
+                    "teacherSpokenScript": "整句也非常稳，太棒了！サンフランシスコの近くから来ました。",
+                    "extractedVocab": [],
+                    "_modelUsed": "gemini-4-hydrogen",
+                }
+            ),
+        ):
+            r2_full = await sensei_engine.evaluate_sensei_turn(
+                session_id=sid,
+                user_id="haodong",
+                step_index=0,
+                stage="SHADOW_DRILL",
+                target_jp="サンフランシスコの近くから来ました。",
+                attempt=3,
+                drill_chunk_jp="",
+                audio_bytes=fake_webm,
+                audio_filename="turn.webm",
+                content_type="audio/webm;codecs=opus",
+                api_key="test-key",
+            )
+            assert r2_full["decision"] == "pass"
+            assert r2_full["consolidatingFull"] is False
 
         # Attempt 3 failing -> advance gently without infinite loop + weakness recorded
         with patch(
@@ -1385,3 +1426,204 @@ async def test_grammar_point_travel_ai_authoring_and_extend_lesson(isolated_env)
         )
     assert [s["stepIndex"] for s in ext_res["steps"]] == [8, 9, 10]
     assert all(len(s["tokens"]) >= 2 and s["teacherPromptTts"] for s in ext_res["steps"])
+
+
+def test_acoustic_prosody_telemetry_pause_and_pitch_contour():
+    import math
+    import struct
+    from server.services.audio_utils import analyze_audio_speech_activity, format_acoustic_summary_for_prompt
+
+    sr = 16000
+    seg1 = b"".join(struct.pack("<h", int(10000 * math.sin(2.0 * math.pi * 180.0 * i / sr))) for i in range(int(sr * 0.4)))
+    gap = b"\x00\x00" * int(sr * 0.45)
+    seg2 = b"".join(struct.pack("<h", int(10000 * math.sin(2.0 * math.pi * 270.0 * i / sr))) for i in range(int(sr * 0.4)))
+    wav_bytes = pcm_to_wav_bytes(seg1 + gap + seg2, sample_rate=sr)
+
+    stats = analyze_audio_speech_activity(wav_bytes, filename="prosody.wav", content_type="audio/wav")
+    assert stats["analyzed"] is True
+    assert stats["has_speech"] is True
+    assert stats["internalPauseCount"] >= 1
+    assert stats["maxInternalPauseMs"] >= 350
+    assert stats["pitchSpreadSemitones"] >= 4.0
+    assert len(stats["pitchHzRange"]) == 2
+    assert len(stats["pitchContour"]) >= 6
+
+    summary = format_acoustic_summary_for_prompt(stats, target_kana_len=10)
+    assert "停顿" in summary and "半音" in summary
+
+
+@pytest.mark.asyncio
+async def test_veteran_sensei_memory_weakness_graduation_and_token_diff(isolated_env):
+    import math
+    import struct
+
+    sr = 16000
+    seg1 = b"".join(struct.pack("<h", int(9500 * math.sin(2.0 * math.pi * 175.0 * i / sr))) for i in range(int(sr * 0.45)))
+    seg2 = b"".join(struct.pack("<h", int(9500 * math.sin(2.0 * math.pi * 260.0 * i / sr))) for i in range(int(sr * 0.45)))
+    sample_wav = pcm_to_wav_bytes(seg1 + seg2, sample_rate=sr)
+
+    db.upsert_weakness(
+        "haodong",
+        "particle",
+        "助词は/が",
+        example_jp="私は寿司が好きです。",
+        note_cn="好き前面用が",
+        db_path=isolated_env["db"],
+    )
+
+    session_info = await sensei_engine.create_guided_lesson(
+        user_id="haodong",
+        curriculum_mode="sensei_syllabus",
+        lesson_id="S33_n3_decisions_habits",
+        ai_generate=False,
+        api_key=None,
+    )
+    sid = session_info["sessionId"]
+
+    captured_prompts = []
+
+    async def _mock_eval_1(parts, **kwargs):
+        captured_prompts.append(parts[0]["text"])
+        return {
+            "noSpeech": False,
+            "heardJp": "私は寿司を好きです。",
+            "teacherSpokenScript": "这里把把を换成が会更自然，再试一次。私は寿司が好きです。",
+            "overallScore": 76,
+            "pitchScore": 80,
+            "grammarScore": 70,
+            "rhythmScore": 82,
+            "politenessScore": 86,
+            "betterJp": "私は寿司が好きです。",
+            "drillChunkJp": "",
+            "drillChunkReading": "",
+            "pitchNotation": "す[し]が",
+            "praiseCn": "「私」「寿司」发音很饱满",
+            "progressNoteCn": "",
+            "actionTipCn": "把を轻换成が，停顿半拍后自然收尾。",
+            "pitchNote": "音高起伏自然",
+            "grammarNote": "好恶对象「好き」前固定用が。",
+            "pragmaticNoteCn": "礼貌体得体",
+            "nativeUpgradeJp": "やっぱりお寿司がいちばん好きですね。",
+            "nativeUpgradeNoteCn": "加やっぱり和ね更有聊天感",
+            "resolvedWeaknesses": [],
+            "issues": [{"type": "particle", "severity": "minor", "patternKey": "助词は/が", "detailCn": "好き前面用が"}],
+            "extractedVocab": [],
+            "_modelUsed": "gemini-4-hydrogen",
+        }
+
+    with patch("server.services.sensei_engine._call_gemini_json", side_effect=_mock_eval_1):
+        r1 = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="CONTROLLED_DRILL",
+            target_jp="私は寿司が好きです。",
+            attempt=1,
+            audio_bytes=sample_wav,
+            lesson_id="S33_n3_decisions_habits",
+            api_key="test-key",
+        )
+
+    assert r1["jlptLevel"] == "N3"
+    assert r1["politenessScore"] == 86
+    assert r1["actionTipCn"]
+    assert r1["pitchNotation"] == "す[し]が"
+    assert len(r1["nativeUpgradeTokens"]) >= 3
+    assert any(t.get("status") == "sub" for t in r1["heardDiff"])
+    assert any(t.get("status") == "sub" for t in r1["targetDiff"])
+    assert "N3" in captured_prompts[0]
+    assert "助词は/が" in captured_prompts[0]
+    assert "半音" in captured_prompts[0]
+
+    # Attempt 2 automatically receives previous attempt context from SQLite + graduates weakness after 2 passes
+    async def _mock_eval_pass(parts, **kwargs):
+        captured_prompts.append(parts[0]["text"])
+        return {
+            "noSpeech": False,
+            "heardJp": "私は寿司が好きです。",
+            "teacherSpokenScript": "这次助词改得太准了！私は寿司が好きです。",
+            "overallScore": 93,
+            "pitchScore": 92,
+            "grammarScore": 95,
+            "rhythmScore": 91,
+            "politenessScore": 94,
+            "betterJp": "私は寿司が好きです。",
+            "drillChunkJp": "",
+            "pitchNotation": "す[し]が",
+            "praiseCn": "助词が非常清晰，整句流利",
+            "progressNoteCn": "成功把上次的を改成了正确的が",
+            "actionTipCn": "保持现在的节奏感即可",
+            "pitchNote": "高低自然",
+            "grammarNote": "が用法完全正确",
+            "nativeUpgradeJp": "",
+            "resolvedWeaknesses": ["助词は/が"],
+            "issues": [],
+            "extractedVocab": [],
+            "_modelUsed": "gemini-4-hydrogen",
+        }
+
+    with patch("server.services.sensei_engine._call_gemini_json", side_effect=_mock_eval_pass):
+        r2 = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="CONTROLLED_DRILL",
+            target_jp="私は寿司が好きです。",
+            attempt=2,
+            audio_bytes=sample_wav,
+            lesson_id="S33_n3_decisions_habits",
+            api_key="test-key",
+        )
+        assert "私は寿司を好きです" in captured_prompts[1]
+        assert r2["progressNoteCn"]
+        assert "助词は/が" in r2["resolvedWeaknesses"]
+        # First fix reduces occurrences from 2 -> 1
+        active_mid = db.list_weaknesses("haodong", db_path=isolated_env["db"])
+        assert len(active_mid) == 1 and active_mid[0]["occurrences"] == 1
+
+        # Second pass completes mastery_streak >= 2 -> graduates out of active weakness radar
+        await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=1,
+            stage="CONTROLLED_DRILL",
+            target_jp="私は寿司が好きです。",
+            attempt=1,
+            audio_bytes=sample_wav,
+            lesson_id="S33_n3_decisions_habits",
+            api_key="test-key",
+        )
+        active_after = db.list_weaknesses("haodong", db_path=isolated_env["db"])
+        assert all(w["pattern_key"] != "助词は/が" for w in active_after)
+
+
+def test_sensei_followup_ask_endpoint(isolated_env):
+    mock_reply = {
+        "answerCn": "在餐厅或向别人借儿童椅时，用お借りできますか比ください更委婉礼貌。테스트",
+        "spokenSummaryCn": "用借来表达请求更柔和礼貌。子ども用の椅子をお借りできますか。",
+        "examples": [
+            {"jp": "子ども用の椅子をお借りできますか。", "cn": "请问能借用一下儿童椅吗？（委婉推荐）"},
+            {"jp": "少しお時間をいただけますか。", "cn": "能占用您一点时间吗？"},
+        ],
+        "_modelUsed": "gemini-4-hydrogen",
+    }
+
+    with patch("server.services.sensei_engine._call_gemini_json", AsyncMock(return_value=mock_reply)):
+        client = TestClient(app)
+        resp = client.post(
+            "/api/sensei/ask",
+            json={
+                "question_cn": "这句话有更礼貌的说法吗？",
+                "target_jp": "子どもの椅子をください。",
+                "heard_jp": "子どもの椅子をください",
+                "better_jp": "子ども用の椅子をお借りできますか。",
+                "jlpt_target": "N4",
+            },
+            headers={"X-Gemini-Api-Key": "test-key"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "테스트" not in body["answerCn"]
+    assert len(body["examples"]) == 2
+    assert len(body["examples"][0]["tokens"]) >= 3
+    assert body["spokenSummaryTts"]
