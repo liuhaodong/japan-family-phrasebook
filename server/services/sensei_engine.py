@@ -41,6 +41,7 @@ from server.db import (
 )
 from server.services.audio_utils import (
     analyze_audio_speech_activity,
+    boost_quiet_audio_for_gemini,
     format_acoustic_summary_for_prompt,
     normalize_gemini_audio,
 )
@@ -1685,10 +1686,14 @@ async def evaluate_sensei_turn(
         '"extractedVocab":[{"surface":"","lemma":"","reading":"","pitchAccent":"","meaningCn":"","jlpt":"N4"}]}'
     )
 
-    audio_b64 = base64.b64encode(norm_bytes).decode("ascii")
+    gemini_bytes, gemini_mime, was_boosted = boost_quiet_audio_for_gemini(
+        norm_bytes, audio_mime, audio_stats
+    )
+    audio_stats["gainBoosted"] = was_boosted
+    audio_b64 = base64.b64encode(gemini_bytes).decode("ascii")
     parts = [
         {"text": prompt},
-        {"inlineData": {"mimeType": audio_mime, "data": audio_b64}},
+        {"inlineData": {"mimeType": gemini_mime, "data": audio_b64}},
     ]
     chosen_model = (coach_model or "").strip()
     if chosen_model not in _ALLOWED_COACH_MODELS:

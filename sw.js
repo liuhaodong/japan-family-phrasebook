@@ -1,4 +1,4 @@
-const CACHE_NAME = "japan-family-phrasebook-v38";
+const CACHE_NAME = "japan-family-phrasebook-v39";
 const ASSETS = [
   "./",
   "./index.html",

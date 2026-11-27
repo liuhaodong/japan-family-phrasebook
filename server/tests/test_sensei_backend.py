@@ -1627,3 +1627,38 @@ def test_sensei_followup_ask_endpoint(isolated_env):
     assert len(body["examples"]) == 2
     assert len(body["examples"][0]["tokens"]) >= 3
     assert body["spokenSummaryTts"]
+
+
+def test_quiet_speech_and_short_phrase_with_silence_pass_and_gain_boost():
+    import math
+    import struct
+    from server.services.audio_utils import analyze_audio_speech_activity, boost_quiet_audio_for_gemini
+
+    sr = 16000
+    # 1. Continuous quiet speech (amplitude ~400 -> peak ~0.012, no leading silence)
+    quiet_pcm = b"".join(struct.pack("<h", int(400 * math.sin(2.0 * math.pi * 210.0 * i / sr))) for i in range(int(sr * 0.6)))
+    quiet_wav = pcm_to_wav_bytes(quiet_pcm, sample_rate=sr)
+    stats1 = analyze_audio_speech_activity(quiet_wav, "quiet.wav", "audio/wav")
+    assert stats1["analyzed"] is True
+    assert stats1["has_speech"] is True
+
+    boosted_bytes, boosted_mime, was_boosted = boost_quiet_audio_for_gemini(quiet_wav, "audio/wav", stats1)
+    assert was_boosted is True
+    assert boosted_mime == "audio/wav"
+    boosted_stats = analyze_audio_speech_activity(boosted_bytes, "boosted.wav", "audio/wav")
+    assert boosted_stats["peakDb"] > stats1["peakDb"] + 18.0
+    assert boosted_stats["peakDb"] > -16.0
+
+    # 2. Quiet short word (0.28s, peak ~0.014) padded by 2.0s silence before & after
+    pad = b"\x00\x00" * int(sr * 2.0)
+    short_word = b"".join(struct.pack("<h", int(460 * math.sin(2.0 * math.pi * 220.0 * i / sr))) for i in range(int(sr * 0.28)))
+    padded_wav = pcm_to_wav_bytes(pad + short_word + pad, sample_rate=sr)
+    stats2 = analyze_audio_speech_activity(padded_wav, "short_word.wav", "audio/wav")
+    assert stats2["has_speech"] is True
+    assert stats2["activeSpeechMs"] >= 180
+
+    # 3. True zero silence & ultra-short 0.1s click remain blocked
+    silent_wav = pcm_to_wav_bytes(b"\x00\x00" * sr, sample_rate=sr)
+    assert analyze_audio_speech_activity(silent_wav, "silent.wav", "audio/wav")["has_speech"] is False
+    click_wav = _make_audible_wav(duration_sec=0.1)
+    assert analyze_audio_speech_activity(click_wav, "click.wav", "audio/wav")["has_speech"] is False

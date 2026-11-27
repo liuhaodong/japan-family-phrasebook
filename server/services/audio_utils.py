@@ -244,8 +244,8 @@ def _estimate_f0_hz(window: Sequence[int], sr: int) -> Optional[float]:
     mean_val = sum(buf) / n
     centered = [float(x) - mean_val for x in buf]
     energy = sum(v * v for v in centered) / n
-    # Require minimum voiced frame energy (above background floor)
-    if energy < (32768.0 * 0.008) ** 2:
+    # Require minimum voiced frame energy while staying sensitive to quiet speech
+    if energy < (32768.0 * 0.0025) ** 2:
         return None
 
     min_lag = max(2, int(eff_sr / 380.0))
@@ -370,9 +370,13 @@ def analyze_audio_speech_activity(
         frame_stats.append((f_rms, f_peak, i))
 
     sorted_rms = sorted(r for r, _, _ in frame_stats)
-    p20_rms = sorted_rms[len(sorted_rms) // 5] if len(sorted_rms) >= 5 else 0.0
-    rms_thresh = max(0.008, min(0.035, p20_rms * 2.2))
-    active_flags = [(r >= rms_thresh and p >= 0.020) for r, p, _ in frame_stats]
+    p10_rms = sorted_rms[len(sorted_rms) // 10] if len(sorted_rms) >= 5 else 0.0
+    top_rms = sorted_rms[-1] if sorted_rms else 0.0
+    # When silent ambient frames exist (p10 < 0.004), track slightly above noise floor;
+    # when speech fills >90% of frames (p10 >= 0.004), never raise threshold above the speech itself.
+    rms_thresh = max(0.003, p10_rms * 1.6) if p10_rms < 0.004 else 0.0045
+    peak_frame_thresh = max(0.008, rms_thresh * 1.6)
+    active_flags = [(r >= rms_thresh and p >= peak_frame_thresh) for r, p, _ in frame_stats]
     active_indices = [idx for idx, flag in enumerate(active_flags) if flag]
     active_speech_ms = int(round(len(active_indices) * frame_ms))
     speech_ratio = round(active_speech_ms / max(1.0, duration_sec * 1000.0), 2)
@@ -422,13 +426,13 @@ def analyze_audio_speech_activity(
                 for h in raw_f0
             ]
 
-    if duration_sec < 0.25:
+    if duration_sec < 0.22:
         has_speech = False
         reason = "too_short"
-    elif peak < 0.018 or rms < 0.004:
+    elif peak < 0.006 or top_rms < 0.0025:
         has_speech = False
         reason = "silence"
-    elif active_speech_ms < 120:
+    elif active_speech_ms < 80:
         has_speech = False
         reason = "no_speech"
     else:
@@ -452,3 +456,33 @@ def analyze_audio_speech_activity(
         "pitchSpreadSemitones": pitch_spread_semitones,
         "pitchContour": pitch_contour,
     }
+
+
+def boost_quiet_audio_for_gemini(
+    raw_bytes: bytes,
+    mime: str,
+    audio_stats: Dict[str, Any],
+) -> Tuple[bytes, str, bool]:
+    """Safely amplify quiet speech recordings (< -12 dBFS peak) toward -6 dBFS before Gemini grading."""
+    if not raw_bytes or not audio_stats or not audio_stats.get("analyzed") or not audio_stats.get("has_speech"):
+        return raw_bytes, mime, False
+    if float(audio_stats.get("peakDb") or 0.0) >= -12.0:
+        return raw_bytes, mime, False
+
+    samples, sample_rate = _decode_to_mono_pcm16(raw_bytes)
+    if not samples or sample_rate <= 0:
+        return raw_bytes, mime, False
+
+    peak = max(abs(s) for s in samples) / 32768.0
+    if peak <= 1e-5:
+        return raw_bytes, mime, False
+
+    gain = min(16.0, 0.50 / peak)
+    if gain <= 1.15:
+        return raw_bytes, mime, False
+
+    boosted = array.array(
+        "h",
+        (max(-32000, min(32000, int(round(s * gain)))) for s in samples),
+    )
+    return pcm_to_wav_bytes(boosted.tobytes(), sample_rate=sample_rate, channels=1, sampwidth=2), "audio/wav", True

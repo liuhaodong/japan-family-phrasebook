@@ -376,18 +376,20 @@
         frameStats.push({ rms: Math.sqrt(fSq / (end - i)), peak: fPeak });
       }
       const sortedRms = frameStats.map((f) => f.rms).sort((a, b) => a - b);
-      const p20Rms = sortedRms.length >= 5 ? sortedRms[Math.floor(sortedRms.length / 5)] : 0;
-      const rmsThresh = Math.max(0.008, Math.min(0.035, p20Rms * 2.2));
+      const p10Rms = sortedRms.length >= 5 ? sortedRms[Math.floor(sortedRms.length / 10)] : 0;
+      const topRms = sortedRms[sortedRms.length - 1] || 0;
+      const rmsThresh = p10Rms < 0.0035 ? Math.max(0.0025, p10Rms * 1.6) : 0.0035;
+      const peakFrameThresh = Math.max(0.006, rmsThresh * 1.6);
       let activeFrames = 0;
       for (const f of frameStats) {
-        if (f.rms >= rmsThresh && f.peak >= 0.018) activeFrames += 1;
+        if (f.rms >= rmsThresh && f.peak >= peakFrameThresh) activeFrames += 1;
       }
       const activeSpeechMs = Math.round(activeFrames * (frameLen / sr) * 1000);
       const hasSpeech = !(
-        duration < 0.25 ||
-        peak < 0.015 ||
-        rms < 0.0035 ||
-        activeSpeechMs < 100
+        duration < 0.20 ||
+        peak < 0.005 ||
+        topRms < 0.002 ||
+        activeSpeechMs < 60
       );
       return {
         analyzed: true,
@@ -1466,9 +1468,7 @@
     }
 
     const startedAt = performance.now();
-    let calSum = 0;
-    let calCount = 0;
-    let noiseFloor = 0.008;
+    let noiseFloor = 0.005;
     let speechStreakMs = 0;
     let hasSpoken = false;
     let sawNonZeroSample = false;
@@ -1488,24 +1488,23 @@
         sq += s * s;
       }
       const rms = Math.sqrt(sq / vadDataArray.length);
-      if (rms > 0.0005) {
+      if (rms > 0.0002) {
         sawNonZeroSample = true;
       }
       const elapsed = now - startedAt;
       const vadUnavailable = elapsed >= 1500 && !sawNonZeroSample;
 
-      if (elapsed < 350) {
-        calSum += rms;
-        calCount += 1;
-        noiseFloor = calSum / Math.max(1, calCount);
+      // Track quiet floor conservatively without letting an immediate start spike the threshold
+      if (elapsed < 350 && rms > 0.0005 && rms < 0.014) {
+        noiseFloor = Math.min(noiseFloor, rms);
       }
 
-      const speechThreshold = Math.max(0.018, Math.min(0.075, noiseFloor * 2.4));
-      const silenceThreshold = speechThreshold * 0.68;
+      const speechThreshold = Math.max(0.009, Math.min(0.032, noiseFloor * 2.1));
+      const silenceThreshold = speechThreshold * 0.65;
 
       if (rms >= speechThreshold) {
         speechStreakMs += dt;
-        if (speechStreakMs >= 140) {
+        if (speechStreakMs >= 90) {
           hasSpoken = true;
           lastSpeechAt = now;
         }
@@ -1518,7 +1517,7 @@
 
       const fillEl = document.getElementById("sensei-vad-fill");
       if (fillEl) {
-        const pct = Math.min(100, Math.round((rms / 0.14) * 100));
+        const pct = Math.min(100, Math.round((rms / 0.08) * 100));
         fillEl.style.width = `${pct}%`;
         fillEl.classList.toggle("active", rms >= speechThreshold);
       }
