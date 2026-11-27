@@ -2803,7 +2803,7 @@
             <button type="button" class="sensei-mini-btn" id="sensei-dict-close">✕</button>
           </div>
           <div class="sensei-dict-reading">
-            あ ${escapeHtml(tk.reading || "")} ${tk.pitch_accent ? `· 🎵 ${escapeHtml(tk.pitch_accent)}` : ""}
+            ${escapeHtml(tk.reading || "")}${tk.pitch_accent ? ` · ${escapeHtml(tk.pitch_accent)}` : ""}
           </div>
           <div class="sensei-dict-meaning">${escapeHtml(tk.meaning_cn || "")}</div>
           ${tk.grammar_note ? `<div class="sensei-dict-note">📘 ${escapeHtml(tk.grammar_note)}</div>` : ""}
