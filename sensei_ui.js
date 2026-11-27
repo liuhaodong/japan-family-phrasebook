@@ -1781,19 +1781,23 @@
     const el = document.getElementById("sensei-mirror-banner");
     if (!el) return;
     if (state.mirrorPhase === "user_mirror_eval") {
-      el.textContent = "1️⃣ 声学镜子：正立即回放你的原声，老师同步逐拍诊断中...";
+      el.textContent = "声学镜子回放原声中，老师同步逐拍诊断...";
       el.style.display = "block";
     } else if (state.mirrorPhase === "user_mirror") {
-      el.textContent = "1️⃣ 声学镜子：正在回放你刚才的录音，仔细听一听...";
+      el.textContent = "声学镜子正在回放你刚才的录音...";
       el.style.display = "block";
     } else if (state.mirrorPhase === "teacher_explain") {
-      el.textContent = "2️⃣ 私教讲解示范中，听完将自动为你开麦...";
+      el.textContent = isIOSDevice
+        ? "老师讲解示范中，听完请点击下方按钮开口跟读..."
+        : "老师讲解示范中，听完将自动为你开麦...";
       el.style.display = "block";
     } else if (state.mirrorPhase === "ready_retry") {
-      el.textContent = "3️⃣ 自动开麦：叮！请直接开口，说完停顿 1.3 秒自动结束";
+      el.textContent = isIOSDevice
+        ? "请点击下方「点击开口说」开始跟读，说完再点一次提交"
+        : "已自动开麦：请直接开口，说完停顿约 1 秒将自动提交";
       el.style.display = "block";
     } else if (state.mirrorPhase === "auto_next") {
-      el.textContent = "🎉 本步过关！1.2 秒后自动进入下一步并开麦...";
+      el.textContent = "本步过关，即将进入下一步...";
       el.style.display = "block";
     } else {
       el.style.display = "none";
@@ -2344,7 +2348,7 @@
       <div class="focus-shell">
         <div class="focus-header">
           <button type="button" class="sensei-link-btn" id="sensei-exit-lesson-btn">
-            ${ico("chevronLeft")} <span>课程概览</span>
+            ${ico("chevronLeft")} <span>返回</span>
           </button>
           <div class="focus-title-meta">
             ${meta.level ? `<span class="sensei-badge">${escapeHtml(meta.level)}</span>` : ""}
