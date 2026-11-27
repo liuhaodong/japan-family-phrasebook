@@ -23,7 +23,7 @@ from server.db import add_turn, create_session, finish_session, list_weaknesses
 from server.services.audio_utils import pcm_to_wav_bytes
 from server.services.curriculum_loader import get_scenario
 from server.services.jp_tokenizer import strip_furigana_parens, tokenize_sentence
-from server.services.sensei_engine import evaluate_live_turn, generate_live_hints
+from server.services.sensei_engine import evaluate_live_turn, generate_live_hints, strip_foreign_hangul
 from server.services.srs_service import list_cards
 
 
@@ -62,6 +62,7 @@ def build_live_system_instruction(
         f"{correction_rule}\n"
         "【双语救场安全网 (Bilingual Safety Net)】：如果学生卡壳或直接用中文/英文问「这句话日语怎么说？」，"
         "立刻用简短清晰的中文告诉他最地道的日语表达，念一遍鼓励他复述后，继续自然推进行动。\n"
+        "【语种锁定 (Language Lock)】：全程仅限规范日语与简体中文提示，严禁输出韩语（한글 / 한국어）、韩文音译或将日语听写成韩文。\n"
         "【开口规则】：每轮回复简短口语化（1–3 句日语为主），留出充足空白等待学生开口，不要自言自语长篇大论。\n"
         f"现在请用这一句开场进入角色：{sc_starter}"
     )
@@ -217,8 +218,8 @@ async def handle_live_websocket(
 
     async def flush_user_turn_for_analysis() -> None:
         pcm_copy = bytes(state["user_pcm"])
-        transcript_copy = state["user_transcript"].strip()
-        last_ai_copy = state["last_ai_jp"] or state["ai_transcript"]
+        transcript_copy = strip_foreign_hangul(state["user_transcript"])
+        last_ai_copy = strip_foreign_hangul(state["last_ai_jp"] or state["ai_transcript"])
         state["user_pcm"].clear()
         state["user_transcript"] = ""
 
@@ -365,27 +366,35 @@ async def handle_live_websocket(
 
                 in_trans = getattr(sc, "input_transcription", None)
                 if in_trans and getattr(in_trans, "text", None):
-                    state["user_transcript"] += in_trans.text
-                    await safe_send_json(
-                        {
-                            "type": "transcript_user",
-                            "text": state["user_transcript"],
-                            "final": False,
-                        }
-                    )
+                    in_chunk = strip_foreign_hangul(in_trans.text, trim=False)
+                    if in_chunk:
+                        state["user_transcript"] += in_chunk
+                        user_preview = strip_foreign_hangul(state["user_transcript"])
+                        if user_preview:
+                            await safe_send_json(
+                                {
+                                    "type": "transcript_user",
+                                    "text": user_preview,
+                                    "final": False,
+                                }
+                            )
 
                 out_trans = getattr(sc, "output_transcription", None)
                 if out_trans and getattr(out_trans, "text", None):
                     if state["user_pcm"] or state["user_transcript"].strip():
                         await flush_user_turn_for_analysis()
-                    state["ai_transcript"] += out_trans.text
-                    await safe_send_json(
-                        {
-                            "type": "transcript_ai",
-                            "text": state["ai_transcript"],
-                            "final": False,
-                        }
-                    )
+                    out_chunk = strip_foreign_hangul(out_trans.text, trim=False)
+                    if out_chunk:
+                        state["ai_transcript"] += out_chunk
+                        ai_preview = strip_foreign_hangul(state["ai_transcript"])
+                        if ai_preview:
+                            await safe_send_json(
+                                {
+                                    "type": "transcript_ai",
+                                    "text": ai_preview,
+                                    "final": False,
+                                }
+                            )
 
                 mt = getattr(sc, "model_turn", None)
                 if mt and getattr(mt, "parts", None):
@@ -397,8 +406,8 @@ async def handle_live_websocket(
                             await safe_send_bytes(inline.data)
 
                 if getattr(sc, "turn_complete", False):
-                    if state["ai_transcript"].strip():
-                        ai_text = state["ai_transcript"].strip()
+                    ai_text = strip_foreign_hangul(state["ai_transcript"])
+                    if ai_text:
                         state["last_ai_jp"] = ai_text
                         state["turn_counter"] += 1
                         ai_tid = f"turn_{uuid.uuid4().hex[:12]}"

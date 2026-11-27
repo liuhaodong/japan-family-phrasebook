@@ -1004,3 +1004,83 @@ def test_strip_wav_header_excludes_trailing_c2pa_chunk_and_polishes_pcm():
     assert max(abs(s) for s in polished) <= 29500
     assert polished[0] == 0 and polished[-1] == 0
     assert abs(polished[500]) > 28000
+
+
+@pytest.mark.asyncio
+async def test_hangul_sanitizer_strips_korean_from_eval_and_tts(isolated_env):
+    from server.services import live_relay
+
+    # 1. Helper & TTS transcript sanitizer strip Hangul while preserving Japanese + Chinese
+    assert sensei_engine.strip_foreign_hangul("予約します예약합니다。") == "予約します。"
+    assert sensei_engine.strip_foreign_hangul("안녕하세요 こんにちは") == "こんにちは"
+    assert tts_service.clean_tts_transcript("发音很棒。예약 予約します。", lang="zh") == "发音很棒。 予約します。"
+    assert tts_service.clean_tts_transcript("안녕하세요 こんにちは", lang="ja") == "こんにちは"
+
+    # 2. Live relay system instruction explicitly locks out Korean/Hangul
+    sys_prompt = live_relay.build_live_system_instruction(
+        scenario=None,
+        user_id="haodong",
+        jlpt_target="N4",
+        correction_mode="tutor",
+    )
+    assert "韩语" in sys_prompt and "한글" in sys_prompt
+
+    # 3. evaluate_sensei_turn strips hallucinated Hangul across all fields + _on_script_ready
+    sid = db.create_session(
+        user_id="haodong",
+        mode="sensei_syllabus",
+        scenario_id="S01_mora_minimal_pairs",
+        persona="Sensei",
+        lesson_plan={"steps": []},
+    )
+    sample_wav = pcm_to_wav_bytes(b"\x01\x00" * 1600, sample_rate=16000)
+    prewarm_calls = []
+
+    def _capture_prewarm(script: str, **kwargs):
+        prewarm_calls.append(script)
+        return "/api/tts/cache/fake.wav"
+
+    polluted_eval = {
+        "overallScore": 78,
+        "pitchScore": 75,
+        "grammarScore": 82,
+        "rhythmScore": 77,
+        "heardJp": "ちょっと 예약 待ってください",
+        "betterJp": "ちょっと待って안녕하세요ください。",
+        "drillChunkJp": "待って 예약",
+        "drillChunkReading": "まって",
+        "pitchNote": "注意 예약 不要变成韩语。",
+        "grammarNote": "连接正确。",
+        "praiseCn": "整体不错",
+        "issues": [{"type": "pitch", "severity": "minor", "patternKey": "促音 예약", "detailCn": "停顿一下"}],
+        "teacherSpokenScript": "发音不错，注意停顿。한국어 ちょっと待ってください。",
+        "extractedVocab": [{"surface": "待つ", "reading": "まつ", "meaningCn": "等待 예약", "jlpt": "N5"}],
+        "_modelUsed": "gemini-3-flash-preview",
+    }
+
+    async def _fake_call_gemini_json(*, on_script_ready=None, **kwargs):
+        if on_script_ready:
+            on_script_ready(polluted_eval["teacherSpokenScript"])
+        return polluted_eval
+
+    with (
+        patch("server.services.sensei_engine._call_gemini_json", side_effect=_fake_call_gemini_json),
+        patch("server.services.sensei_engine.prewarm_tts_stream", side_effect=_capture_prewarm),
+    ):
+        res = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="CONTROLLED_DRILL",
+            target_jp="ちょっと待ってください。",
+            attempt=1,
+            audio_bytes=sample_wav,
+            defer_tts=True,
+            api_key="test-key",
+        )
+
+    assert not sensei_engine._HANGUL_RE.search(json.dumps(res, ensure_ascii=False))
+    assert res["heardJp"] == "ちょっと 待ってください"
+    assert res["betterJp"] == "ちょっと待ってください。"
+    assert len(prewarm_calls) == 1
+    assert not sensei_engine._HANGUL_RE.search(prewarm_calls[0])

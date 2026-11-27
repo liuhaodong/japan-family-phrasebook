@@ -30,6 +30,7 @@ _EMOJI_RE = re.compile(
     "[\U0001F300-\U0001FAFF\u2600-\u27BF]+",
     flags=re.UNICODE,
 )
+_HANGUL_RE = re.compile(r"[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]+")
 _RATE_RE = re.compile(r"rate=(\d+)")
 _ZH_ONLY_RE = re.compile(
     r"[的了这那你我请跟再听读说试音调词句助语气拍重练过关棒清晰稳错对平高低拉长停顿步记忆整体节奏还差遍刚才很不错加油继续保持非常变形自然杂音预约问题]"
@@ -41,10 +42,11 @@ _DEMO_COLON_LEAD_RE = re.compile(r"(?:跟我读|跟我念|跟我练|单独读|�
 
 
 def clean_tts_transcript(text: str, lang: Optional[str] = None) -> str:
-    """Strip markdown, arrows, and emojis so Gemini TTS reads clean speech only."""
+    """Strip markdown, arrows, emojis, and foreign Hangul so Gemini TTS reads clean speech only."""
     cleaned = text or ""
     cleaned = _EMOJI_RE.sub(" ", cleaned)
     cleaned = _MD_CHARS_RE.sub("", cleaned)
+    cleaned = _HANGUL_RE.sub("", cleaned)
     cleaned = cleaned.replace("➔", "、").replace("→", "、").replace("・", " ")
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     if lang == "ja" and has_kanji(cleaned):

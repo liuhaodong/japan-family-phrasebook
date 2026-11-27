@@ -53,11 +53,32 @@ _SPOKEN_SCRIPT_RE = re.compile(r'"teacherSpokenScript"\s*:\s*"((?:\\.|[^"\\])*)"
 _VALID_OR_BAD_ESCAPE_RE = re.compile(r'\\(["\\/bfnrt]|u[0-9a-fA-F]{4})|\\')
 _TRAILING_COMMA_RE = re.compile(r",\s*([}\]])")
 _DUP_PUNCT_RE = re.compile(r"([。！？!?])\1+")
+_HANGUL_RE = re.compile(r"[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]+")
 _GENERIC_CN_OVERLAP = {
     "今天", "昨天", "明天", "现在", "时间", "问题", "朋友", "咖啡", "工作",
     "天气", "声音", "练习", "注意", "自己", "意思", "中文", "日语", "日本",
     "中国", "周末", "酒店", "机场", "餐厅", "小时", "时候", "公司", "家庭",
 }
+
+
+def strip_foreign_hangul(text: str, *, trim: bool = True) -> str:
+    """Remove hallucinated Korean Hangul blocks emitted by multimodal fallback models."""
+    if not text:
+        return ""
+    cleaned = _HANGUL_RE.sub("", text)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    return cleaned.strip() if trim else cleaned
+
+
+def _sanitize_no_hangul(value: Any) -> Any:
+    """Recursively strip Korean Hangul characters from strings inside JSON payloads."""
+    if isinstance(value, str):
+        return strip_foreign_hangul(value)
+    if isinstance(value, list):
+        return [_sanitize_no_hangul(item) for item in value]
+    if isinstance(value, dict):
+        return {k: _sanitize_no_hangul(v) for k, v in value.items()}
+    return value
 
 
 def prepare_tts_bilingual_script(script: str, jp_phrases: Optional[List[str]] = None) -> str:
@@ -412,7 +433,8 @@ async def _author_textbook_lesson(
         f"学生历史薄弱点: {weakness_str}\n"
         f"记忆本待复习生词（若自然顺畅可嵌入1个）: {due_str}\n\n"
         "【书写规范】targetJp、questionJp、blackboard 的日语例句必须使用东京日常规范日语（正常使用常用汉字与假名混排，如「新しい料理を作ってみます。」「店の席を予約しておきます。」），禁止写成全平假名！界面会自动在汉字上方标出假名。\n"
-        "【口播规范】teacherPrompt 供语音朗读：请把中文引导与日语示范分成独立句子（先用纯中文说清要点加句号，不要在中文句子中间夹杂日语词，再另起一句给纯日语示范句），后端会自动把日语单独按假名发音，绝不串音。\n\n"
+        "【口播规范】teacherPrompt 供语音朗读：请把中文引导与日语示范分成独立句子（先用纯中文说清要点加句号，不要在中文句子中间夹杂日语词，再另起一句给纯日语示范句），后端会自动把日语单独按假名发音，绝不串音。\n"
+        "【语种锁定】全程仅限规范日语（汉字+平假名/片假名）与简体中文教学说明，严禁输出韩语（한글 / 한국어）或任何其他无关语种字符。\n\n"
         "严格输出以下 JSON（steps 必须精确为 6 步，顺序为 WARMUP, TEACH, CONTROLLED_DRILL, TRANSFORM_DRILL, SUBSTITUTION_DRILL, FREE_OUTPUT）：\n"
         "{\n"
         '  "blackboard": {\n'
@@ -442,27 +464,27 @@ async def _author_textbook_lesson(
 def _normalize_authored_steps(raw_steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     for idx, st in enumerate(raw_steps):
-        target_jp = strip_furigana_parens(st.get("targetJp") or "")
-        question_jp = strip_furigana_parens(st.get("questionJp") or "")
+        target_jp = strip_furigana_parens(strip_foreign_hangul(st.get("targetJp") or ""))
+        question_jp = strip_furigana_parens(strip_foreign_hangul(st.get("questionJp") or ""))
         if not target_jp:
             continue
         stage = st.get("stage") or "CONTROLLED_DRILL"
         hide_target = bool(st.get("hideTarget", stage in ("TRANSFORM_DRILL", "SUBSTITUTION_DRILL", "FREE_OUTPUT")))
-        prompt_raw = st.get("teacherPrompt") or ""
+        prompt_raw = strip_foreign_hangul(st.get("teacherPrompt") or "")
         normalized.append(
             {
                 "stepIndex": idx,
                 "stage": stage,
-                "stageLabel": st.get("stageLabel") or f"{idx + 1}. 练习",
+                "stageLabel": strip_foreign_hangul(st.get("stageLabel") or "") or f"{idx + 1}. 练习",
                 "hideTarget": hide_target,
                 "questionJp": question_jp,
-                "questionCn": st.get("questionCn") or "",
+                "questionCn": strip_foreign_hangul(st.get("questionCn") or ""),
                 "questionTokens": tokenize_sentence(question_jp) if question_jp else [],
                 "targetJp": target_jp,
-                "targetDisplayJp": st.get("targetDisplayJp") or target_jp,
-                "targetCn": st.get("targetCn") or "",
-                "cueCn": st.get("cueCn") or "",
-                "tipCn": st.get("tipCn") or "",
+                "targetDisplayJp": strip_foreign_hangul(st.get("targetDisplayJp") or "") or target_jp,
+                "targetCn": strip_foreign_hangul(st.get("targetCn") or ""),
+                "cueCn": strip_foreign_hangul(st.get("cueCn") or ""),
+                "tipCn": strip_foreign_hangul(st.get("tipCn") or ""),
                 "teacherPrompt": prompt_raw,
                 "teacherPromptTts": prepare_tts_bilingual_script(prompt_raw, [target_jp, question_jp]),
                 "tokens": tokenize_sentence(target_jp),
@@ -587,11 +609,11 @@ async def create_guided_lesson(
 
         if authored and authored.get("steps"):
             steps = _normalize_authored_steps(authored["steps"])
-            blackboard = dict(authored.get("blackboard") or (unit or {}).get("blackboard") or {})
+            blackboard = _sanitize_no_hangul(dict(authored.get("blackboard") or (unit or {}).get("blackboard") or {}))
         else:
             fb = _build_offline_syllabus_fallback(unit, clean_custom)
             steps = fb["steps"]
-            blackboard = dict(fb["blackboard"] or {})
+            blackboard = _sanitize_no_hangul(dict(fb["blackboard"] or {}))
 
         if blackboard.get("contrastBadJp"):
             blackboard["contrastBadTokens"] = tokenize_sentence(blackboard["contrastBadJp"])
@@ -933,7 +955,7 @@ async def evaluate_sensei_turn(
         f"阶段:{stage} | 第{attempt}次 | 参考目标:{clean_target} | 本轮片段:{active_target} | 语义:{cue_cn or target_cn}\n"
         "规则：\n"
         f"{stage_rule}"
-        f"2. heardJp、betterJp、drillChunkJp 使用规范日语汉字与假名（如「予約」「新しい料理」），界面会自动标假名。\n"
+        f"2. heardJp、betterJp、drillChunkJp 使用规范日语汉字与假名（如「予約」「新しい料理」），界面会自动标假名；全程严禁输出韩语（한글 / 한국어）或将日语误转写为韩文。\n"
         f"3. 先输出 teacherSpokenScript（20–50字）：前半句用纯中文点评（指代某词用中文意思或「这个词/前半句」，不要在中文句中夹日语词），句号收尾；后半句另起一句给纯日语示范（如「发音很清晰，预约这个词音调偏平，跟我读一遍。予約。」）。禁英文/罗马音/星号/括号/箭头；若总分>={pass_threshold}且无严重问题，issues/drillChunkJp/grammarNote 留空以提速。\n"
         "返回精简JSON（每条说明25字内，issues<=2，extractedVocab<=2）：\n"
         '{"teacherSpokenScript":"纯中日口语台词","overallScore":0,"pitchScore":0,"grammarScore":0,"rhythmScore":0,'
@@ -957,6 +979,7 @@ async def evaluate_sensei_turn(
     known_jp_hints = [clean_target, active_target, question_jp]
 
     def _on_script_ready(script_text: str) -> None:
+        script_text = strip_foreign_hangul(script_text)
         if not defer_tts or not api_key or not script_text:
             return
         cleaned = prepare_tts_bilingual_script(script_text, known_jp_hints)
@@ -984,6 +1007,7 @@ async def evaluate_sensei_turn(
         hedge_after_sec=6.5 if (chosen_model == "gemini-4-hydrogen" and len(models) >= 2) else None,
     )
 
+    eval_data = _sanitize_no_hangul(eval_data)
     overall_score = int(max(0, min(100, eval_data.get("overallScore", 70))))
     issues = eval_data.get("issues") or []
     drill_chunk = (eval_data.get("drillChunkJp") or "").strip()
@@ -1142,7 +1166,9 @@ async def evaluate_live_turn(
         )
 
     models = [COACH_MODEL] + [m for m in COACH_FALLBACK_MODELS if m != COACH_MODEL]
-    data = await _call_gemini_json(parts=parts, models=models, api_key=api_key, temperature=0.15, timeout_sec=30.0)
+    data = _sanitize_no_hangul(
+        await _call_gemini_json(parts=parts, models=models, api_key=api_key, temperature=0.15, timeout_sec=30.0)
+    )
 
     if data.get("patternKey") and data.get("issueType") not in ("", "none", None):
         upsert_weakness(
@@ -1169,7 +1195,9 @@ async def generate_live_hints(
         '{"hints": [{"jp": "纯日语", "reading": "纯平假名", "cn": "中文意思与语气说明"}]}'
     )
     models = [COACH_MODEL] + [m for m in COACH_FALLBACK_MODELS if m != COACH_MODEL]
-    res = await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.3, timeout_sec=15.0)
+    res = _sanitize_no_hangul(
+        await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.3, timeout_sec=15.0)
+    )
     return (res.get("hints") or [])[:3]
 
 
@@ -1208,7 +1236,9 @@ async def generate_session_report(
     )
 
     models = [REPORT_MODEL] + [m for m in REPORT_FALLBACK_MODELS if m != REPORT_MODEL]
-    report = await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.25)
+    report = _sanitize_no_hangul(
+        await _call_gemini_json(parts=[{"text": prompt}], models=models, api_key=api_key, temperature=0.25)
+    )
 
     for m in (report.get("topMistakes") or [])[:3]:
         if m.get("patternKey"):
