@@ -38,6 +38,7 @@
     syllabus: null,
     curriculumMode: "sensei_syllabus", // sensei_syllabus | grammar_point | custom_topic | travel_scenario
     selectedLessonId: "",
+    syllabusLevelFilter: "all",
     selectedGrammarId: "",
     grammarLevelFilter: "all",
     grammarQuery: "",
@@ -50,6 +51,8 @@
     lessonSession: null,
     isGeneratingLesson: false,
     isExtendingLesson: false,
+    previewChapter: null,
+    loadingChapter: false,
     lessonStepIdx: 0,
     attempt: 1,
     drillChunkJp: "",
@@ -2406,26 +2409,178 @@
     `;
   }
 
-  function renderBlackboardHtml(meta) {
-    const bb = meta?.blackboard;
-    if (!bb || !bb.titleCn) return "";
+  async function openTextbookPreview(lessonId) {
+    if (!lessonId) return;
+    state.loadingChapter = true;
+    try {
+      const res = await apiJson(`/api/sensei/syllabus/${encodeURIComponent(lessonId)}`);
+      state.previewChapter = res.lesson || null;
+    } catch (err) {
+      showToast(`❌ 读取教材章节失败：${err.message}`);
+    } finally {
+      state.loadingChapter = false;
+      renderView();
+    }
+  }
+
+  function renderTextbookBodyHtml(tb, bb, level) {
+    const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
+    const vocabList = tb?.vocabList || [];
+    const grammarNotes = tb?.grammarNotes || [];
+    const dlg = tb?.dialogue;
+    const rp = tb?.readingPassage;
+
+    const bbHtml =
+      bb && bb.titleCn
+        ? `<div class="sensei-blackboard">
+            <div class="sensei-bb-head">
+              <span>🧑‍🏫 私教黑板 · ${escapeHtml(bb.titleCn)}</span>
+              ${level ? `<span class="sensei-badge">${escapeHtml(level)}</span>` : ""}
+            </div>
+            ${bb.formulaJp ? `<div class="sensei-bb-formula">${escapeHtml(bb.formulaJp)}</div>` : ""}
+            ${bb.cnPitfallCn ? `<div class="sensei-bb-pitfall">⚠️ <strong>避坑点拨：</strong>${escapeHtml(bb.cnPitfallCn)}</div>` : ""}
+            ${
+              bb.contrastBadJp || bb.contrastGoodJp
+                ? `<div class="sensei-contrast-row">
+                    ${bb.contrastBadJp ? `<span class="bad">❌ ${bb.contrastBadTokens?.length ? renderTokensHtml(bb.contrastBadTokens, bb.contrastBadJp) : escapeHtml(bb.contrastBadJp)}</span>` : ""}
+                    ${bb.contrastGoodJp ? `<span class="good">✅ ${bb.contrastGoodTokens?.length ? renderTokensHtml(bb.contrastGoodTokens, bb.contrastGoodJp) : escapeHtml(bb.contrastGoodJp)}</span>` : ""}
+                    ${bb.contrastNoteCn ? `<span class="note">（${escapeHtml(bb.contrastNoteCn)}）</span>` : ""}
+                  </div>`
+                : ""
+            }
+          </div>`
+        : "";
+
+    if (!tb) return bbHtml;
+
     return `
-      <div class="sensei-blackboard">
-        <div class="sensei-bb-head">
-          <span>🧑‍🏫 私教黑板 · ${escapeHtml(bb.titleCn)}</span>
-          ${meta.level ? `<span class="sensei-badge">${escapeHtml(meta.level)}</span>` : ""}
-        </div>
-        ${bb.formulaJp ? `<div class="sensei-bb-formula">${escapeHtml(bb.formulaJp)}</div>` : ""}
-        ${bb.cnPitfallCn ? `<div class="sensei-bb-pitfall">⚠️ <strong>避坑点拨：</strong>${escapeHtml(bb.cnPitfallCn)}</div>` : ""}
+      <div class="sensei-textbook-panel">
+        ${tb.canDoCn ? `<div class="tb-cando">🎯 <strong>本课目标：</strong>${escapeHtml(tb.canDoCn)}</div>` : ""}
+        ${bbHtml}
         ${
-          bb.contrastBadJp || bb.contrastGoodJp
-            ? `<div class="sensei-contrast-row">
-                ${bb.contrastBadJp ? `<span class="bad">❌ ${bb.contrastBadTokens?.length ? renderTokensHtml(bb.contrastBadTokens, bb.contrastBadJp) : escapeHtml(bb.contrastBadJp)}</span>` : ""}
-                ${bb.contrastGoodJp ? `<span class="good">✅ ${bb.contrastGoodTokens?.length ? renderTokensHtml(bb.contrastGoodTokens, bb.contrastGoodJp) : escapeHtml(bb.contrastGoodJp)}</span>` : ""}
-                ${bb.contrastNoteCn ? `<span class="note">（${escapeHtml(bb.contrastNoteCn)}）</span>` : ""}
+          vocabList.length
+            ? `<div class="tb-section">
+                <div class="tb-section-title">📚 本课核心生词（${vocabList.length}）</div>
+                <div class="tb-vocab-grid">
+                  ${vocabList
+                    .map(
+                      (v, idx) => `
+                    <div class="tb-vocab-item">
+                      <div class="tb-vocab-main">
+                        <div class="tb-vocab-jp" lang="ja">${escapeHtml(v.jp)}</div>
+                        <div class="tb-vocab-reading">${escapeHtml(v.reading || "")}${v.pos ? ` · ${escapeHtml(v.pos)}` : ""}</div>
+                        <div class="tb-vocab-cn">${escapeHtml(v.cn || "")}</div>
+                      </div>
+                      <div class="tb-vocab-btns">
+                        <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(v.jp)}" title="听发音">${ico("speaker")}</button>
+                        <button type="button" class="sensei-mini-btn" data-save-tb-vocab="${idx}" title="存入 FSRS 记忆本">+</button>
+                      </div>
+                    </div>`
+                    )
+                    .join("")}
+                </div>
               </div>`
             : ""
         }
+        ${
+          grammarNotes.length
+            ? `<div class="tb-section">
+                <div class="tb-section-title">📐 文法精讲（${grammarNotes.length}）</div>
+                ${grammarNotes
+                  .map(
+                    (g) => `
+                  <div class="tb-grammar-item">
+                    <div class="tb-grammar-pat">${escapeHtml(g.pattern || "")}</div>
+                    ${g.formation ? `<div class="tb-grammar-form">接续：${escapeHtml(g.formation)}</div>` : ""}
+                    ${g.explanation ? `<div class="tb-grammar-expl">${escapeHtml(g.explanation)}</div>` : ""}
+                    ${
+                      g.exampleJp
+                        ? `<div class="tb-grammar-ex">
+                            <div>
+                              <span lang="ja" style="font-weight:600;">${escapeHtml(g.exampleJp)}</span>
+                              ${g.exampleCn ? `<div class="tb-vocab-cn">${escapeHtml(g.exampleCn)}</div>` : ""}
+                            </div>
+                            <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(g.exampleJp)}">${ico("speaker")}</button>
+                          </div>`
+                        : ""
+                    }
+                  </div>`
+                  )
+                  .join("")}
+              </div>`
+            : ""
+        }
+        ${
+          dlg && (dlg.turns || []).length
+            ? `<div class="tb-section">
+                <div class="tb-section-title">💬 课文示范对话 · ${escapeHtml(dlg.title || "")}${dlg.setting ? `（${escapeHtml(dlg.setting)}）` : ""}</div>
+                <div class="tb-dialogue-list">
+                  ${dlg.turns
+                    .map(
+                      (t) => `
+                    <div class="tb-dialogue-turn">
+                      <div>
+                        <span class="tb-dialogue-spk">${escapeHtml(t.speaker || "")}</span>
+                        <span class="tb-dialogue-jp" lang="ja">${escapeHtml(t.jp || "")}</span>
+                        ${t.cn ? `<div class="tb-dialogue-cn">${escapeHtml(t.cn)}</div>` : ""}
+                      </div>
+                      <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(t.jp || "")}">${ico("speaker")}</button>
+                    </div>`
+                    )
+                    .join("")}
+                </div>
+              </div>`
+            : ""
+        }
+        ${
+          rp && rp.jp
+            ? `<div class="tb-section">
+                <div class="tb-section-title">📰 精读短文（${escapeHtml(level || "N4")}）</div>
+                <div class="tb-reading-box">
+                  <div class="tb-reading-head">
+                    <span>《${escapeHtml(rp.title || "课文阅读")}》</span>
+                    <button type="button" class="sensei-mini-btn" data-tts-lang="ja" data-tts-text="${escapeHtml(rp.jp)}">${ico("speaker")} 朗读全文</button>
+                  </div>
+                  <div class="tb-reading-jp" lang="ja">${escapeHtml(rp.jp)}</div>
+                  ${rp.cn ? `<div class="tb-reading-cn">${escapeHtml(rp.cn)}</div>` : ""}
+                </div>
+              </div>`
+            : ""
+        }
+      </div>
+    `;
+  }
+
+  function renderTextbookPanel(meta) {
+    return renderTextbookBodyHtml(meta?.textbook || null, meta?.blackboard || null, meta?.level || "");
+  }
+
+  function renderTextbookPreviewModal() {
+    const ch = state.previewChapter;
+    if (!ch) return "";
+    return `
+      <div class="sensei-tb-modal-backdrop" id="sensei-tb-modal-backdrop">
+        <div class="sensei-tb-modal" role="dialog" aria-modal="true" aria-label="课程教材正文">
+          <div class="sensei-tb-modal-head">
+            <div>
+              <div style="display:flex;align-items:center;gap:0.4rem;">
+                <span class="sensei-badge">${escapeHtml(ch.level || "N4")}</span>
+                <strong style="font-size:0.96rem;">${escapeHtml(ch.title || "")}</strong>
+              </div>
+              <div style="font-size:0.76rem;color:var(--text-muted);margin-top:0.15rem;">${escapeHtml(ch.trackTitle || "")}</div>
+            </div>
+            <button type="button" class="sensei-mini-btn" id="sensei-tb-modal-close" aria-label="关闭教材">✕</button>
+          </div>
+          <div class="sensei-tb-modal-body">
+            ${renderTextbookBodyHtml(ch, ch.blackboard, ch.level)}
+          </div>
+          <div class="sensei-tb-modal-foot">
+            <button type="button" class="sensei-btn ghost" id="sensei-tb-modal-close-foot">返回</button>
+            <button type="button" class="sensei-btn primary" id="sensei-tb-start-btn" data-lesson-id="${escapeHtml(ch.id)}" ${state.isGeneratingLesson ? "disabled" : ""}>
+              ${state.isGeneratingLesson ? "正在编排带练..." : "开始本课 AI 私教带练"}
+            </button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -2440,7 +2595,7 @@
     // STATE A — Clean Editorial Overview before a lesson starts
     if (!step) {
       const doneCnt = syl?.completedCount ?? 0;
-      const totalCnt = syl?.totalCount ?? 16;
+      const totalCnt = syl?.totalCount ?? 40;
       const modeNames = {
         sensei_syllabus: rec ? `[${escapeHtml(rec.level)}] ${escapeHtml(rec.title)}` : "资深私教体系课",
         custom_topic: state.customTopic ? `自由命题：${escapeHtml(state.customTopic)}` : "自由命题现编教材",
@@ -2451,22 +2606,34 @@
           <div class="sensei-hero-eyebrow">
             <span>今日私教</span>
             <span class="dot-sep">·</span>
-            <span>大纲进度 ${doneCnt} / ${totalCnt} 课</span>
+            <span>教材进度 ${doneCnt} / ${totalCnt} 课</span>
           </div>
           <h2 class="sensei-hero-title">${rec ? modeNames.sensei_syllabus : "1 对 1 日语发音与口语反射"}</h2>
           <p class="sensei-hero-sub">
             ${
               rec
-                ? `${escapeHtml(rec.subtitle)} · ${escapeHtml(rec.cnPitfall)}`
-                : "每堂课根据你的记忆本与弱点现编教材，录音后立刻回放原声并逐拍纠音。"
+                ? `${escapeHtml(rec.canDoCn || rec.subtitle)} · ${escapeHtml(rec.cnPitfall)}`
+                : "覆盖 N5 地基 → N4 进阶 → N3 中级 40 课体系教材，支持精读、文法黑板、原声镜像与随时加练。"
             }
           </p>
+          <div class="sensei-hero-level-pills">
+            <button type="button" class="sensei-mini-btn" data-jump-level="N5">N5 地基 (13课)</button>
+            <button type="button" class="sensei-mini-btn" data-jump-level="N4">N4 进阶 (12课)</button>
+            <button type="button" class="sensei-mini-btn" data-jump-level="N3">N3 中级 (15课)</button>
+          </div>
           <div class="sensei-hero-cta-row">
-            <button type="button" class="sensei-btn primary big" id="${rec ? "sensei-start-rec-btn" : "sensei-start-lesson-btn"}" ${state.isGeneratingLesson ? "disabled" : ""}>
-              ${state.isGeneratingLesson ? "正在现场备课..." : "开始今日私教课"}
-            </button>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0.55rem;">
+              ${
+                rec
+                  ? `<button type="button" class="sensei-btn ghost" id="sensei-hero-preview-btn" data-lesson-id="${escapeHtml(rec.id)}">📖 预习本课教材</button>`
+                  : ""
+              }
+              <button type="button" class="sensei-btn primary big" id="${rec ? "sensei-start-rec-btn" : "sensei-start-lesson-btn"}" ${state.isGeneratingLesson ? "disabled" : ""}>
+                ${state.isGeneratingLesson ? "正在现场备课..." : "开始今日私教课"}
+              </button>
+            </div>
             <button type="button" class="sensei-link-btn" id="sensei-open-course-picker">
-              自选课程 / 自由命题 / 旅行场景 ${ico("chevronRight")}
+              自选 40 课教材 / 语法库 / 旅行场景 / 自由命题 ${ico("chevronRight")}
             </button>
           </div>
         </div>
@@ -2477,7 +2644,7 @@
     const steps = state.lessonSession?.steps || [];
     const meta = state.lessonSession?.lessonMeta || {};
     const bb = meta?.blackboard;
-    const hasBb = Boolean(bb && bb.titleCn);
+    const hasBb = Boolean((bb && bb.titleCn) || meta?.textbook);
     const isFreeOutput = step.stage === "FREE_OUTPUT";
 
     return `
@@ -2493,7 +2660,7 @@
           <div class="focus-head-actions">
             ${
               hasBb
-                ? `<button type="button" class="sensei-mini-btn ${state.showBlackboard ? "active" : ""}" id="sensei-toggle-bb-btn">黑板要点</button>`
+                ? `<button type="button" class="sensei-mini-btn ${state.showBlackboard ? "active" : ""}" id="sensei-toggle-bb-btn">📖 教材</button>`
                 : ""
             }
             <button type="button" class="sensei-mini-btn" id="sensei-open-drawer-focus" aria-label="选课与偏好">
@@ -2517,7 +2684,7 @@
           </div>
         </div>
 
-        ${hasBb && state.showBlackboard ? renderBlackboardHtml(meta) : ""}
+        ${hasBb && state.showBlackboard ? renderTextbookPanel(meta) : ""}
 
         <div class="focus-stage-card">
           <div class="focus-cue">${escapeHtml(step.cueCn)}</div>
@@ -2974,28 +3141,75 @@
           `<option value="${escapeHtml(s.id)}" ${s.id === state.selectedScenarioId ? "selected" : ""}>${escapeHtml(s.title)}（${s.category === "daily" ? "日常" : "旅行"}）</option>`
       )
       .join("");
-    const trackOptGroups = (syl?.tracks || [])
+    const activeLvl = state.syllabusLevelFilter || "all";
+    const filteredTracks = (syl?.tracks || [])
+      .map((tr) => {
+        const lessons = (tr.lessons || []).filter((l) => activeLvl === "all" || l.level === activeLvl);
+        return { ...tr, lessons };
+      })
+      .filter((tr) => tr.lessons.length > 0);
+    const flatFiltered = filteredTracks.flatMap((tr) => tr.lessons);
+    const selectedLessonObj =
+      flatFiltered.find((l) => l.id === state.selectedLessonId) ||
+      (activeLvl !== "all" ? syl?.recommendedByLevel?.[activeLvl] : null) ||
+      flatFiltered.find((l) => l.id === rec?.id) ||
+      flatFiltered[0] ||
+      rec;
+    const currentLessonId = selectedLessonObj?.id || "";
+    const trackOptGroups = filteredTracks
       .map(
         (tr) => `
         <optgroup label="${escapeHtml(tr.title)}">
           ${(tr.lessons || [])
             .map((l) => {
               const badge = l.status === "completed" ? `已学 ${l.bestScore}分 · ` : rec?.id === l.id ? "推荐 · " : "";
-              return `<option value="${escapeHtml(l.id)}" ${l.id === (state.selectedLessonId || rec?.id) ? "selected" : ""}>${badge}[${escapeHtml(l.level)}] ${escapeHtml(l.title)}</option>`;
+              const rBadge = l.hasReading ? " · 含精读" : "";
+              return `<option value="${escapeHtml(l.id)}" ${l.id === currentLessonId ? "selected" : ""}>${badge}[${escapeHtml(l.level)}] ${escapeHtml(l.title)}${rBadge}</option>`;
             })
             .join("")}
         </optgroup>`
       )
       .join("");
 
+    const levelTabs = [
+      { id: "all", label: `全部 (${syl?.totalCount || 40})` },
+      { id: "N5", label: "N5 基础" },
+      { id: "N4", label: "N4 进阶" },
+      { id: "N3", label: "N3 实战" },
+    ]
+      .map(
+        (t) =>
+          `<button type="button" class="sensei-pill ${activeLvl === t.id ? "active" : ""}" data-slevel="${t.id}">${t.label}</button>`
+      )
+      .join("");
+
+    const previewBox = selectedLessonObj
+      ? `
+        <div class="tb-drawer-preview">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:0.4rem;">
+            <strong style="color:var(--text-primary);font-size:0.81rem;">[${escapeHtml(selectedLessonObj.level)}] ${escapeHtml(selectedLessonObj.title)}</strong>
+            <span class="sensei-badge">${selectedLessonObj.grammarCount || 2} 语法${selectedLessonObj.hasReading ? " · 长文精读" : ""}</span>
+          </div>
+          ${selectedLessonObj.canDoCn ? `<div><strong>学习目标：</strong>${escapeHtml(selectedLessonObj.canDoCn)}</div>` : ""}
+          ${(selectedLessonObj.vocabPreview || []).length ? `<div><strong>核心词：</strong>${escapeHtml(selectedLessonObj.vocabPreview.join(" / "))}</div>` : ""}
+        </div>`
+      : "";
+
     let courseBody = "";
     if (state.curriculumMode === "sensei_syllabus") {
       courseBody = `
-        <label class="sensei-lbl">16 课体系化进阶大纲</label>
+        <label class="sensei-lbl">${syl?.totalCount || 40} 课标准阶梯教材 (N5→N3)</label>
+        <div class="sensei-pill-group" style="margin-bottom:0.5rem;flex-wrap:wrap;">${levelTabs}</div>
         <select id="sensei-lesson-select" class="sensei-select">${trackOptGroups}</select>
-        <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="margin-top:0.65rem;width:100%;" ${state.isGeneratingLesson ? "disabled" : ""}>
-          ${state.isGeneratingLesson ? "正在现场备课..." : "开始选定课程"}
-        </button>
+        ${previewBox}
+        <div style="display:flex;gap:0.45rem;margin-top:0.65rem;">
+          <button type="button" class="sensei-btn ghost" id="sensei-preview-textbook-btn" data-lesson-id="${escapeHtml(currentLessonId)}" style="flex:1;" ${!currentLessonId ? "disabled" : ""}>
+            📖 精读教材
+          </button>
+          <button type="button" class="sensei-btn primary" id="sensei-start-lesson-btn" style="flex:1.35;" ${state.isGeneratingLesson ? "disabled" : ""}>
+            ${state.isGeneratingLesson ? "正在现场备课..." : "开始本课私教"}
+          </button>
+        </div>
       `;
     } else if (state.curriculumMode === "grammar_point") {
       const allGrammar = getAllGrammarItems();
@@ -3226,6 +3440,7 @@
 
         ${bodyHtml}
         ${renderSettingsDrawer(userOptions, voiceOptions, coachOptions)}
+        ${renderTextbookPreviewModal()}
         ${renderTokenPopover()}
       </div>
     `;
@@ -3450,8 +3665,40 @@
         renderView();
       };
     });
+    root.querySelectorAll("[data-slevel]").forEach((btn) => {
+      btn.onclick = () => {
+        const lvl = btn.dataset.slevel || "all";
+        state.syllabusLevelFilter = lvl;
+        const tracks = state.syllabus?.tracks || [];
+        const matches = tracks
+          .flatMap((tr) => tr.lessons || [])
+          .filter((l) => lvl === "all" || l.level === lvl);
+        if (matches.length && !matches.some((l) => l.id === state.selectedLessonId)) {
+          state.selectedLessonId =
+            (lvl !== "all" ? state.syllabus?.recommendedByLevel?.[lvl]?.id : null) ||
+            matches[0].id;
+        }
+        renderView();
+      };
+    });
     const lessonSel = root.querySelector("#sensei-lesson-select");
-    if (lessonSel) lessonSel.onchange = () => { state.selectedLessonId = lessonSel.value; };
+    if (lessonSel) {
+      lessonSel.onchange = () => {
+        state.selectedLessonId = lessonSel.value;
+        renderView();
+      };
+    }
+    const previewTbBtn = root.querySelector("#sensei-preview-textbook-btn");
+    if (previewTbBtn) {
+      previewTbBtn.onclick = () => {
+        const lid =
+          previewTbBtn.dataset.lessonId ||
+          lessonSel?.value ||
+          state.selectedLessonId ||
+          state.syllabus?.recommendedLesson?.id;
+        if (lid) openTextbookPreview(lid);
+      };
+    }
     const grammarSel = root.querySelector("#sensei-grammar-select");
     if (grammarSel) grammarSel.onchange = () => { state.selectedGrammarId = grammarSel.value; };
     root.querySelectorAll("[data-glevel]").forEach((btn) => {
@@ -3504,6 +3751,27 @@
           lessonId: state.syllabus?.recommendedLesson?.id,
         });
     }
+    const heroPreviewBtn = root.querySelector("#sensei-hero-preview-btn");
+    if (heroPreviewBtn) {
+      heroPreviewBtn.onclick = () => {
+        const lid = heroPreviewBtn.dataset.lessonId || state.syllabus?.recommendedLesson?.id;
+        if (lid) openTextbookPreview(lid);
+      };
+    }
+    root.querySelectorAll("[data-jump-level]").forEach((btn) => {
+      btn.onclick = () => {
+        const lvl = btn.dataset.jumpLevel || "all";
+        state.curriculumMode = "sensei_syllabus";
+        state.syllabusLevelFilter = lvl;
+        const recByLvl = state.syllabus?.recommendedByLevel?.[lvl]?.id;
+        const firstByLvl = (state.syllabus?.tracks || [])
+          .flatMap((tr) => tr.lessons || [])
+          .find((l) => lvl === "all" || l.level === lvl)?.id;
+        state.selectedLessonId = recByLvl || firstByLvl || "";
+        state.drawerOpen = true;
+        renderView();
+      };
+    });
 
     const scSel = root.querySelector("#sensei-scenario-select");
     if (scSel) scSel.onchange = () => { state.selectedScenarioId = scSel.value; };
@@ -3657,13 +3925,54 @@
         renderView();
       };
     }
+    const closeTbModal = () => {
+      state.previewChapter = null;
+      renderView();
+    };
+    const tbCloseBtn = root.querySelector("#sensei-tb-modal-close");
+    if (tbCloseBtn) tbCloseBtn.onclick = closeTbModal;
+    const tbCloseFootBtn = root.querySelector("#sensei-tb-modal-close-foot");
+    if (tbCloseFootBtn) tbCloseFootBtn.onclick = closeTbModal;
+    const tbBackdrop = root.querySelector("#sensei-tb-modal-backdrop");
+    if (tbBackdrop) {
+      tbBackdrop.onclick = (e) => {
+        if (e.target === tbBackdrop) closeTbModal();
+      };
+    }
+    const tbStartBtn = root.querySelector("#sensei-tb-start-btn");
+    if (tbStartBtn) {
+      tbStartBtn.onclick = () => {
+        const lid = tbStartBtn.dataset.lessonId || state.previewChapter?.id || state.selectedLessonId;
+        state.previewChapter = null;
+        state.drawerOpen = false;
+        if (lid) startGuidedLesson({ curriculumMode: "sensei_syllabus", lessonId: lid });
+        else renderView();
+      };
+    }
+    root.querySelectorAll("[data-save-tb-vocab]").forEach((btn) => {
+      btn.onclick = async () => {
+        const idx = Number(btn.dataset.saveTbVocab);
+        const chapter = state.previewChapter || state.lessonSession?.lessonMeta?.textbook;
+        const v = (chapter?.vocabList || [])[idx];
+        if (!v) return;
+        await saveTokenToSrs({
+          surface: v.jp,
+          lemma: v.jp,
+          reading: v.reading || "",
+          meaning_cn: v.cn || "",
+          jlpt: chapter?.level || state.lessonSession?.lessonMeta?.level || "N4",
+          context_jp: "",
+        });
+      };
+    });
   }
 
   if (typeof document !== "undefined") {
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && (state.drawerOpen || state.activeTokenEntry)) {
+      if (e.key === "Escape" && (state.drawerOpen || state.activeTokenEntry || state.previewChapter)) {
         state.drawerOpen = false;
         state.activeTokenEntry = null;
+        state.previewChapter = null;
         renderView();
       }
     });

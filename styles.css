@@ -7033,3 +7033,235 @@ body.dark-mode .app-topbar {
   gap: 0.3rem;
   flex-wrap: wrap;
 }
+
+/* 9. Real Textbook Chapter Reader Panel & Modal (v37) */
+.sensei-hero-level-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1.05rem;
+}
+.sensei-textbook-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 1rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  box-shadow: var(--shadow-sm);
+}
+.tb-cando {
+  background: var(--bg-indigo-soft);
+  color: var(--accent-indigo);
+  border-radius: 10px;
+  padding: 0.55rem 0.78rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.tb-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 0.72rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.tb-section-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.tb-vocab-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 0.45rem;
+}
+.tb-vocab-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.48rem 0.62rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.tb-vocab-main {
+  min-width: 0;
+}
+.tb-vocab-jp {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.tb-vocab-reading {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+.tb-vocab-cn {
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+}
+.tb-vocab-btns {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.tb-grammar-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 11px;
+  padding: 0.65rem 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.tb-grammar-pat {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--accent-indigo);
+}
+.tb-grammar-form {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border-radius: 6px;
+  padding: 0.22rem 0.45rem;
+}
+.tb-grammar-expl {
+  font-size: 0.81rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.tb-grammar-ex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+}
+.tb-dialogue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tb-dialogue-turn {
+  background: var(--bg-subtle);
+  border-radius: 10px;
+  padding: 0.48rem 0.68rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.tb-dialogue-spk {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--accent-indigo);
+  margin-right: 0.3rem;
+}
+.tb-dialogue-jp {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tb-dialogue-cn {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 0.12rem;
+}
+.tb-reading-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.tb-reading-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.tb-reading-jp {
+  font-size: 0.92rem;
+  line-height: 1.85;
+  color: var(--text-primary);
+}
+.tb-reading-cn {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  border-top: 1px dashed var(--border-color);
+  padding-top: 0.4rem;
+}
+.tb-drawer-preview {
+  margin-top: 0.55rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.55rem 0.68rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.sensei-tb-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 125;
+  background: rgba(17, 19, 23, 0.52);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem;
+}
+.sensei-tb-modal {
+  width: min(760px, 100%);
+  max-height: 88dvh;
+  background: var(--bg-main);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sensei-tb-modal-head {
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.sensei-tb-modal-body {
+  padding: 0.95rem 1.05rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+.sensei-tb-modal-foot {
+  padding: 0.8rem 1.1rem;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

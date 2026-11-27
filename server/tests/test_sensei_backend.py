@@ -388,15 +388,51 @@ def test_ws_live_protocol_handshake_and_clean_end(isolated_env, monkeypatch):
 
 
 def test_veteran_syllabus_and_progress_tracking(isolated_env):
+    import re
+    from server.services import syllabus
+
     client = TestClient(app)
     r = client.get("/api/sensei/syllabus?user_id=haodong&jlpt_target=N4")
     assert r.status_code == 200
     body = r.json()
-    assert len(body["tracks"]) == 6
-    assert body["totalCount"] == 16
+    assert len(body["tracks"]) == 10
+    assert body["totalCount"] == 40
     assert body["recommendedLesson"]["id"] == "S01_mora_minimal_pairs"
+    assert set(body["recommendedByLevel"].keys()) == {"N5", "N4", "N3"}
 
-    # Simulate completing step 5 of S01 -> progress advances recommendation to S02
+    # Validate textbook integrity across all 40 lessons
+    hangul_re = re.compile(r"[\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F]")
+    lvl_counts = {"N5": 0, "N4": 0, "N3": 0}
+    seen_ids = set()
+    for idx, ch in enumerate(syllabus.SENSEI_LESSONS, start=1):
+        assert ch["order"] == idx
+        assert ch["id"] not in seen_ids
+        seen_ids.add(ch["id"])
+        assert ch.get("canDoCn")
+        bb = ch.get("blackboard") or {}
+        assert bb.get("formulaJp") and bb.get("contrastGoodJp")
+        assert len(ch.get("vocabList") or []) >= 6
+        assert len(ch.get("grammarNotes") or []) >= 2
+        assert len((ch.get("dialogue") or {}).get("turns") or []) >= 4
+        assert not hangul_re.search(json.dumps(ch, ensure_ascii=False))
+        lvl = ch["level"]
+        lvl_counts[lvl] += 1
+        if lvl in ("N4", "N3"):
+            rp = ch.get("readingPassage") or {}
+            assert rp.get("title") and rp.get("jp") and rp.get("cn")
+        if lvl == "N3":
+            assert len(ch["vocabList"]) >= 8
+            assert len(ch["grammarNotes"]) >= 3
+    assert lvl_counts == {"N5": 13, "N4": 12, "N3": 15}
+
+    # Verify full chapter detail endpoint with tokenized blackboard contrast
+    ch_res = client.get("/api/sensei/syllabus/S33_n3_decisions_habits")
+    assert ch_res.status_code == 200
+    ch_body = ch_res.json()["lesson"]
+    assert ch_body["readingPassage"]["title"]
+    assert len(ch_body["blackboard"]["contrastGoodTokens"]) >= 2
+
+    # Simulate completing S01 -> progress advances recommendation to S02
     db.upsert_lesson_progress("haodong", "S01_mora_minimal_pairs", score=93, completed=True, db_path=isolated_env["db"])
     r2 = client.get("/api/sensei/syllabus?user_id=haodong&jlpt_target=N4").json()
     assert r2["completedCount"] == 1
@@ -447,6 +483,25 @@ async def test_ai_textbook_authoring_syllabus_and_custom_topic(isolated_env):
         )
         assert res_custom["lessonMeta"]["curriculumMode"] == "custom_topic"
         assert "和日本同事聊周末与AI工具" in res_custom["lessonMeta"]["title"]
+
+    # N3 textbook chapter authoring injects readingPassage/grammarNotes into Gemini prompt and returns textbook metadata
+    n3_prompts = []
+
+    async def _capture_n3_author(parts, **kwargs):
+        n3_prompts.append(parts[0]["text"])
+        return mocked_authored
+
+    with patch("server.services.sensei_engine._call_gemini_json", side_effect=_capture_n3_author):
+        res_n3 = await sensei_engine.create_guided_lesson(
+            user_id="haodong",
+            curriculum_mode="sensei_syllabus",
+            lesson_id="S33_n3_decisions_habits",
+            api_key="test-key",
+        )
+    assert res_n3["lessonMeta"]["level"] == "N3"
+    assert res_n3["lessonMeta"]["textbook"]["readingPassage"]["title"] == "新しい習慣が変えた毎日"
+    assert "JLPT N3 中级难度校准" in n3_prompts[-1]
+    assert "新しい習慣が変えた毎日" in n3_prompts[-1]
 
 
 

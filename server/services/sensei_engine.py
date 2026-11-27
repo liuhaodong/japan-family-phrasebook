@@ -444,11 +444,57 @@ async def _author_textbook_lesson(
         grammar_focus = custom_topic if curriculum_mode == "custom_topic" else (unit or {}).get("grammarFocus", "")
         cn_pitfall = (unit or {}).get("cnPitfall", "避免中文语序与中式直译，突出日语助词与自然语调。")
         key_patterns = ", ".join((unit or {}).get("keyPatterns") or [])
-        grammar_block = ""
+        textbook_parts: List[str] = []
+        if unit:
+            if unit.get("canDoCn"):
+                textbook_parts.append(f"- Can-Do 教学目标：{unit['canDoCn']}")
+            vocab_items = unit.get("vocabList") or []
+            if vocab_items:
+                v_str = "、".join(f"{v.get('jp', '')}({v.get('reading', '')}:{v.get('cn', '')})" for v in vocab_items[:8])
+                textbook_parts.append(f"- 本课核心生词：{v_str}")
+            g_notes = unit.get("grammarNotes") or []
+            if g_notes:
+                g_str = " | ".join(
+                    f"{g.get('pattern', '')} [{g.get('formation', '')}] 例:{strip_furigana_parens(g.get('exampleJp') or '')}"
+                    for g in g_notes
+                )
+                textbook_parts.append(f"- 本课核心文法：{g_str}")
+            dlg_turns = (unit.get("dialogue") or {}).get("turns") or []
+            if dlg_turns:
+                d_str = " / ".join(f"{t.get('speaker', '')}:{strip_furigana_parens(t.get('jp') or '')}" for t in dlg_turns[:4])
+                textbook_parts.append(f"- 教材示范对话：{d_str}")
+            rp = unit.get("readingPassage") or {}
+            if rp.get("jp"):
+                textbook_parts.append(f"- 精读短文《{rp.get('title', '')}》：{rp['jp']}")
+        grammar_block = (
+            "【本课标准教材正文（请紧扣生词、文法公式、示范对话与精读短文编写带练）】\n" + "\n".join(textbook_parts) + "\n\n"
+            if textbook_parts
+            else ""
+        )
         pacing_hint = (
-            "请根据本课知识密度与实战需求自主决定步骤数量（建议 6–10 步，较复杂的语法可展开到 8–12 步，不设 10 分钟限制），"
-            "自然涵盖：热身唤醒(WARMUP) → 核心精讲(TEACH) → 节奏镜子跟读(CONTROLLED_DRILL) → 1–2 步口头变形反射(TRANSFORM_DRILL) → "
+            "请根据本课知识密度与实战需求自主决定步骤数量（建议 7–12 步，不设 10 分钟限制），"
+            "自然涵盖：热身唤醒(WARMUP) → 核心文法精讲(TEACH) → 节奏镜子跟读(CONTROLLED_DRILL) → 1–2 步口头变形反射(TRANSFORM_DRILL) → "
             "1–2 步情景造句(SUBSTITUTION_DRILL) → 1–2 步私教自由问答(FREE_OUTPUT)。\n"
+        )
+
+    effective_level = (grammar_point or {}).get("level") or (unit or {}).get("level") or jlpt_target or "N4"
+    effective_level_up = effective_level.upper()
+    if effective_level_up == "N3":
+        level_calibration = (
+            "【JLPT N3 中级难度校准（严禁降级成简单 N5 短句）】\n"
+            "- 目标句必须使用真正 N3 级别复句与中级词汇（如 ことにする/なる、うちに/最中に、にとって/によって、てくる/ていく、ほど/しか、べき/ばよかった、わりには/といえば、ております/させていただく 等）。\n"
+            "- 至少设计 2 步 TRANSFORM_DRILL，给出简短 N5 表达要求学生口头改造成更地道、有逻辑张力的 N3 长句。\n"
+            "- FREE_OUTPUT 提问应贴近工作/育儿/长途旅行思辨，鼓励学生回答 2–3 句完整段落（8–12 步为佳）。\n"
+        )
+    elif effective_level_up == "N4":
+        level_calibration = (
+            "【JLPT N4 进阶难度校准】\n"
+            "- 目标句至少包含 2 个自然从句组合（如 〜ので、〜たら、〜のに、〜てみる、〜ておく、授受 〜てくれる/もらう、被动/使役等），贴合生活与家庭对话（7–10 步为佳）。\n"
+        )
+    else:
+        level_calibration = (
+            "【JLPT N5 地基难度校准】\n"
+            "- 句型清晰实用、拍节饱满、助词精准，帮助稳扎稳打建立口腔肌肉反射（6–8 步为佳）。\n"
         )
 
     fresh_pair = random.sample(_VARIED_DAILY_SCENES, 2)
@@ -467,9 +513,10 @@ async def _author_textbook_lesson(
         f"目标句型参考: {key_patterns or '围绕主题自然精选'}\n"
         f"中国学习者常见母语负迁移陷阱: {cn_pitfall}\n"
         f"建议生活语境: {contexts}\n"
-        f"学生目标等级: {jlpt_target}\n"
+        f"目标等级: {effective_level_up}\n"
         f"学生历史薄弱点: {weakness_str}\n"
         f"记忆本待复习生词（若自然顺畅可嵌入1个）: {due_str}\n\n"
+        f"{level_calibration}\n"
         f"{pacing_hint}\n"
         "【书写规范】targetJp、questionJp、blackboard 的日语例句必须使用东京日常规范日语（正常使用常用汉字与假名混排，如「新しい料理を作ってみます。」「店の席を予約しておきます。」），禁止写成全平假名！界面会自动在汉字上方标出假名。\n"
         "【口播规范】teacherPrompt 供语音朗读：请把中文引导与日语示范分成独立句子（先用纯中文说清要点加句号，不要在中文句子中间夹杂日语词，再另起一句给纯日语示范句），后端会自动把日语单独按假名发音，绝不串音。\n"
@@ -695,6 +742,97 @@ def _build_offline_syllabus_fallback(unit: Optional[Dict[str, Any]], custom_topi
         "contrastGoodJp": "",
         "contrastNoteCn": "",
     }
+
+    if unit and (unit.get("grammarNotes") or unit.get("dialogue")):
+        g_notes = unit.get("grammarNotes") or []
+        dlg_turns = (unit.get("dialogue") or {}).get("turns") or []
+        g0 = g_notes[0] if len(g_notes) > 0 else {}
+        g1 = g_notes[1] if len(g_notes) > 1 else g0
+        g0_jp = strip_furigana_parens(g0.get("exampleJp") or bb.get("contrastGoodJp") or "今日は いい 天気ですね。")
+        g1_jp = strip_furigana_parens(g1.get("exampleJp") or g0_jp)
+        d0 = dlg_turns[0] if len(dlg_turns) > 0 else {"jp": g0_jp, "cn": g0.get("exampleCn") or ""}
+        d1 = dlg_turns[1] if len(dlg_turns) > 1 else d0
+        d2 = dlg_turns[2] if len(dlg_turns) > 2 else g1
+        d0_jp = strip_furigana_parens(d0.get("jp") or g0_jp)
+        d1_jp = strip_furigana_parens(d1.get("jp") or g1_jp)
+        rp = unit.get("readingPassage") or {}
+        rp_first_jp = ""
+        if rp.get("jp"):
+            rp_first_jp = strip_furigana_parens(rp["jp"].split("。")[0] + "。")
+
+        raw_steps: List[Dict[str, Any]] = [
+            {
+                "stage": "WARMUP",
+                "stageLabel": "1. 课文导入",
+                "hideTarget": False,
+                "targetJp": g0_jp,
+                "targetCn": g0.get("exampleCn") or focus,
+                "cueCn": f"文法「{g0.get('pattern', p0)}」：{g0.get('explanation', focus)}",
+                "tipCn": f"接续：{g0.get('formation', p0)}",
+                "teacherPrompt": f"今天进入《{title}》，我们先从核心例句入手。请跟我读，{g0_jp}",
+            },
+            {
+                "stage": "TEACH",
+                "stageLabel": "2. 文法深化",
+                "hideTarget": False,
+                "targetJp": g1_jp,
+                "targetCn": g1.get("exampleCn") or focus,
+                "cueCn": f"核心对比「{g1.get('pattern', focus)}」：{g1.get('explanation', '')}",
+                "tipCn": f"接续：{g1.get('formation', '')}",
+                "teacherPrompt": f"注意句型接续与语感差别，跟着再读这句例句。{g1_jp}",
+            },
+            {
+                "stage": "CONTROLLED_DRILL",
+                "stageLabel": "3. 对话精练",
+                "hideTarget": False,
+                "questionJp": d0_jp,
+                "questionCn": d0.get("cn") or "",
+                "targetJp": d1_jp,
+                "targetCn": d1.get("cn") or "",
+                "cueCn": "听清课文对话上句，自然接出下句回答。",
+                "tipCn": bb.get("cnPitfallCn") or "",
+                "teacherPrompt": f"来进入课文对话演练，认真听对方怎么说。{d0_jp}",
+            },
+            {
+                "stage": "TRANSFORM_DRILL",
+                "stageLabel": "4. 避坑转换",
+                "hideTarget": True,
+                "targetJp": strip_furigana_parens(bb.get("contrastGoodJp") or g0_jp),
+                "targetCn": g0.get("exampleCn") or bb.get("contrastNoteCn") or "说出地道正确日语",
+                "cueCn": f"注意避坑「{bb.get('cnPitfallCn', '')}」，直接口头说出正确日语：{g0.get('exampleCn') or bb.get('contrastNoteCn') or ''}",
+                "tipCn": f"公式参考：{bb.get('formulaJp', '')}",
+                "teacherPrompt": "不要看文字，用今天黑板上的正确表达直接说出来试试。",
+            },
+        ]
+        if rp_first_jp:
+            raw_steps.append(
+                {
+                    "stage": "CONTROLLED_DRILL",
+                    "stageLabel": "5. 短文精读",
+                    "hideTarget": False,
+                    "targetJp": rp_first_jp,
+                    "targetCn": (rp.get("cn") or "").split("。")[0] + "。",
+                    "cueCn": f"精读《{rp.get('title', title)}》选段，注意断句、助词与长句语气。",
+                    "tipCn": "放稳语速，逗号处自然换气。",
+                    "teacherPrompt": f"下面我们来念一段教材短文《{rp.get('title', '')}》。{rp_first_jp}",
+                }
+            )
+        raw_steps.append(
+            {
+                "stage": "FREE_OUTPUT",
+                "stageLabel": f"{len(raw_steps) + 1}. 私教自由问答",
+                "hideTarget": True,
+                "questionJp": d0_jp,
+                "questionCn": d0.get("cn") or f"请用今天学到的「{p0}」谈谈你的真实情况。",
+                "targetJp": strip_furigana_parens(d2.get("jp") or d1_jp),
+                "targetCn": d2.get("cn") or d1.get("cn") or "",
+                "cueCn": f"围绕「{title}」，用上今天学到的句型 {p0} 自然回答！",
+                "tipCn": f"推荐词：{', '.join(v.get('jp', '') for v in (unit.get('vocabList') or [])[:3])}",
+                "teacherPrompt": f"最后一关自由回答，用自己的话回应这一句。{d0_jp}",
+            }
+        )
+        return {"blackboard": bb, "steps": _normalize_authored_steps(raw_steps)}
+
     raw_steps = [
         {
             "stage": "WARMUP",
@@ -959,7 +1097,7 @@ async def create_guided_lesson(
                     curriculum_mode=curriculum_mode if (curriculum_mode != "grammar_point" or grammar_point) else "custom_topic",
                     unit=unit,
                     custom_topic=clean_custom,
-                    jlpt_target=(grammar_point or {}).get("level") or jlpt_target,
+                    jlpt_target=(unit or {}).get("level") or (grammar_point or {}).get("level") or jlpt_target,
                     weaknesses=weaknesses,
                     due_cards=due_cards,
                     coach_model=coach_model,
@@ -1007,6 +1145,17 @@ async def create_guided_lesson(
             meta_lvl = jlpt_target
             meta_focus = clean_custom
 
+        unit_textbook = None
+        if curriculum_mode == "sensei_syllabus" and unit:
+            unit_textbook = {
+                "canDoCn": unit.get("canDoCn") or meta_sub,
+                "estimatedMin": int(unit.get("estimatedMin") or 12),
+                "vocabList": unit.get("vocabList") or [],
+                "grammarNotes": unit.get("grammarNotes") or [],
+                "dialogue": unit.get("dialogue") or None,
+                "readingPassage": unit.get("readingPassage") or None,
+            }
+
         lesson_meta = {
             "curriculumMode": curriculum_mode,
             "lessonId": resolved_lid,
@@ -1016,6 +1165,7 @@ async def create_guided_lesson(
             "level": meta_lvl,
             "grammarFocus": meta_focus,
             "blackboard": blackboard,
+            "textbook": unit_textbook,
             "aiGenerated": bool(authored and authored.get("steps")),
             "totalSteps": len(steps),
         }

@@ -57,7 +57,7 @@ from server.services.srs_service import (
     review_card,
 )
 from server.services.story_service import fetch_stories, generate_graded_story
-from server.services.syllabus import get_syllabus_overview
+from server.services.syllabus import get_syllabus_lesson, get_syllabus_overview
 from server.services.tts_service import get_tts_cache_meta, stream_speech_pcm, synthesize_speech
 
 _SAFE_CACHE_NAME_RE = re.compile(r"^[a-f0-9]{16,64}\.wav$")
@@ -249,6 +249,21 @@ async def api_get_syllabus(
     init_db()
     progress = list_lesson_progress(user_id=user_id)
     return get_syllabus_overview(progress_map=progress, jlpt_target=jlpt_target)
+
+
+@app.get("/api/sensei/syllabus/{lesson_id}")
+async def api_get_syllabus_lesson(lesson_id: str) -> Dict[str, Any]:
+    lesson = get_syllabus_lesson(lesson_id)
+    if not lesson:
+        raise HTTPException(status_code=404, detail="未找到对应教材章节。")
+    enriched = dict(lesson)
+    bb = dict(enriched.get("blackboard") or {})
+    if bb.get("contrastBadJp"):
+        bb["contrastBadTokens"] = tokenize_sentence(bb["contrastBadJp"])
+    if bb.get("contrastGoodJp"):
+        bb["contrastGoodTokens"] = tokenize_sentence(bb["contrastGoodJp"])
+    enriched["blackboard"] = bb
+    return {"lesson": enriched}
 
 
 @app.get("/api/grammar")
