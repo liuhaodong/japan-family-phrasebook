@@ -318,6 +318,78 @@
     });
   }
 
+  async function inspectRecordedAudioBlob(blob) {
+    if (!blob || !blob.size) {
+      return { analyzed: true, hasSpeech: false, reason: "empty" };
+    }
+    const ctx = ensureLessonTtsCtx(24000) || ensureLessonAudioCtx();
+    if (!ctx || typeof ctx.decodeAudioData !== "function") {
+      return { analyzed: false, hasSpeech: true, reason: "no_ctx" };
+    }
+    try {
+      if (ctx.state === "suspended" || ctx.state === "interrupted") {
+        await ctx.resume().catch(() => {});
+      }
+      const arrayBuf = await blob.arrayBuffer();
+      const audioBuf = await ctx.decodeAudioData(arrayBuf.slice(0));
+      const duration = audioBuf.duration || 0;
+      const samples = audioBuf.getChannelData(0);
+      const sr = audioBuf.sampleRate || 16000;
+      if (!samples || !samples.length) {
+        return { analyzed: true, hasSpeech: false, reason: "empty" };
+      }
+
+      let peak = 0;
+      let sqSum = 0;
+      for (let i = 0; i < samples.length; i++) {
+        const s = samples[i];
+        const a = Math.abs(s);
+        if (a > peak) peak = a;
+        sqSum += s * s;
+      }
+      const rms = Math.sqrt(sqSum / samples.length);
+
+      const frameLen = Math.max(1, Math.round(sr * 0.02));
+      const frameStats = [];
+      for (let i = 0; i < samples.length; i += frameLen) {
+        const end = Math.min(samples.length, i + frameLen);
+        let fSq = 0;
+        let fPeak = 0;
+        for (let j = i; j < end; j++) {
+          const s = samples[j];
+          const a = Math.abs(s);
+          if (a > fPeak) fPeak = a;
+          fSq += s * s;
+        }
+        frameStats.push({ rms: Math.sqrt(fSq / (end - i)), peak: fPeak });
+      }
+      const sortedRms = frameStats.map((f) => f.rms).sort((a, b) => a - b);
+      const p20Rms = sortedRms.length >= 5 ? sortedRms[Math.floor(sortedRms.length / 5)] : 0;
+      const rmsThresh = Math.max(0.008, Math.min(0.035, p20Rms * 2.2));
+      let activeFrames = 0;
+      for (const f of frameStats) {
+        if (f.rms >= rmsThresh && f.peak >= 0.018) activeFrames += 1;
+      }
+      const activeSpeechMs = Math.round(activeFrames * (frameLen / sr) * 1000);
+      const hasSpeech = !(
+        duration < 0.25 ||
+        peak < 0.015 ||
+        rms < 0.0035 ||
+        activeSpeechMs < 100
+      );
+      return {
+        analyzed: true,
+        hasSpeech,
+        duration,
+        peak,
+        rms,
+        activeSpeechMs,
+      };
+    } catch {
+      return { analyzed: false, hasSpeech: true, reason: "decode_skipped" };
+    }
+  }
+
   async function playMirrorAudio(audioBlob, blobUrl = "") {
     if (!audioBlob || !audioBlob.size) return;
     if (isIOSDevice) {
@@ -1436,6 +1508,14 @@
         if (isIOSDevice) {
           await new Promise((r) => setTimeout(r, 220));
         }
+        const audioCheck = await inspectRecordedAudioBlob(blob);
+        if (audioCheck.analyzed && !audioCheck.hasSpeech) {
+          state.isRecordingTurn = false;
+          state.mirrorPhase = "";
+          renderView();
+          showToast("🔇 未检测到有效人声（可能静音或离麦克风太远），请清晰朗读后再试");
+          return;
+        }
         await submitLessonAudioTurn(blob);
       };
 
@@ -1575,10 +1655,15 @@
 
       res.localMirrorUrl = mirrorSnapshotUrl;
       state.lastTurnResult = res;
-      state.turnHistory.push(res);
+      const isNoSpeech = Boolean(res.noSpeech || res.decision === "no_speech");
+      if (!isNoSpeech) {
+        state.turnHistory.push(res);
+      }
       state.isEvaluatingTurn = false;
 
-      if (res.decision === "retry_chunk" && res.drillChunkJp) {
+      if (isNoSpeech) {
+        // Keep current step & drill chunk intact without penalizing attempt count.
+      } else if (res.decision === "retry_chunk" && res.drillChunkJp) {
         state.drillChunkJp = res.drillChunkJp;
         state.drillChunkTokens = res.drillChunkTokens || [];
         state.attempt += 1;
@@ -2387,23 +2472,29 @@
   }
 
   function renderTurnDiagnosisCard(res) {
-    const passed = res.decision === "pass";
-    const advanced = res.decision === "advance";
-    const badgeClass = passed ? "pass" : advanced ? "warn" : "retry";
-    const badgeText = passed
+    const isNoSpeech = Boolean(res.noSpeech || res.decision === "no_speech");
+    const passed = !isNoSpeech && res.decision === "pass";
+    const advanced = !isNoSpeech && res.decision === "advance";
+    const badgeClass = isNoSpeech ? "warn" : passed ? "pass" : advanced ? "warn" : "retry";
+    const badgeText = isNoSpeech
+      ? "未检测到清晰日语人声 · 请再试一次"
+      : passed
       ? "过关 · 节奏与音调稳定"
       : advanced
       ? "已记入错题 · 建议进入下一步"
       : res.decision === "retry_chunk"
       ? `拆词重练：先读准「${res.drillChunkJp}」`
       : "请听纠音示范再试一次";
+    const scorePillText = isNoSpeech
+      ? `未收音 · 请重读${res.audioStats && res.audioStats.analyzed ? ` · 峰值 ${res.audioStats.peakDb}dB` : ""}`
+      : `总分 ${res.overallScore} · 音调 ${res.pitchScore} · 语法 ${res.grammarScore}${res.evalMs ? ` · ${(res.evalMs / 1000).toFixed(1)}s` : ""}`;
     const ico = (name) => (window.JP_APP && window.JP_APP.icon ? window.JP_APP.icon(name) : "");
 
     return `
       <div class="sensei-card sensei-diagnosis-card ${badgeClass}">
         <div class="sensei-diag-top">
           <span class="sensei-diag-badge ${badgeClass}">${escapeHtml(badgeText)}</span>
-          <span class="sensei-score-pill" title="模型：${escapeHtml(res.modelUsed || "")}">总分 ${res.overallScore} · 音调 ${res.pitchScore} · 语法 ${res.grammarScore}${res.evalMs ? ` · ${(res.evalMs / 1000).toFixed(1)}s` : ""}</span>
+          <span class="sensei-score-pill" title="模型：${escapeHtml(res.modelUsed || "")}">${escapeHtml(scorePillText)}</span>
         </div>
 
         <div class="sensei-diff-grid">

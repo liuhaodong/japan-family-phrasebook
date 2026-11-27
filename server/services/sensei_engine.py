@@ -35,7 +35,7 @@ from server.db import (
     upsert_lesson_progress,
     upsert_weakness,
 )
-from server.services.audio_utils import normalize_gemini_audio
+from server.services.audio_utils import analyze_audio_speech_activity, normalize_gemini_audio
 from server.services.curriculum_loader import get_grammar, get_scenario, get_verbs
 from server.services.jp_tokenizer import (
     has_kana,
@@ -931,6 +931,62 @@ async def evaluate_sensei_turn(
 
     clean_target = strip_furigana_parens(target_jp)
     active_target = strip_furigana_parens(drill_chunk_jp) if drill_chunk_jp else clean_target
+    target_tokens = tokenize_sentence(clean_target)
+    audio_stats = analyze_audio_speech_activity(
+        norm_bytes, filename=audio_filename, content_type=audio_mime
+    )
+
+    async def _build_no_speech_payload(reason_cn: str, spoken_cn: str, model_used: str) -> Dict[str, Any]:
+        teacher_url = ""
+        if not defer_tts and api_key:
+            try:
+                tts_res = await synthesize_speech(
+                    spoken_cn, api_key=api_key, voice=voice, model=TTS_FAST_MODEL
+                )
+                teacher_url = tts_res["audio_url"]
+            except Exception:
+                teacher_url = ""
+        return {
+            "turnId": turn_id,
+            "sessionId": session_id,
+            "stepIndex": step_index,
+            "stage": stage,
+            "attempt": attempt,
+            "decision": "no_speech",
+            "noSpeech": True,
+            "overallScore": 0,
+            "pitchScore": 0,
+            "grammarScore": 0,
+            "rhythmScore": 0,
+            "heardJp": "",
+            "betterJp": clean_target,
+            "betterTokens": target_tokens,
+            "targetJp": clean_target,
+            "drillChunkJp": "",
+            "drillChunkTokens": [],
+            "drillChunkReading": "",
+            "pitchNote": reason_cn,
+            "grammarNote": "",
+            "praiseCn": "",
+            "issues": [],
+            "teacherSpokenScript": spoken_cn,
+            "teacherSpokenTts": spoken_cn,
+            "teacherAudioUrl": teacher_url,
+            "userAudioUrl": user_audio_url,
+            "extractedVocab": [],
+            "targetTokens": target_tokens,
+            "heardTokens": [],
+            "modelUsed": model_used,
+            "evalMs": int((time.perf_counter() - t0) * 1000),
+            "audioStats": audio_stats,
+        }
+
+    if audio_stats["analyzed"] and not audio_stats["has_speech"]:
+        return await _build_no_speech_payload(
+            "录音中未检测到有效人声（音量过低或录音过短），请靠近麦克风清晰朗读后再试。",
+            "刚才录音里几乎没有听到声音，请你靠近麦克风，大声清晰地再读一遍。",
+            "acoustic-gate",
+        )
 
     if stage == "FREE_OUTPUT":
         stage_rule = (
@@ -954,12 +1010,13 @@ async def evaluate_sensei_turn(
         "你是严格但温暖的东京母语级日语私教（中文教学），听学生录音做精准音调与语法纠音。\n"
         f"阶段:{stage} | 第{attempt}次 | 参考目标:{clean_target} | 本轮片段:{active_target} | 语义:{cue_cn or target_cn}\n"
         "规则：\n"
+        "0. 【反幻觉铁律】：必须先真实倾听音频！先输出 noSpeech 与逐字如实听写的 heardJp，严禁照抄参考目标脑补学生没读出的词！若音频为静音、环境杂音、咳嗽/按键声、完全听不清或未说日语，必须设 \"noSpeech\": true、\"heardJp\": \"\"、四项分数全为 0、praiseCn/issues/drillChunkJp 留空，并在 teacherSpokenScript 坦诚说「刚才没听清你的声音，请靠近麦克风再读一遍」，绝不可编造好评或音调分析！若只读了一部分或说错词，必须如实听写并在总分大幅扣分（<50分）。\n"
         f"{stage_rule}"
         f"2. heardJp、betterJp、drillChunkJp 使用规范日语汉字与假名（如「予約」「新しい料理」），界面会自动标假名；全程严禁输出韩语（한글 / 한국어）或将日语误转写为韩文。\n"
         f"3. 先输出 teacherSpokenScript（20–50字）：前半句用纯中文点评（指代某词用中文意思或「这个词/前半句」，不要在中文句中夹日语词），句号收尾；后半句另起一句给纯日语示范（如「发音很清晰，预约这个词音调偏平，跟我读一遍。予約。」）。禁英文/罗马音/星号/括号/箭头；若总分>={pass_threshold}且无严重问题，issues/drillChunkJp/grammarNote 留空以提速。\n"
         "返回精简JSON（每条说明25字内，issues<=2，extractedVocab<=2）：\n"
-        '{"teacherSpokenScript":"纯中日口语台词","overallScore":0,"pitchScore":0,"grammarScore":0,"rhythmScore":0,'
-        '"heardJp":"如实听写","betterJp":"地道目标句","drillChunkJp":"需单练词块(过关留空)",'
+        '{"noSpeech":false,"heardJp":"逐字如实听写(静音/听不清必须留空)","teacherSpokenScript":"纯中日口语台词","overallScore":0,"pitchScore":0,"grammarScore":0,"rhythmScore":0,'
+        '"betterJp":"地道目标句","drillChunkJp":"需单练词块(过关留空)",'
         '"drillChunkReading":"如 ちか↓く(勿用反斜杠)","pitchNote":"音调简评","grammarNote":"语法简评","praiseCn":"亮点",'
         '"issues":[{"type":"pitch|sokuon|long_vowel|voicing|consonant|ending|particle|grammar","severity":"critical|minor","patternKey":"短标签","detailCn":"原因"}],'
         '"extractedVocab":[{"surface":"","lemma":"","reading":"","pitchAccent":"","meaningCn":"","jlpt":"N4"}]}'
@@ -1008,6 +1065,14 @@ async def evaluate_sensei_turn(
     )
 
     eval_data = _sanitize_no_hangul(eval_data)
+    heard_jp = (eval_data.get("heardJp") or "").strip()
+    if bool(eval_data.get("noSpeech")) or not heard_jp:
+        return await _build_no_speech_payload(
+            eval_data.get("pitchNote") or "未识别到清晰的日语发音，请靠近麦克风重新朗读。",
+            "刚才没听清你的日语发音，请你靠近麦克风，再清楚地读一遍。",
+            eval_data.get("_modelUsed", chosen_model),
+        )
+
     overall_score = int(max(0, min(100, eval_data.get("overallScore", 70))))
     issues = eval_data.get("issues") or []
     drill_chunk = (eval_data.get("drillChunkJp") or "").strip()
@@ -1077,6 +1142,7 @@ async def evaluate_sensei_turn(
         "stage": stage,
         "attempt": attempt,
         "decision": decision,
+        "noSpeech": False,
         "overallScore": overall_score,
         "pitchScore": int(eval_data.get("pitchScore", overall_score)),
         "grammarScore": int(eval_data.get("grammarScore", overall_score)),
@@ -1101,6 +1167,7 @@ async def evaluate_sensei_turn(
         "heardTokens": heard_tokens,
         "modelUsed": eval_data.get("_modelUsed", chosen_model),
         "evalMs": eval_ms,
+        "audioStats": audio_stats,
     }
 
     add_turn(

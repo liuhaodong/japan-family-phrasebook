@@ -156,9 +156,22 @@ async def test_tts_service_strips_markdown_no_system_instruction_and_caches(isol
         assert len(captured_payloads) == 1
 
 
+def _make_audible_wav(duration_sec: float = 0.6, amp: int = 6000, sample_rate: int = 16000) -> bytes:
+    """Build a voiced-level 440Hz sine WAV buffer that clears the acoustic silence gate."""
+    import math
+    import struct
+
+    n_samples = max(1, int(sample_rate * duration_sec))
+    pcm = b"".join(
+        struct.pack("<h", int(amp * math.sin(2.0 * math.pi * 440.0 * i / sample_rate)))
+        for i in range(n_samples)
+    )
+    return pcm_to_wav_bytes(pcm, sample_rate=sample_rate)
+
+
 @pytest.mark.asyncio
 async def test_repeat_until_good_audio_mirror_state_machine(isolated_env):
-    sample_wav = pcm_to_wav_bytes(b"\x00\x00" * 3200, sample_rate=16000)
+    sample_wav = _make_audible_wav()
 
     session_info = await sensei_engine.create_guided_lesson(
         user_id="haodong",
@@ -1033,7 +1046,7 @@ async def test_hangul_sanitizer_strips_korean_from_eval_and_tts(isolated_env):
         persona="Sensei",
         lesson_plan={"steps": []},
     )
-    sample_wav = pcm_to_wav_bytes(b"\x01\x00" * 1600, sample_rate=16000)
+    sample_wav = _make_audible_wav()
     prewarm_calls = []
 
     def _capture_prewarm(script: str, **kwargs):
@@ -1084,3 +1097,122 @@ async def test_hangul_sanitizer_strips_korean_from_eval_and_tts(isolated_env):
     assert res["betterJp"] == "ちょっと待ってください。"
     assert len(prewarm_calls) == 1
     assert not sensei_engine._HANGUL_RE.search(prewarm_calls[0])
+
+
+@pytest.mark.asyncio
+async def test_silent_audio_blocked_by_acoustic_gate_and_model_no_speech_guard(isolated_env):
+    from server.services import audio_utils
+
+    sid = db.create_session(
+        user_id="haodong",
+        mode="sensei_syllabus",
+        scenario_id="S01_mora_minimal_pairs",
+        persona="Sensei",
+        lesson_plan={"steps": []},
+    )
+
+    # 1. Pure zero silence WAV (1.0s) -> blocked before Gemini, no weaknesses recorded
+    silent_wav = pcm_to_wav_bytes(b"\x00\x00" * 16000, sample_rate=16000)
+    gate_silence = audio_utils.analyze_audio_speech_activity(silent_wav, "silent.wav", "audio/wav")
+    assert gate_silence["analyzed"] is True
+    assert gate_silence["has_speech"] is False
+    assert gate_silence["reason"] == "silence"
+
+    mock_gemini = AsyncMock()
+    with patch("server.services.sensei_engine._call_gemini_json", mock_gemini):
+        r_silent = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="SHADOW_DRILL",
+            target_jp="ちょっと待ってください。",
+            attempt=1,
+            audio_bytes=silent_wav,
+            defer_tts=True,
+            api_key="test-key",
+        )
+    mock_gemini.assert_not_called()
+    assert r_silent["noSpeech"] is True
+    assert r_silent["decision"] == "no_speech"
+    assert r_silent["overallScore"] == 0
+    assert r_silent["heardJp"] == ""
+    assert db.list_weaknesses("haodong", db_path=isolated_env["db"]) == []
+
+    # 2. Ultra-short click WAV (0.1s) -> also blocked before Gemini
+    short_wav = _make_audible_wav(duration_sec=0.1)
+    with patch("server.services.sensei_engine._call_gemini_json", mock_gemini):
+        r_short = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="SHADOW_DRILL",
+            target_jp="ちょっと待ってください。",
+            attempt=1,
+            audio_bytes=short_wav,
+            defer_tts=True,
+            api_key="test-key",
+        )
+    mock_gemini.assert_not_called()
+    assert r_short["noSpeech"] is True
+    assert r_short["decision"] == "no_speech"
+    assert r_short["audioStats"]["reason"] == "too_short"
+
+    # 3. Audible WAV where Gemini flags noSpeech=True -> zeroed out even if model gave scores/praise
+    audible_wav = _make_audible_wav()
+    with patch(
+        "server.services.sensei_engine._call_gemini_json",
+        AsyncMock(
+            return_value={
+                "noSpeech": True,
+                "heardJp": "",
+                "overallScore": 78,
+                "praiseCn": "读得很好",
+                "issues": [{"type": "pitch", "severity": "minor", "patternKey": "fake", "detailCn": "fake"}],
+                "_modelUsed": "gemini-4-hydrogen",
+            }
+        ),
+    ):
+        r_flag = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="SHADOW_DRILL",
+            target_jp="ちょっと待ってください。",
+            attempt=1,
+            audio_bytes=audible_wav,
+            defer_tts=True,
+            api_key="test-key",
+        )
+    assert r_flag["noSpeech"] is True
+    assert r_flag["decision"] == "no_speech"
+    assert r_flag["overallScore"] == 0
+    assert r_flag["praiseCn"] == ""
+    assert db.list_weaknesses("haodong", db_path=isolated_env["db"]) == []
+
+    # 4. Audible WAV where Gemini leaves heardJp empty even with noSpeech=False -> enforced no_speech
+    with patch(
+        "server.services.sensei_engine._call_gemini_json",
+        AsyncMock(
+            return_value={
+                "noSpeech": False,
+                "heardJp": "",
+                "overallScore": 82,
+                "praiseCn": "不错",
+                "_modelUsed": "gemini-3-flash-preview",
+            }
+        ),
+    ):
+        r_empty = await sensei_engine.evaluate_sensei_turn(
+            session_id=sid,
+            user_id="haodong",
+            step_index=0,
+            stage="SHADOW_DRILL",
+            target_jp="ちょっと待ってください。",
+            attempt=1,
+            audio_bytes=audible_wav,
+            defer_tts=True,
+            api_key="test-key",
+        )
+    assert r_empty["noSpeech"] is True
+    assert r_empty["decision"] == "no_speech"
+    assert r_empty["overallScore"] == 0
