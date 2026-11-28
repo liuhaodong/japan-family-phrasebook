@@ -331,11 +331,49 @@
     });
   }
 
+  function encodeMonoPcmWavBlob(samples, sampleRate, gain = 1.0) {
+    const len = samples?.length || 0;
+    const sr = Math.max(8000, Math.round(sampleRate || 16000));
+    const buf = new ArrayBuffer(44 + len * 2);
+    const view = new DataView(buf);
+    const writeStr = (off, str) => {
+      for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i));
+    };
+    writeStr(0, "RIFF");
+    view.setUint32(4, 36 + len * 2, true);
+    writeStr(8, "WAVE");
+    writeStr(12, "fmt ");
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sr, true);
+    view.setUint32(28, sr * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, "data");
+    view.setUint32(40, len * 2, true);
+    for (let i = 0; i < len; i++) {
+      let v = samples[i] * gain;
+      const absV = Math.abs(v);
+      if (absV > 0.9) {
+        const sgn = v < 0 ? -1 : 1;
+        v = sgn * (0.9 + 0.08 * Math.tanh((absV - 0.9) * 3.0));
+      }
+      const s16 = Math.max(-32767, Math.min(32767, Math.round(v * 32767)));
+      view.setInt16(44 + i * 2, s16, true);
+    }
+    return new Blob([buf], { type: "audio/wav" });
+  }
+
   async function inspectRecordedAudioBlob(blob) {
     if (!blob || !blob.size) {
       return { analyzed: true, hasSpeech: false, reason: "empty" };
     }
-    const ctx = ensureLessonTtsCtx(24000) || ensureLessonAudioCtx();
+    const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ctx =
+      isIOSDevice && OfflineCtx
+        ? new OfflineCtx(1, 1, 24000)
+        : ensureLessonTtsCtx(24000) || ensureLessonAudioCtx();
     if (!ctx || typeof ctx.decodeAudioData !== "function") {
       return { analyzed: false, hasSpeech: true, reason: "no_ctx" };
     }
@@ -392,6 +430,11 @@
         topRms < 0.002 ||
         activeSpeechMs < 60
       );
+      let boostedBlob = null;
+      if (hasSpeech && peak > 0.002 && peak < 0.55) {
+        const gain = Math.min(18.0, 0.72 / peak);
+        boostedBlob = encodeMonoPcmWavBlob(samples, sr, gain);
+      }
       return {
         analyzed: true,
         hasSpeech,
@@ -399,6 +442,7 @@
         peak,
         rms,
         activeSpeechMs,
+        boostedBlob,
       };
     } catch {
       return { analyzed: false, hasSpeech: true, reason: "decode_skipped" };
@@ -1831,7 +1875,7 @@
           return;
         }
         if (isIOSDevice) {
-          await new Promise((r) => setTimeout(r, 220));
+          await new Promise((r) => setTimeout(r, 420));
         }
         const audioCheck = await inspectRecordedAudioBlob(blob);
         if (audioCheck.analyzed && !audioCheck.hasSpeech) {
@@ -1841,7 +1885,7 @@
           showToast("🔇 未检测到有效人声（可能静音或离麦克风太远），请清晰朗读后再试");
           return;
         }
-        await submitLessonAudioTurn(blob);
+        await submitLessonAudioTurn(blob, audioCheck.boostedBlob || null);
       };
 
       if (isMp4OrIOS) {
@@ -1899,7 +1943,7 @@
     showToast("已取消本次诊断，可直接重新开口");
   }
 
-  async function submitLessonAudioTurn(audioBlob) {
+  async function submitLessonAudioTurn(audioBlob, mirrorBlob = null) {
     const step = currentLessonStep();
     if (!step || !state.lessonSession) return;
     const seq = ++turnChoreographySeq;
@@ -1909,8 +1953,9 @@
         URL.revokeObjectURL(localMirrorBlobUrl);
       } catch {}
     }
-    lastMirrorBlob = audioBlob;
-    localMirrorBlobUrl = URL.createObjectURL(audioBlob);
+    const playbackBlob = mirrorBlob || audioBlob;
+    lastMirrorBlob = playbackBlob;
+    localMirrorBlobUrl = URL.createObjectURL(playbackBlob);
     const mirrorSnapshotUrl = localMirrorBlobUrl;
 
     const evalStartedAt = performance.now();
@@ -1939,8 +1984,8 @@
     }, 200);
 
     const mirrorPlayPromise =
-      state.mirrorPlayback && audioBlob
-        ? playMirrorAudio(audioBlob, mirrorSnapshotUrl)
+      state.mirrorPlayback && playbackBlob
+        ? playMirrorAudio(playbackBlob, mirrorSnapshotUrl)
         : Promise.resolve();
 
     try {
